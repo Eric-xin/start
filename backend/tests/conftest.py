@@ -1,0 +1,55 @@
+import pytest
+import pytest_asyncio
+from httpx import AsyncClient, ASGITransport
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from app.main import app
+from app.database import Base, get_db
+from app.core.redis_client import get_redis
+
+TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
+
+
+@pytest_asyncio.fixture(scope="function")
+async def db_engine():
+    engine = create_async_engine(TEST_DB_URL, echo=False)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield engine
+    await engine.dispose()
+
+
+@pytest_asyncio.fixture(scope="function")
+async def db_session(db_engine):
+    async_session = async_sessionmaker(db_engine, class_=AsyncSession, expire_on_commit=False)
+    async with async_session() as session:
+        yield session
+
+
+class FakeRedis:
+    def __init__(self):
+        self._store = {}
+
+    async def exists(self, key):
+        return key in self._store
+
+    async def setex(self, key, ttl, value):
+        self._store[key] = value
+
+
+@pytest_asyncio.fixture(scope="function")
+async def client(db_session):
+    fake_redis = FakeRedis()
+
+    async def override_db():
+        yield db_session
+
+    async def override_redis():
+        return fake_redis
+
+    app.dependency_overrides[get_db] = override_db
+    app.dependency_overrides[get_redis] = override_redis
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        yield ac
+
+    app.dependency_overrides.clear()

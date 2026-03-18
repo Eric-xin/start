@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "CardEcon",
+    "slug": "cardecon",
+    "version": "1.0.0",
+    "orientation": "landscape",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#0f0f0f"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.cardecon.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0f0f0f"
+      },
+      "package": "com.cardecon.app"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font"
+    ],
+    "scheme": "cardecon",
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

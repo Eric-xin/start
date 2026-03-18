@@ -1,0 +1,21 @@
+export const Colors = {
+  background: "#0f0f0f",
+  surface: "#1a1a1a",
+  terminalDark: "#050e1f",
+  cardSurface: "#f5f0e8",
+  bloombergBlue: "#0a6cf5",
+  terminalGreen: "#00ff88",
+  textPrimary: "#ffffff",
+  textSecondary: "#b0b0b0",
+  textMuted: "#555555",
+  cardText: "#1a1a1a",
+  cardTextBody: "#3a3a3a",
+  amber: "#f57f17",
+  cardBand: {
+    red: "#d32f2f",
+    green: "#2e7d32",
+    amber: "#f57f17",
+    purple: "#6a1b9a",
+    steel_blue: "#1565c0",
+  } as Record<string, string>,
+} as const;

@@ -1,0 +1,67 @@
+import { api } from "./api";
+
+export interface CardData {
+  id: number;
+  type: "education" | "event" | "action";
+  title: string;
+  body: string;
+  emoji: string;
+  stage_min: number;
+  stage_max: number;
+  topics: string[];
+  linked_traits: string[];
+  difficulty: number;
+  diagnostic_power: number;
+  left_choice: string;
+  right_choice: string;
+  card_band_color: string;
+}
+
+export interface SessionData {
+  id: string;
+  user_id: string;
+  stage: number;
+  progress: number;
+  persona_vector: number[];
+  topic_mastery: Record<string, number>;
+  investor_rank: number;
+  capital: number;
+  portfolio_weights: Record<string, number>;
+  peak_capital: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SwipeResponse {
+  lesson: string;
+  reward: number;
+  session: SessionData;
+  next_card: CardData | null;
+}
+
+export async function createSession(): Promise<SessionData> {
+  const resp = await api.post<SessionData>("/api/game/sessions");
+  return resp.data;
+}
+
+export async function getSession(sessionId: string): Promise<SessionData> {
+  const resp = await api.get<SessionData>(`/api/game/sessions/${sessionId}`);
+  return resp.data;
+}
+
+export async function swipe(
+  sessionId: string,
+  cardId: number,
+  action: "left" | "right"
+): Promise<SwipeResponse> {
+  const resp = await api.post<SwipeResponse>(
+    `/api/game/sessions/${sessionId}/swipe`,
+    { card_id: cardId, action }
+  );
+  return resp.data;
+}
+
+export async function getNextCard(sessionId: string): Promise<CardData | null> {
+  const resp = await api.get<CardData | null>(`/api/game/sessions/${sessionId}/next-card`);
+  return resp.data;
+}
