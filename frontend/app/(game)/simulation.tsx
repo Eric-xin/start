@@ -1273,6 +1273,7 @@ const TRAIT_KEYS = [
 // ─── Main Simulation Screen ───────────────────────────────────────────────────
 
 export default function SimulationScreen() {
+  const router = useRouter();
   const { t } = useTranslation();
   const colors = useColors();
   const isNormal = useThemeStore((state) => state.mode === "normal");
@@ -1312,6 +1313,14 @@ export default function SimulationScreen() {
       prev.includes(asset) ? prev.filter((a) => a !== asset) : [...prev, asset]
     );
   }, []);
+
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.push("/(game)");
+    }
+  };
 
   const handleRun = useCallback(async () => {
     if (running) return;
@@ -1728,7 +1737,7 @@ export default function SimulationScreen() {
           <ThemeModeToggle compact />
           <View style={[styles.statusDot, { backgroundColor: Colors.green }]} />
           <LiveClock />
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
             <Text style={[styles.backBtnText, { color: colors.textDim }]}>BACK</Text>
           </TouchableOpacity>
         </View>

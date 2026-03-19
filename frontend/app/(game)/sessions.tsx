@@ -17,7 +17,6 @@ export default function SessionsScreen() {
   const router = useRouter();
   const colors = useColors();
   const { t } = useTranslation();
-  const colors = useColors();
   const { setSession } = useGameStore();
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,11 +33,19 @@ export default function SessionsScreen() {
     router.push("/(game)/play");
   };
 
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.push("/(game)/index");
+    }
+  };
+
   return (
     <View style={styles.container}>
       <AppTopBar
         label={t("sessions.topBar")}
-        onBack={() => router.back()}
+        onBack={handleBack}
         rightContent={<Text style={styles.sessionCount}>{t("sessions.count", { count: sessions.length })}</Text>}
       />
 

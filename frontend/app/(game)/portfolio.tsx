@@ -235,6 +235,14 @@ export default function PortfolioScreen() {
     }
   };
 
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.push("/(game)/index");
+    }
+  };
+
   if (loading) {
     return (
       <View style={[styles.loading, { backgroundColor: colors.bg }]}>
@@ -260,7 +268,7 @@ export default function PortfolioScreen() {
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
       <AppTopBar
         label={isNormal ? t("topbar.portfolio") : t("portfolio.topBarPro")}
-        onBack={() => router.back()}
+        onBack={handleBack}
         rightContent={
           <>
             <ThemeModeToggle navSized />

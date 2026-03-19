@@ -88,6 +88,14 @@ export default function PersonasScreen() {
     );
   };
 
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.push("/(game)/index");
+    }
+  };
+
   if (loading) {
     return (
       <View style={[styles.loading, { backgroundColor: colors.bg }]}>
@@ -100,7 +108,7 @@ export default function PersonasScreen() {
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
       <AppTopBar
         label={isNormal ? t("personas.topBar") : t("personas.topBarPro")}
-        onBack={() => router.back()}
+        onBack={handleBack}
         rightContent={
           <>
             <ThemeModeToggle compact />

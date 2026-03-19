@@ -77,7 +77,7 @@ async def seed_leaderboard_users():
                     updated_at=datetime.now(timezone.utc),
                 )
                 db.add(portfolio)
-                print(f"Created demo user: {username} with net worth ${net_worth:,.2f}")
+                print(f"Created demo user: {username} with net worth CHF{net_worth:,.2f}")
             else:
                 print(f"User {username} already exists, skipping...")
 

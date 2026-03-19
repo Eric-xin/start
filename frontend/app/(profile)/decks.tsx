@@ -153,11 +153,19 @@ export default function DecksScreen() {
   const enabledDecks = progress?.enabled_decks.length ?? 0;
   const totalDecks = progress?.decks.length ?? 0;
 
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.push("/(game)/index");
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
       <AppTopBar
         label={isNormal ? t("decks.topBar") : t("decks.topBarPro")}
-        onBack={() => router.back()}
+        onBack={handleBack}
         rightContent={
           <>
             <ThemeModeToggle navSized />

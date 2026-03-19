@@ -235,11 +235,19 @@ export default function PersonaDetailScreen() {
     </View>
   ) : null;
 
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.push("/(profile)/personas");
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
       <AppTopBar
         label={isNormal ? t("personaDetail.topBar") : t("personaDetail.topBarPro")}
-        onBack={() => router.back()}
+        onBack={handleBack}
         rightContent={<ThemeModeToggle compact />}
       />
 

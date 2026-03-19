@@ -171,6 +171,14 @@ export default function SessionDetailScreen() {
   const acceptedCount = history.filter((e) => e.action === "right").length;
   const declinedCount = history.filter((e) => e.action === "left").length;
 
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.push("/(game)/sessions");
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.loading}>
@@ -183,7 +191,7 @@ export default function SessionDetailScreen() {
     <View style={styles.container}>
       <AppTopBar
         label={t("sessionDetail.topBar")}
-        onBack={() => router.back()}
+        onBack={handleBack}
         rightContent={
           session ? (
             <TouchableOpacity style={styles.continueTopBtn} onPress={handleContinue}>

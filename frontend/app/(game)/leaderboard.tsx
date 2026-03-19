@@ -169,7 +169,6 @@ function LeaderRow({ player, maxValue }: { player: RankedPlayer; maxValue: numbe
 export default function LeaderboardScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { t } = useTranslation();
   const colors = useColors();
   const isNormal = useThemeStore((s) => s.mode === "normal");
   const portfolio = usePortfolioStore((s) => s.portfolio);

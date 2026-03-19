@@ -11,7 +11,6 @@ import { Colors, useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { useThemeStore } from "../../store/themeStore";
 import { ThemeModeToggle } from "../../components/theme/ThemeModeToggle";
-import { AppTopBar } from "../../components/navigation/AppTopBar";
 
 const TIER_COLORS: Record<string, string> = {
   bronze: "#cd7f32",
@@ -85,6 +84,14 @@ export default function AchievementsScreen() {
 
   const categoryOrder = ["progress", "stages", "streaks", "money", "rank", "mastery", "decisions", "strategy"];
 
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.push("/(game)/index");
+    }
+  };
+
   if (loading) {
     return (
       <View style={[styles.loading, { backgroundColor: colors.bg }]}>
@@ -100,7 +107,7 @@ export default function AchievementsScreen() {
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
       <AppTopBar
         label={isNormal ? t("achievements.topBar") : t("achievements.topBarPro")}
-        onBack={() => router.back()}
+        onBack={handleBack}
         rightContent={
           <>
             <ThemeModeToggle compact />

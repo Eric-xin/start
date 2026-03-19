@@ -74,19 +74,19 @@ SEED_ACHIEVEMENTS = [
 
     # ── Money & Performance ───────────────────────────────────────────────────
     {"key": "capital_12k", "category": "money", "title": "Growing Wealth",
-     "description": "Reach $12,000 in capital", "emoji": "💰",
+     "description": "Reach CHF12,000 in capital", "emoji": "💰",
      "tier": "bronze", "condition_type": "capital_reached", "condition_value": 12_000},
 
     {"key": "capital_15k", "category": "money", "title": "Solid Portfolio",
-     "description": "Reach $15,000 in capital", "emoji": "💎",
+     "description": "Reach CHF15,000 in capital", "emoji": "💎",
      "tier": "silver", "condition_type": "capital_reached", "condition_value": 15_000},
 
     {"key": "capital_20k", "category": "money", "title": "Wealthy Investor",
-     "description": "Reach $20,000 in capital", "emoji": "🏦",
+     "description": "Reach CHF20,000 in capital", "emoji": "🏦",
      "tier": "gold", "condition_type": "capital_reached", "condition_value": 20_000},
 
     {"key": "peak_25k", "category": "money", "title": "Peak Performance",
-     "description": "Reach a peak net worth of $25,000", "emoji": "⛰️",
+     "description": "Reach a peak net worth of CHF25,000", "emoji": "⛰️",
      "tier": "platinum", "condition_type": "peak_net_worth", "condition_value": 25_000},
 
     # ── Investor Rank ─────────────────────────────────────────────────────────

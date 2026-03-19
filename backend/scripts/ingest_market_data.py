@@ -81,14 +81,14 @@ MARKET_EVENTS = [
         "date": "2021-01-27",
         "label": "GameStop Short Squeeze",
         "impact": "neutral",
-        "description": "Retail investors on Reddit drive GME from $20 to $483, triggering hedge fund losses and market volatility.",
+        "description": "Retail investors on Reddit drive GME from CHF20 to CHF483, triggering hedge fund losses and market volatility.",
         "affected_assets": ["stocks"],
     },
     {
         "date": "2021-02-21",
-        "label": "Bitcoin Hits $58K ATH",
+        "label": "Bitcoin Hits CHF58K ATH",
         "impact": "positive",
-        "description": "Bitcoin reaches new all-time high of $58,000, driven by institutional adoption (Tesla, MicroStrategy).",
+        "description": "Bitcoin reaches new all-time high of CHF58,000, driven by institutional adoption (Tesla, MicroStrategy).",
         "affected_assets": ["bitcoin"],
     },
     {
@@ -100,9 +100,9 @@ MARKET_EVENTS = [
     },
     {
         "date": "2021-11-10",
-        "label": "Bitcoin ATH $69K + S&P ATH",
+        "label": "Bitcoin ATH CHF69K + S&P ATH",
         "impact": "positive",
-        "description": "Bitcoin reaches all-time high of $69,000. S&P 500 also at record highs. Market exuberance peak.",
+        "description": "Bitcoin reaches all-time high of CHF69,000. S&P 500 also at record highs. Market exuberance peak.",
         "affected_assets": ["bitcoin", "stocks", "tech"],
     },
     {
@@ -116,7 +116,7 @@ MARKET_EVENTS = [
         "date": "2022-02-24",
         "label": "Russia Invades Ukraine",
         "impact": "negative",
-        "description": "Russia launches full-scale invasion. Oil spikes to $130/barrel. European markets crash. Gold surges as safe haven.",
+        "description": "Russia launches full-scale invasion. Oil spikes to CHF130/barrel. European markets crash. Gold surges as safe haven.",
         "affected_assets": ["stocks", "gold", "bonds"],
     },
     {
@@ -130,14 +130,14 @@ MARKET_EVENTS = [
         "date": "2022-05-11",
         "label": "Luna/UST Collapse",
         "impact": "negative",
-        "description": "Terra Luna and UST stablecoin collapse to zero, wiping out $60B. Contagion spreads across entire crypto market.",
+        "description": "Terra Luna and UST stablecoin collapse to zero, wiping out CHF60B. Contagion spreads across entire crypto market.",
         "affected_assets": ["bitcoin"],
     },
     {
         "date": "2022-06-13",
         "label": "Bear Market Confirmed",
         "impact": "negative",
-        "description": "S&P 500 enters official bear market (>20% decline). Bitcoin falls below $20K. Fed accelerates hikes to fight 9% inflation.",
+        "description": "S&P 500 enters official bear market (>20% decline). Bitcoin falls below CHF20K. Fed accelerates hikes to fight 9% inflation.",
         "affected_assets": ["stocks", "tech", "bitcoin", "bonds"],
     },
     {
@@ -184,9 +184,9 @@ MARKET_EVENTS = [
     },
     {
         "date": "2024-03-14",
-        "label": "Bitcoin ATH $73K",
+        "label": "Bitcoin ATH CHF73K",
         "impact": "positive",
-        "description": "Bitcoin hits new all-time high of $73,000 ahead of April halving. Crypto market cap exceeds $2.5 trillion.",
+        "description": "Bitcoin hits new all-time high of CHF73,000 ahead of April halving. Crypto market cap exceeds CHF2.5 trillion.",
         "affected_assets": ["bitcoin"],
     },
     {
@@ -235,7 +235,7 @@ MARKET_EVENTS = [
         "date": "2025-03-04",
         "label": "Trade War Escalates",
         "impact": "negative",
-        "description": "Tariff escalation continues. S&P 500 enters correction (-10%). Gold hits $2,900 as safe haven demand surges.",
+        "description": "Tariff escalation continues. S&P 500 enters correction (-10%). Gold hits CHF2,900 as safe haven demand surges.",
         "affected_assets": ["stocks", "tech", "gold"],
     },
 ]
