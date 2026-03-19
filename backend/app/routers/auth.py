@@ -1,4 +1,6 @@
 from fastapi import APIRouter, Depends, Query
+from fastapi.security import OAuth2PasswordRequestForm
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.schemas.auth import (
@@ -20,6 +22,19 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
 @router.post("/login", response_model=TokenResponse)
 async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
     return await auth_service.login_user(db, data)
+
+
+@router.post("/swagger-login", response_model=TokenResponse)
+async def swagger_login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Swagger UI compatible login endpoint (form-data).
+    """
+    login_data = LoginRequest(identifier=form_data.username, password=form_data.password)
+    return await auth_service.login_user(db, login_data)
+
 
 
 @router.get("/verify-email")
