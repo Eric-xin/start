@@ -216,7 +216,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const colors = useColors();
   const isNormal = useThemeStore((state) => state.mode === "normal");
-  const { user, setUser, clearAuth } = useAuthStore();
+  const { user, setUser, clearAuth, setSkipInvestingIntro } = useAuthStore();
   const { width } = useWindowDimensions();
   const isWide = width >= 760;
   const cardSurfaceStyle = {
@@ -324,6 +324,16 @@ export default function ProfileScreen() {
             <Text style={s.metaValue}>{user?.created_at ? new Date(user.created_at as any).getFullYear() : "—"}</Text>
           </View>
         </View>
+
+        <TouchableOpacity
+          style={s.replayIntroBtn}
+          onPress={async () => {
+            await setSkipInvestingIntro(false);
+            router.push("/(game)/investing-intro");
+          }}
+        >
+          <Text style={s.replayIntroTxt}>REPLAY INVESTING INTRO →</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Active Persona */}
@@ -564,6 +574,21 @@ const s = StyleSheet.create({
   metaBadge: { gap: 2 },
   metaLabel: { fontSize: 7, fontFamily: Fonts.sansBold, color: Colors.textMuted, letterSpacing: 1.5 },
   metaValue: { fontSize: 12, fontFamily: Fonts.mono, color: Colors.textBright },
+  replayIntroBtn: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: Colors.borderDim,
+    borderRadius: 2,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    alignItems: "center",
+  },
+  replayIntroTxt: {
+    fontSize: 9,
+    fontFamily: Fonts.sansBold,
+    color: Colors.blue,
+    letterSpacing: 1.5,
+  },
 
   // Persona
   personaRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },

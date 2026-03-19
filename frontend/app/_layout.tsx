@@ -11,7 +11,7 @@ export default function RootLayout() {
   const [fontsLoaded] = useAppFonts();
   const router = useRouter();
   const segments = useSegments();
-  const { token, isHydrated, hydrate } = useAuthStore();
+  const { token, isHydrated, skipInvestingIntro, hydrate } = useAuthStore();
 
   useEffect(() => {
     hydrate();
@@ -21,12 +21,15 @@ export default function RootLayout() {
     if (!isHydrated || !fontsLoaded) return;
 
     const inAuth = segments[0] === "(auth)";
+    const inIntro = segments[0] === "(game)" && segments[1] === "investing-intro";
     if (!token && !inAuth) {
       router.replace("/(auth)/login");
     } else if (token && inAuth) {
+      router.replace(skipInvestingIntro ? "/(game)" : "/(game)/investing-intro");
+    } else if (token && skipInvestingIntro && inIntro) {
       router.replace("/(game)");
     }
-  }, [token, isHydrated, fontsLoaded, segments]);
+  }, [token, isHydrated, fontsLoaded, skipInvestingIntro, segments]);
 
   const isReady = fontsLoaded && isHydrated;
   const inAuth = segments[0] === "(auth)";
