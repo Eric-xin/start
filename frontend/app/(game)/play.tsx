@@ -57,9 +57,10 @@ function TerminalGrid() {
 
 // ─── Top Status Bar ─────────────────────────────────────────────────────────
 function TopStatusBar({ session }: { session: any }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const now = new Date();
-  const timeStr = now.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const locale = i18n?.language || undefined;
+  const timeStr = now.toLocaleTimeString(locale, { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
   return (
     <View style={tbStyles.bar}>
