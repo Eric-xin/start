@@ -1,5 +1,6 @@
 import axios from "axios";
 import { getItem, deleteItem } from "./storage";
+import { useAuthStore } from "../store/authStore";
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? "https://markethand.ericxin.dev";
 
@@ -23,9 +24,7 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      await deleteItem("access_token");
-      await deleteItem("refresh_token");
-      // Auth store will detect missing token on next render
+      await useAuthStore.getState().clearAuth();
     }
     return Promise.reject(error);
   }
