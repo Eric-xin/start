@@ -3,6 +3,7 @@ import { StyleSheet, View } from "react-native";
 import Svg, { Rect } from "react-native-svg";
 
 const GRID = 16;
+const RENDER_GRID = 28;
 const VARIANTS_PER_SUBJECT = 100;
 
 type Subject =
@@ -28,11 +29,13 @@ type Subject =
   | "volatility";
 
 type Pixel = { x: number; y: number; shade: 0 | 1 | 2 };
+type CardMaterial = "standard" | "metal" | "glass" | "old";
 
 interface Props {
   subject?: string;
   bandColor: string;
   seed: string | number;
+  material?: CardMaterial;
 }
 
 function hashSeed(value: string | number): number {
@@ -385,10 +388,11 @@ function buildSubjectPixels(subject: Subject, variant: number): Pixel[] {
   return Array.from(transformed.values());
 }
 
-export function PixelArtBackground({ subject, bandColor, seed }: Props) {
+export function PixelArtBackground({ subject, bandColor, seed, material = "standard" }: Props) {
   const normalized = normalizeSubject(subject);
   const subjectSeed = hashSeed(normalized);
-  const variant = hashSeed(`${seed}:${normalized}`) % VARIANTS_PER_SUBJECT;
+  const renderSeed = hashSeed(`${seed}:${normalized}:${material}`);
+  const variant = renderSeed % VARIANTS_PER_SUBJECT;
 
   const pixels = useMemo(
     () => buildSubjectPixels(normalized, variant + subjectSeed),
@@ -396,21 +400,84 @@ export function PixelArtBackground({ subject, bandColor, seed }: Props) {
   );
 
   const palette = useMemo(
-    () => [
-      tint(bandColor, 0.75),
-      tint(bandColor, 0.95),
-      tint(bandColor, 1.2),
-    ],
-    [bandColor],
+    () => {
+      if (material === "metal") {
+        return ["rgb(92, 100, 118)", "rgb(150, 162, 184)", "rgb(220, 230, 245)"];
+      }
+      if (material === "glass") {
+        return ["rgba(164, 220, 255, 0.55)", "rgba(210, 240, 255, 0.72)", "rgba(244, 252, 255, 0.9)"];
+      }
+      if (material === "old") {
+        return ["rgb(116, 93, 61)", "rgb(151, 122, 78)", "rgb(193, 163, 110)"];
+      }
+      return [
+        tint(bandColor, 0.75),
+        tint(bandColor, 0.95),
+        tint(bandColor, 1.2),
+      ];
+    },
+    [bandColor, material],
   );
+
+  const tileAlpha = material === "glass" ? 0.02 : material === "metal" ? 0.05 : material === "old" ? 0.06 : 0.07;
+  const tileAltAlpha = material === "glass" ? 0.01 : material === "metal" ? 0.03 : material === "old" ? 0.04 : 0.03;
+
+  const effectPixels = useMemo(() => {
+    const rand = lcg(renderSeed + 11);
+    const list: Array<{ x: number; y: number; w: number; h: number; fill: string; opacity: number }> = [];
+
+    if (material === "metal") {
+      for (let y = 2; y < RENDER_GRID; y += 4) {
+        list.push({
+          x: 0,
+          y,
+          w: RENDER_GRID,
+          h: 1,
+          fill: "#dce8ff",
+          opacity: 0.08 + ((y % 8) === 0 ? 0.05 : 0),
+        });
+      }
+      list.push({ x: 0, y: 4, w: RENDER_GRID, h: 3, fill: "#ffffff", opacity: 0.06 });
+    } else if (material === "glass") {
+      list.push({ x: 1, y: 1, w: RENDER_GRID - 2, h: 5, fill: "#ffffff", opacity: 0.09 });
+      for (let i = 0; i < 10; i += 1) {
+        list.push({
+          x: Math.floor(rand() * RENDER_GRID),
+          y: Math.floor(rand() * RENDER_GRID),
+          w: 1,
+          h: 1,
+          fill: "#e8f8ff",
+          opacity: 0.18,
+        });
+      }
+    } else if (material === "old") {
+      for (let i = 0; i < 16; i += 1) {
+        list.push({
+          x: Math.floor(rand() * RENDER_GRID),
+          y: Math.floor(rand() * RENDER_GRID),
+          w: 1 + Math.floor(rand() * 2),
+          h: 1 + Math.floor(rand() * 2),
+          fill: "#7e5f39",
+          opacity: 0.08,
+        });
+      }
+      for (let i = 0; i < 4; i += 1) {
+        const x = Math.floor(rand() * (RENDER_GRID - 4));
+        const y = Math.floor(rand() * (RENDER_GRID - 4));
+        list.push({ x, y, w: 4, h: 1, fill: "#5f4220", opacity: 0.1 });
+      }
+    }
+
+    return list;
+  }, [material, renderSeed]);
 
   return (
     <View pointerEvents="none" style={styles.wrap}>
-      <Svg width="100%" height="100%" viewBox={`0 0 ${GRID} ${GRID}`}>
-        {Array.from({ length: GRID * GRID }).map((_, i) => {
-          const x = i % GRID;
-          const y = Math.floor(i / GRID);
-          const alpha = (x + y) % 2 === 0 ? 0.07 : 0.03;
+      <Svg width="100%" height="100%" viewBox={`0 0 ${RENDER_GRID} ${RENDER_GRID}`}>
+        {Array.from({ length: RENDER_GRID * RENDER_GRID }).map((_, i) => {
+          const x = i % RENDER_GRID;
+          const y = Math.floor(i / RENDER_GRID);
+          const alpha = (x + y) % 2 === 0 ? tileAlpha : tileAltAlpha;
           return (
             <Rect
               key={`bg-${i}`}
@@ -423,15 +490,27 @@ export function PixelArtBackground({ subject, bandColor, seed }: Props) {
           );
         })}
 
+        {effectPixels.map((e, i) => (
+          <Rect
+            key={`fx-${i}`}
+            x={e.x}
+            y={e.y}
+            width={e.w}
+            height={e.h}
+            fill={e.fill}
+            opacity={e.opacity}
+          />
+        ))}
+
         {pixels.map((p, i) => (
           <Rect
             key={`px-${i}`}
-            x={p.x}
-            y={p.y}
+            x={(p.x / (GRID - 1)) * (RENDER_GRID - 2) + 0.5}
+            y={(p.y / (GRID - 1)) * (RENDER_GRID - 2) + 0.5}
             width={1}
             height={1}
             fill={palette[p.shade]}
-            opacity={0.24 + p.shade * 0.08}
+            opacity={material === "glass" ? 0.22 + p.shade * 0.06 : 0.3 + p.shade * 0.09}
           />
         ))}
       </Svg>
