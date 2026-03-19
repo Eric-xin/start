@@ -19,6 +19,8 @@ import { useThemeStore } from "../../../store/themeStore";
 import { useAuthStore } from "../../../store/authStore";
 import { useArenaStore } from "../../../store/arenaStore";
 import { createRoom, joinRoom } from "../../../services/arena";
+import { AppTopBar } from "../../../components/navigation/AppTopBar";
+import { ThemeModeToggle } from "../../../components/theme/ThemeModeToggle";
 
 const ROUND_OPTIONS = [5, 10, 15, 20];
 const CAPITAL_OPTIONS = [5_000, 10_000, 25_000, 50_000];
@@ -86,14 +88,11 @@ export default function ArenaHubScreen() {
       style={styles.root}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>{isNormal ? t("arena.hub.back") : t("arena.hub.backPro")}</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{isNormal ? t("arena.hub.title") : t("arena.hub.titlePro")}</Text>
-        <View style={{ width: 60 }} />
-      </View>
+      <AppTopBar
+        label={isNormal ? t("arena.hub.title") : t("arena.hub.titlePro")}
+        onBack={() => router.canGoBack() ? router.back() : router.push("/(game)")}
+        rightContent={<ThemeModeToggle compact />}
+      />
 
       <ScrollView
         contentContainerStyle={styles.scroll}

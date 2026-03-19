@@ -17,6 +17,8 @@ import { useThemeStore } from "../../../../store/themeStore";
 import { useArenaStore } from "../../../../store/arenaStore";
 import { useAuthStore } from "../../../../store/authStore";
 import { startGame, getRoom } from "../../../../services/arena";
+import { AppTopBar } from "../../../../components/navigation/AppTopBar";
+import { ThemeModeToggle } from "../../../../components/theme/ThemeModeToggle";
 
 export default function ArenaLobbyScreen() {
   const { code } = useLocalSearchParams<{ code: string }>();
@@ -85,17 +87,19 @@ export default function ArenaLobbyScreen() {
 
   return (
     <View style={styles.root}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.replace("/(game)/arena")} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>{isNormal ? t("arena.lobby.leave") : t("arena.lobby.leavePro")}</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{isNormal ? t("arena.lobby.title") : t("arena.lobby.titlePro")}</Text>
-        <View style={styles.liveChip}>
-          <View style={[styles.liveDot, { backgroundColor: wsConnected ? colors.green : colors.amber }]} />
-          <Text style={styles.liveLabel}>{wsConnected ? (isNormal ? t("arena.lobby.live") : t("arena.lobby.livePro")) : "..."}</Text>
-        </View>
-      </View>
+      <AppTopBar
+        label={isNormal ? t("arena.lobby.title") : t("arena.lobby.titlePro")}
+        onBack={() => router.replace("/(game)/arena")}
+        rightContent={
+          <>
+            <ThemeModeToggle compact />
+            <View style={styles.liveChip}>
+              <View style={[styles.liveDot, { backgroundColor: wsConnected ? colors.green : colors.amber }]} />
+              <Text style={styles.liveLabel}>{wsConnected ? (isNormal ? t("arena.lobby.live") : t("arena.lobby.livePro")) : "..."}</Text>
+            </View>
+          </>
+        }
+      />
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 

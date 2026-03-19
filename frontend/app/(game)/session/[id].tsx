@@ -11,6 +11,7 @@ import { Colors } from "../../../constants/colors";
 import { Fonts } from "../../../constants/fonts";
 import { MarkdownText } from "../../../components/MarkdownText";
 import { AppTopBar } from "../../../components/navigation/AppTopBar";
+import { ThemeModeToggle } from "../../../components/theme/ThemeModeToggle";
 
 const TYPE_COLOR: Record<string, string> = {
   education: Colors.blue,
@@ -193,11 +194,14 @@ export default function SessionDetailScreen() {
         label={t("sessionDetail.topBar")}
         onBack={handleBack}
         rightContent={
-          session ? (
-            <TouchableOpacity style={styles.continueTopBtn} onPress={handleContinue}>
-              <Text style={styles.continueTopBtnText}>{t("sessionDetail.continue")}</Text>
-            </TouchableOpacity>
-          ) : null
+          <>
+            <ThemeModeToggle compact />
+            {session ? (
+              <TouchableOpacity style={styles.continueTopBtn} onPress={handleContinue}>
+                <Text style={styles.continueTopBtnText}>{t("sessionDetail.continue")}</Text>
+              </TouchableOpacity>
+            ) : null}
+          </>
         }
       />
 

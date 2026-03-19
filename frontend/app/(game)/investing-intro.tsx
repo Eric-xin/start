@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { AppTopBar } from "../../components/navigation/AppTopBar";
+import { ThemeModeToggle } from "../../components/theme/ThemeModeToggle";
 import { useAuthStore } from "../../store/authStore";
 
 export default function InvestingIntroScreen() {
@@ -22,7 +23,11 @@ export default function InvestingIntroScreen() {
 
   return (
     <View style={styles.container}>
-      <AppTopBar label={t("topbar.whyInvesting")} />
+      <AppTopBar
+        label={t("topbar.whyInvesting")}
+        onBack={() => router.canGoBack() ? router.back() : router.push("/(game)")}
+        rightContent={<ThemeModeToggle compact />}
+      />
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <View style={styles.quoteCard}>

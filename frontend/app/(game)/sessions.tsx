@@ -10,6 +10,7 @@ import { useGameStore } from "../../store/gameStore";
 import { Colors, useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { AppTopBar } from "../../components/navigation/AppTopBar";
+import { ThemeModeToggle } from "../../components/theme/ThemeModeToggle";
 
 const RANK_LABELS = ["—", "ANALYST I", "ASSOCIATE II", "DIRECTOR III", "MD IV"];
 
@@ -46,7 +47,12 @@ export default function SessionsScreen() {
       <AppTopBar
         label={t("sessions.topBar")}
         onBack={handleBack}
-        rightContent={<Text style={styles.sessionCount}>{t("sessions.count", { count: sessions.length })}</Text>}
+        rightContent={
+          <>
+            <ThemeModeToggle compact />
+            <Text style={styles.sessionCount}>{t("sessions.count", { count: sessions.length })}</Text>
+          </>
+        }
       />
 
       {loading ? (

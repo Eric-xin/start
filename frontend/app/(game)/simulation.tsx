@@ -983,34 +983,6 @@ const metricStyles = StyleSheet.create({
 
 // ─── Live Clock ────────────────────────────────────────────────────────────────
 
-function LiveClock() {
-  const colors = useColors();
-  const [time, setTime] = useState(() => {
-    const now = new Date();
-    return now.toTimeString().slice(0, 8);
-  });
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date();
-      setTime(now.toTimeString().slice(0, 8));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <Text style={[clockStyles.text, { color: colors.textDim }]}>{time} UTC</Text>
-  );
-}
-
-const clockStyles = StyleSheet.create({
-  text: {
-    fontSize: 11,
-    fontFamily: Fonts.mono,
-    color: Colors.textDim,
-    letterSpacing: 1,
-  },
-});
 
 // ─── Asset Toggle ─────────────────────────────────────────────────────────────
 
@@ -1730,13 +1702,7 @@ export default function SimulationScreen() {
       <AppTopBar
         label={isNormal ? t("simulation.header.title") : t("simulation.header.titlePro")}
         onBack={handleBack}
-        rightContent={
-          <>
-            <ThemeModeToggle compact />
-            <View style={[styles.statusDot, { backgroundColor: Colors.green }]} />
-            <LiveClock />
-          </>
-        }
+        rightContent={<ThemeModeToggle compact />}
       />
 
       {/* Body */}

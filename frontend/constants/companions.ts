@@ -42,7 +42,7 @@ const bullPhrases = makePhrases({
   welcome: [
     "We are so back. Let's swing big and make the tape sweat.",
     "New session, fresh conviction, zero fear.",
-    "CardEcon just opened and I already smell upside.",
+    "MarketHand just opened and I already smell upside.",
     "We're not tiptoeing in. We're charging.",
     "Wake up, champ. Opportunity is already moving.",
     "Let's build a stack and a story worth bragging about.",

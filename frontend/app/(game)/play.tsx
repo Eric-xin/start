@@ -111,7 +111,7 @@ function TopStatusBar({
   return (
     <View style={styles.bar}>
       <View style={styles.left}>
-        <Text style={styles.logo}>CARDECON</Text>
+        <Text style={styles.logo}>{t("common.appName")}</Text>
         <View style={styles.sep} />
         <Text style={styles.label}>{isNormal ? t("play.top.cash") : t("play.top.stage")}</Text>
         <Text style={[styles.value, { color: isNormal ? (session.capital >= 10000 ? colors.green : session.capital >= 8500 ? colors.amber : colors.red) : colors.textBright }]}>
