@@ -32,6 +32,7 @@ class CardOut(BaseModel):
     value_max: float | None = None
     value_step: float | None = None
     alpha: float = 1.0
+    weights: dict = {}
 
 
 class CardCreate(BaseModel):
@@ -57,6 +58,7 @@ class CardCreate(BaseModel):
     value_max: float | None = None
     value_step: float | None = None
     alpha: float = 1.0
+    weights: dict = {}
 
 
 class CardUpdate(BaseModel):
@@ -83,3 +85,4 @@ class CardUpdate(BaseModel):
     value_max: float | None = None
     value_step: float | None = None
     alpha: float | None = None
+    weights: dict | None = None

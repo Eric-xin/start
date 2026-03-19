@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func as sa_func
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.models.achievement import Achievement, UserAchievement
 from app.models.portfolio import UserPortfolio, CardPlay
@@ -119,10 +120,14 @@ async def check_and_unlock(
             progress,
             action_counts,
         ):
-            db.add(UserAchievement(
-                user_id=user_id,
-                achievement_id=achievement.id,
-            ))
-            newly_unlocked.append(achievement)
+            # ON CONFLICT DO NOTHING ensures idempotency even under concurrent requests
+            stmt = (
+                pg_insert(UserAchievement)
+                .values(user_id=user_id, achievement_id=achievement.id)
+                .on_conflict_do_nothing(constraint="uq_user_achievement")
+            )
+            result = await db.execute(stmt)
+            if result.rowcount:
+                newly_unlocked.append(achievement)
 
     return newly_unlocked

@@ -257,9 +257,16 @@ async def process_swipe(
     _check_strategy_unlocks(progress)
     progress.updated_at = datetime.now(timezone.utc)
 
-    # Update capital (alpha scales the impact — e.g. rate cuts hit harder than trivia)
+    # Update capital — use multi-dimensional weights via market state
+    from app.services.portfolio_service import (
+        _update_market_state, _compute_market_multiplier,
+    )
+    session_market = getattr(session, "market_state", None) or {}
+    session_market = _update_market_state(session_market, card, action, reward)
+    market_mult = _compute_market_multiplier(session_market)
+
     alpha = getattr(card, "alpha", 1.0)
-    capital_delta = reward * 200 * alpha
+    capital_delta = reward * 200 * alpha * market_mult
     session.capital += capital_delta
     if session.capital > session.peak_capital:
         session.peak_capital = session.capital

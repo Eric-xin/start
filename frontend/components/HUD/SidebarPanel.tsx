@@ -3,25 +3,52 @@ import { View, Text, StyleSheet } from "react-native";
 import { Colors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { Layout } from "../../constants/layout";
-import type { SessionData } from "../../services/game";
+
+interface MarketState {
+  sentiment?: number;
+  inflation?: number;
+  greed?: number;
+  volatility?: number;
+  fundamentals?: number;
+}
 
 interface Props {
-  session: SessionData;
+  session: {
+    capital: number;
+    stage: number;
+    progress: number;
+    investor_rank: number;
+    peak_capital?: number;
+    peak_net_worth?: number;
+    portfolio_weights?: Record<string, number>;
+    market_state?: MarketState;
+  };
 }
 
 const TICKERS = [
-  { sym: "SPY", base: 450 },
-  { sym: "QQQ", base: 380 },
-  { sym: "BTC", base: 42000 },
-  { sym: "GLD", base: 185 },
-  { sym: "TLT", base: 92 },
-  { sym: "VIX", base: 18 },
+  { sym: "SPY", base: 450, drivers: { sentiment: 0.6, fundamentals: 0.4, volatility: -0.3 } },
+  { sym: "QQQ", base: 380, drivers: { sentiment: 0.5, greed: 0.3, fundamentals: 0.3, volatility: -0.4 } },
+  { sym: "BTC", base: 42000, drivers: { sentiment: 0.3, greed: 0.6, volatility: 0.2, fundamentals: 0.1 } },
+  { sym: "GLD", base: 185, drivers: { sentiment: -0.3, inflation: 0.5, volatility: 0.3, fundamentals: -0.1 } },
+  { sym: "TLT", base: 92, drivers: { sentiment: -0.2, inflation: -0.6, volatility: -0.2, fundamentals: 0.2 } },
+  { sym: "VIX", base: 18, drivers: { sentiment: -0.5, volatility: 0.8, greed: -0.3, fundamentals: -0.3 } },
 ];
 
-function getTickerData(session: SessionData) {
+function getTickerData(session: Props["session"]) {
+  const ms = session.market_state ?? {};
   const seed = session.capital / 10000;
+
   return TICKERS.map((t, i) => {
-    const pct = parseFloat((Math.sin(seed * (i + 1) * 1.7) * 2.8).toFixed(2));
+    // Base noise from capital (keeps some variation between tickers)
+    const noise = Math.sin(seed * (i + 1) * 1.7) * 1.0;
+
+    // Market-state-driven component
+    let stateEffect = 0;
+    for (const [dim, weight] of Object.entries(t.drivers)) {
+      stateEffect += (ms[dim as keyof MarketState] ?? 0) * weight;
+    }
+    // Scale state effect to a reasonable percentage range (-5% to +5%)
+    const pct = parseFloat((noise + stateEffect * 4.0).toFixed(2));
     const price = (t.base * (1 + pct / 100)).toFixed(t.base > 1000 ? 0 : 2);
     return { sym: t.sym, price, pct, up: pct >= 0 };
   });
@@ -42,10 +69,34 @@ const rStyles = StyleSheet.create({
   value: { fontSize: 10, fontFamily: Fonts.mono, color: Colors.textBright },
 });
 
+function deriveSentimentLabel(ms: MarketState): { label: string; color: string } {
+  const s = ms.sentiment ?? 0;
+  const g = ms.greed ?? 0;
+  const combined = s * 0.6 + g * 0.4;
+  if (combined > 0.3) return { label: "BULLISH", color: Colors.green };
+  if (combined < -0.3) return { label: "BEARISH", color: Colors.red };
+  return { label: "NEUTRAL", color: Colors.amber };
+}
+
 export function SidebarPanel({ session }: Props) {
   const tickers = getTickerData(session);
-  const sentiment = session.capital > 11000 ? "BULLISH" : session.capital < 9500 ? "BEARISH" : "NEUTRAL";
-  const sentimentColor = session.capital > 11000 ? Colors.green : session.capital < 9500 ? Colors.red : Colors.amber;
+  const ms: MarketState = session.market_state ?? {};
+
+  const sentimentInfo = deriveSentimentLabel(ms);
+
+  // Macro indicators driven by market_state dimensions
+  const inflationVal = ms.inflation ?? 0;     // -1 to 1
+  const volatilityVal = ms.volatility ?? 0;
+  const fundamentalsVal = ms.fundamentals ?? 0;
+
+  // 10Y Yield: base 3.8%, shifts with inflation (+) and fundamentals (+)
+  const yieldPct = 3.8 + inflationVal * 1.5 + fundamentalsVal * 0.5;
+  // Fed Rate: base 4.5%, rises with inflation, slightly with volatility
+  const fedRate = 4.5 + inflationVal * 1.0 + volatilityVal * 0.3;
+  // CPI YoY: base 3.0%, directly driven by inflation dimension
+  const cpi = 3.0 + inflationVal * 2.5;
+
+  const peak = (session as any).peak_net_worth ?? (session as any).peak_capital ?? session.capital;
 
   return (
     <View style={styles.sidebar}>
@@ -68,10 +119,10 @@ export function SidebarPanel({ session }: Props) {
       {/* Macro panel */}
       <View style={styles.section}>
         <Text style={styles.sectionHeader}>MACRO</Text>
-        <Row label="SENTIMENT" value={sentiment} valueColor={sentimentColor} />
-        <Row label="10Y YIELD" value={`${(3.5 + session.stage * 0.3).toFixed(2)}%`} />
-        <Row label="FED RATE" value={`${(4.25 + session.stage * 0.15).toFixed(2)}%`} />
-        <Row label="CPI YoY" value={`${(2.8 + session.stage * 0.4).toFixed(1)}%`} />
+        <Row label="SENTIMENT" value={sentimentInfo.label} valueColor={sentimentInfo.color} />
+        <Row label="10Y YIELD" value={`${Math.max(0.5, yieldPct).toFixed(2)}%`} />
+        <Row label="FED RATE" value={`${Math.max(0.25, fedRate).toFixed(2)}%`} />
+        <Row label="CPI YoY" value={`${Math.max(0.0, cpi).toFixed(1)}%`} />
       </View>
 
       <View style={styles.divider} />
@@ -81,7 +132,7 @@ export function SidebarPanel({ session }: Props) {
         <Text style={styles.sectionHeader}>SESSION</Text>
         <Row label="STAGE" value={`${session.stage} / 5`} />
         <Row label="PROGRESS" value={`${(session.progress * 100).toFixed(0)}%`} />
-        <Row label="PEAK" value={`$${Math.round(session.peak_capital).toLocaleString()}`} />
+        <Row label="PEAK" value={`$${Math.round(peak).toLocaleString()}`} />
         <Row
           label="P&L"
           value={`${session.capital >= 10000 ? "+" : ""}$${Math.round(session.capital - 10000).toLocaleString()}`}

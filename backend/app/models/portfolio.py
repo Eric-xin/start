@@ -30,6 +30,9 @@ class UserPortfolio(Base):
     total_cards_played: Mapped[int] = mapped_column(Integer, default=0)
     topic_mastery: Mapped[dict] = mapped_column(JSON, default=dict)
     portfolio_weights: Mapped[dict] = mapped_column(JSON, default=dict)
+    # Cumulative market state driven by card weights
+    # Keys: sentiment, inflation, greed, volatility, fundamentals — each in [-1.0, 1.0]
+    market_state: Mapped[dict] = mapped_column(JSON, default=dict)
     last_card_type: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
 
     # Daily income

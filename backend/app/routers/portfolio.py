@@ -52,6 +52,7 @@ def _portfolio_out(portfolio: UserPortfolio) -> PortfolioOut:
         total_cards_played=portfolio.total_cards_played,
         topic_mastery=portfolio.topic_mastery or {},
         portfolio_weights=portfolio.portfolio_weights or {},
+        market_state=portfolio.market_state or {},
         last_income_date=portfolio.last_income_date,
         income_streak=portfolio.income_streak,
         persona_id=str(portfolio.persona_id) if portfolio.persona_id else None,

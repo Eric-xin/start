@@ -241,8 +241,8 @@ export default function PlayScreen() {
   const rank = portfolio?.investor_rank ?? 1;
   // Build a session-shaped proxy so HUD components keep working unchanged
   const sessionProxy = portfolio
-    ? { ...portfolio, progress: (portfolio.total_cards_played % 20) / 20 }
-    : { capital: 0, stage: 1, investor_rank: 1, progress: 0, portfolio_weights: {} };
+    ? { ...portfolio, progress: (portfolio.total_cards_played % 20) / 20, market_state: portfolio.market_state ?? {} }
+    : { capital: 0, stage: 1, investor_rank: 1, progress: 0, portfolio_weights: {}, market_state: {} };
   const showSidebar = isWide || (isMedium && rank >= 3);
   const showDonut = rank >= 4 && isWide;
   const showMarketPill = rank >= 2;
@@ -318,7 +318,7 @@ export default function PlayScreen() {
           {/* Market context pill — Rank 2+ */}
           {showMarketPill && !lesson && (
             <View style={styles.pillRow}>
-              <MarketContextPill stage={sessionProxy.stage} capital={sessionProxy.capital} />
+              <MarketContextPill stage={sessionProxy.stage} capital={sessionProxy.capital} marketState={sessionProxy.market_state} />
             </View>
           )}
 

@@ -20,6 +20,7 @@ class PortfolioOut(BaseModel):
     total_cards_played: int
     topic_mastery: dict
     portfolio_weights: dict
+    market_state: dict = {}
     last_income_date: Optional[date]
     income_streak: int
     persona_id: Optional[str]
