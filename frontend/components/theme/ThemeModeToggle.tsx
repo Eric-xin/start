@@ -6,8 +6,10 @@ import { useThemeStore } from "../../store/themeStore";
 
 export function ThemeModeToggle({
   compact = false,
+  navSized = false,
 }: {
   compact?: boolean;
+  navSized?: boolean;
 }) {
   const colors = useColors();
   const mode = useThemeStore((state) => state.mode);
@@ -32,6 +34,7 @@ export function ThemeModeToggle({
             style={[
               styles.chip,
               compact && styles.chipCompact,
+              navSized && styles.chipNav,
               active && { backgroundColor: colors.blueDim },
             ]}
             activeOpacity={0.85}
@@ -40,6 +43,7 @@ export function ThemeModeToggle({
               style={[
                 styles.text,
                 compact && styles.textCompact,
+                navSized && styles.textNav,
                 { color: active ? colors.blue : colors.textDim },
               ]}
             >
@@ -67,11 +71,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
+  chipNav: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
   text: {
     fontSize: 9,
     fontFamily: Fonts.sansBold,
   },
   textCompact: {
     fontSize: 8,
+  },
+  textNav: {
+    fontSize: 10,
+    letterSpacing: 1.2,
   },
 });

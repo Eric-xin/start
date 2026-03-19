@@ -7,6 +7,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { getNextCard, getPortfolio, type PortfolioData, updateCompanion } from "../../services/portfolio";
@@ -21,24 +22,29 @@ import { COMPANIONS, type CompanionId } from "../../constants/companions";
 import { CompanionVisual } from "../../components/companion/CompanionVisual";
 import { useCompanionStore } from "../../store/companionStore";
 import { ThemeModeToggle } from "../../components/theme/ThemeModeToggle";
-
-const RANK_LABELS = ["—", "ANALYST I", "ASSOCIATE II", "DIRECTOR III", "MD IV"];
+import { AppTopBar } from "../../components/navigation/AppTopBar";
 
 function GridBg() {
   const colors = useColors();
   return (
     <View style={[StyleSheet.absoluteFill, { pointerEvents: "none" }]}>
       {Array.from({ length: 28 }).map((_, i) => (
-        <View key={`h${i}`} style={{ position: "absolute", top: i * 32, left: 0, right: 0, height: 1, backgroundColor: colors.borderFaint }} />
+        <View
+          key={`h${i}`}
+          style={{ position: "absolute", top: i * 32, left: 0, right: 0, height: 1, backgroundColor: colors.borderFaint }}
+        />
       ))}
       {Array.from({ length: 24 }).map((_, i) => (
-        <View key={`v${i}`} style={{ position: "absolute", left: i * 64, top: 0, bottom: 0, width: 1, backgroundColor: colors.borderFaint, opacity: 0.5 }} />
+        <View
+          key={`v${i}`}
+          style={{ position: "absolute", left: i * 64, top: 0, bottom: 0, width: 1, backgroundColor: colors.borderFaint, opacity: 0.35 }}
+        />
       ))}
     </View>
   );
 }
 
-function DataBlock({
+function SnapshotCard({
   label,
   value,
   sub,
@@ -50,14 +56,51 @@ function DataBlock({
   accent?: string;
 }) {
   const colors = useColors();
-  const styles = createDataBlockStyles(colors);
-
   return (
-    <View style={styles.block}>
-      <Text style={styles.label}>{label}</Text>
-      <Text style={[styles.value, accent ? { color: accent } : null]}>{value}</Text>
-      {sub ? <Text style={styles.sub}>{sub}</Text> : null}
+    <View
+      style={{
+        flex: 1,
+        minWidth: 140,
+        backgroundColor: colors.bg,
+        borderWidth: 1,
+        borderColor: colors.borderDim,
+        borderRadius: 18,
+        padding: 14,
+      }}
+    >
+      <Text style={{ fontSize: 11, fontFamily: Fonts.sansBold, color: colors.textDim, marginBottom: 6 }}>{label}</Text>
+      <Text style={{ fontSize: 22, fontFamily: Fonts.sansBold, color: accent ?? colors.textBright }}>{value}</Text>
+      {sub ? <Text style={{ fontSize: 11, fontFamily: Fonts.sans, color: colors.textPrimary, marginTop: 6 }}>{sub}</Text> : null}
     </View>
+  );
+}
+
+function QuickLink({
+  label,
+  sub,
+  onPress,
+}: {
+  label: string;
+  sub: string;
+  onPress: () => void;
+}) {
+  const colors = useColors();
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      style={{
+        flex: 1,
+        minWidth: 160,
+        backgroundColor: colors.bgPanel,
+        borderWidth: 1,
+        borderColor: colors.borderDim,
+        borderRadius: 20,
+        padding: 16,
+      }}
+    >
+      <Text style={{ fontSize: 14, fontFamily: Fonts.sansBold, color: colors.textBright, marginBottom: 6 }}>{label}</Text>
+      <Text style={{ fontSize: 12, fontFamily: Fonts.sans, color: colors.textPrimary, lineHeight: 18 }}>{sub}</Text>
+    </TouchableOpacity>
   );
 }
 
@@ -65,7 +108,10 @@ export default function GameIndexScreen() {
   const router = useRouter();
   const colors = useColors();
   const isNormal = useThemeStore((state) => state.mode === "normal");
+  const setMode = useThemeStore((state) => state.setMode);
   const styles = createStyles(colors, isNormal);
+  const { width } = useWindowDimensions();
+  const isWide = width >= 1040;
   const { user, clearAuth } = useAuthStore();
   const { setPortfolio, setCurrentCard } = usePortfolioStore();
   const setCompanion = useCompanionStore((state) => state.setCompanion);
@@ -74,6 +120,7 @@ export default function GameIndexScreen() {
   const [activePersona, setActivePersona] = useState<PersonaData | null>(null);
   const [loadingData, setLoadingData] = useState(true);
   const [selectorVisible, setSelectorVisible] = useState(false);
+
   const currentCompanion = useMemo(
     () => (portfolio?.companion_id ? COMPANIONS[portfolio.companion_id as CompanionId] : null),
     [portfolio?.companion_id]
@@ -131,166 +178,153 @@ export default function GameIndexScreen() {
     }
   };
 
+  const quickLinks = [
+    { label: isNormal ? "🧪 Simulation" : "SIMULATION", sub: isNormal ? "Try simple what-if scenarios before you risk anything." : "Run persona-driven historical backtests.", to: "/(game)/simulation" },
+    { label: isNormal ? "💼 Portfolio" : "PORTFOLIO", sub: isNormal ? "See where your money is and what changed recently." : "Review capital, net worth, and recent moves.", to: "/(game)/portfolio" },
+    { label: isNormal ? "🧠 Personas" : "PERSONAS", sub: isNormal ? "Compare your investor styles and switch the one you want to train." : "Manage active and archived personas.", to: "/(profile)/personas" },
+    { label: isNormal ? "🃏 Decks" : "DECKS", sub: isNormal ? "Choose the lesson packs you want to see more often." : "Configure strategies and deck availability.", to: "/(profile)/decks" },
+    { label: isNormal ? "🏆 Achievements" : "ACHIEVEMENTS", sub: isNormal ? "Track milestones and see what to unlock next." : "Review progression achievements.", to: "/(game)/achievements" },
+  ];
+
   return (
     <View style={styles.container}>
       <GridBg />
 
-      <View style={styles.topBar}>
-        <View style={styles.topLeft}>
-          <Text style={styles.logo}>CARDECON</Text>
-          <View style={styles.barSep} />
-          <Text style={styles.topBarLabel}>{isNormal ? "Home" : "INDEX"}</Text>
-        </View>
-        <View style={styles.topRight}>
-          <ThemeModeToggle compact />
-          <TouchableOpacity style={styles.topBtn} onPress={() => router.push("/(profile)")}>
-            <Text style={styles.topBtnText}>PROFILE</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.topBtn} onPress={() => router.push("/(profile)/personas")}>
-            <Text style={styles.topBtnText}>PERSONAS</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.topBtn} onPress={() => router.push("/(game)/simulation")}>
-            <Text style={styles.topBtnText}>SIMULATION</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.topBtn} onPress={() => router.push("/(profile)/decks")}>
-            <Text style={styles.topBtnText}>DECKS</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.topBtn} onPress={() => router.push("/(game)/achievements")}>
-            <Text style={styles.topBtnText}>ACHIEVEMENTS</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.logoutBtn} onPress={clearAuth}>
-            <Text style={styles.logoutText}>LOGOUT</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      <AppTopBar
+        label={isNormal ? "Home Base" : "INDEX"}
+        rightContent={
+          <>
+            <ThemeModeToggle navSized />
+            <TouchableOpacity style={styles.navBtn} onPress={() => router.push("/(profile)")}>
+              <Text style={styles.navBtnText}>{isNormal ? "Profile" : "PROFILE"}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.navBtn, styles.logoutBtn]} onPress={clearAuth}>
+              <Text style={styles.navBtnText}>{isNormal ? "Log Out" : "LOGOUT"}</Text>
+            </TouchableOpacity>
+          </>
+        }
+      />
 
-      <ScrollView
-        style={styles.contentScroll}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        bounces
-      >
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.blueDot, { backgroundColor: colors.amber }]} />
-            <Text style={styles.cardHeaderText}>{isNormal ? "🎨 Viewing Style" : "VIEW MODE"}</Text>
-          </View>
-          <Text style={styles.sessionDesc}>
-            {isNormal
-              ? "Normal mode turns the app into a friendlier learning view with softer language, more spacing, and easier summaries."
-              : "Pro mode keeps the denser terminal layout for faster scanning and full market detail."}
-          </Text>
-          <ThemeModeToggle />
-        </View>
+      <ScrollView style={styles.contentScroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={[styles.hero, isWide && styles.heroWide]}>
+          <View style={styles.heroMain}>
+            <Text style={styles.eyebrow}>{isNormal ? "WELCOME BACK" : "SESSION READY"}</Text>
+            <Text style={styles.heroTitle}>
+              {isNormal ? `Hi ${user?.username ?? "Investor"}, ready for today's learning run?` : "Primary investor console online."}
+            </Text>
+            <Text style={styles.heroBody}>
+              {isNormal
+                ? "Your home screen now highlights the money story, your current learning style, and the guide helping you through the next decisions."
+                : "Portfolio, persona, and deck systems are loaded. Choose a module or continue the active run."}
+            </Text>
 
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={styles.blueDot} />
-            <Text style={styles.cardHeaderText}>{isNormal ? "👤 Investor Profile" : "INVESTOR PROFILE"}</Text>
-          </View>
-          <Text style={styles.username}>{user?.username?.toUpperCase() ?? "INVESTOR"}</Text>
-          <Text style={styles.email}>{user?.email ?? "—"}</Text>
+            <View style={styles.snapshotRow}>
+              <SnapshotCard
+                label={isNormal ? "🏦 Total value" : "NET WORTH"}
+                value={loadingData ? "..." : `$${(portfolio?.net_worth ?? 0).toLocaleString("en-US", { maximumFractionDigits: 0 })}`}
+                sub={isNormal ? "Your overall money picture" : "Portfolio total"}
+                accent={colors.blue}
+              />
+              <SnapshotCard
+                label={isNormal ? "🧠 Active style" : "ACTIVE PERSONA"}
+                value={loadingData ? "..." : activePersona?.name ?? "Explorer"}
+                sub={isNormal ? "How the game is reading your choices" : "Current investor style"}
+                accent={colors.teal}
+              />
+              <SnapshotCard
+                label={isNormal ? "💵 Income" : "INCOME"}
+                value={loadingData ? "..." : portfolio?.can_claim_income ? "Ready" : "Claimed"}
+                sub={portfolio?.can_claim_income ? `+$${portfolio.pending_income.toFixed(0)} available now` : isNormal ? "Next claim tomorrow" : "Next cycle pending"}
+                accent={portfolio?.can_claim_income ? colors.green : colors.textDim}
+              />
+            </View>
 
-          <View style={styles.dataRow}>
-            <DataBlock
-              label={isNormal ? "🏦 Total Value" : "NET WORTH"}
-              value={loadingData ? "..." : `$${(portfolio?.net_worth ?? 0).toLocaleString("en-US", { maximumFractionDigits: 0 })}`}
-              accent={colors.blue}
-            />
-            <View style={styles.dataSep} />
-            <DataBlock
-              label={isNormal ? "🧠 Investor Style" : "STAGE / RANK"}
-              value={loadingData ? "..." : isNormal ? (activePersona?.name ?? "Explorer") : `S${portfolio?.stage ?? 1} / R${portfolio?.investor_rank ?? 1}`}
-              sub={isNormal ? "Your active guide for decisions" : portfolio ? RANK_LABELS[portfolio.investor_rank] : undefined}
-              accent={colors.teal}
-            />
-            <View style={styles.dataSep} />
-            <DataBlock
-              label={isNormal ? "💵 Daily Income" : "INCOME"}
-              value={loadingData ? "..." : portfolio?.can_claim_income ? "READY" : "CLAIMED"}
-              sub={portfolio?.can_claim_income ? `+$${portfolio.pending_income.toFixed(0)} available` : "tomorrow"}
-              accent={portfolio?.can_claim_income ? colors.green : colors.textDim}
-            />
-          </View>
-        </View>
-
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={styles.blueDot} />
-            <Text style={styles.cardHeaderText}>{isNormal ? "🧭 Your Guide" : "GUIDE SYSTEM"}</Text>
+            <View style={styles.heroActions}>
+              <TouchableOpacity style={styles.primaryCta} onPress={handlePlay} disabled={launching}>
+                {launching ? <ActivityIndicator color={colors.bg} size="small" /> : <Text style={styles.primaryCtaText}>{isNormal ? "Start Playing" : "▶ START PLAYING"}</Text>}
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.secondaryCta} onPress={() => router.push("/(game)/portfolio")}>
+                <Text style={styles.secondaryCtaText}>{isNormal ? "Open Portfolio" : "OPEN PORTFOLIO"}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
-          {currentCompanion ? (
-            <View style={styles.guideRow}>
-              <CompanionVisual companionId={currentCompanion.id} size={88} />
-              <View style={styles.guideCopy}>
-                <Text style={styles.guideName}>{currentCompanion.name}</Text>
-                <Text style={styles.guideBody}>{currentCompanion.previewQuote}</Text>
+          <View style={styles.heroSide}>
+            <View style={styles.guideCard}>
+              <Text style={styles.panelTitle}>{isNormal ? "🧭 Your Guide" : "GUIDE SYSTEM"}</Text>
+              {currentCompanion ? (
+                <>
+                  <View style={styles.guideTop}>
+                    <CompanionVisual companionId={currentCompanion.id} size={92} />
+                    <View style={styles.guideCopy}>
+                      <Text style={styles.guideName}>{currentCompanion.name}</Text>
+                      <Text style={styles.guideRole}>{currentCompanion.personality}</Text>
+                    </View>
+                  </View>
+                  {/* <Text style={styles.guideQuote}>"{currentCompanion.previewQuote}"</Text> */}
+                </>
+              ) : (
+                <Text style={styles.guideQuote}>
+                  {isNormal ? "Pick a guide to make the game feel more personal and easier to follow." : "Select a companion voice for the session."}
+                </Text>
+              )}
+              <TouchableOpacity style={styles.ghostBtn} onPress={() => setSelectorVisible(true)}>
+                <Text style={styles.ghostBtnText}>{currentCompanion ? (isNormal ? "Change Guide" : "CHANGE GUIDE") : (isNormal ? "Choose Guide" : "SELECT GUIDE")}</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modeCard}>
+              <Text style={styles.panelTitle}>{isNormal ? "🎨 Viewing Style" : "VIEW MODE"}</Text>
+              <View style={styles.modeGrid}>
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={() => setMode("normal")}
+                  style={[styles.modePane, isNormal && styles.modePaneActive]}
+                >
+                  <Text style={styles.modePaneTitle}>Normal</Text>
+                  <Text style={styles.modePaneBody}>Friendly labels, more breathing room, easier summaries, and a softer learning feel.</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={() => setMode("pro")}
+                  style={[styles.modePane, !isNormal && styles.modePaneActive]}
+                >
+                  <Text style={styles.modePaneTitle}>Pro</Text>
+                  <Text style={styles.modePaneBody}>Dense market detail, faster scanning, terminal-style layouts, and the full trading feel.</Text>
+                </TouchableOpacity>
               </View>
             </View>
-          ) : (
-            <Text style={styles.sessionDesc}>
-              {isNormal ? "Pick a companion to guide your investing journey." : "Select a companion guide before starting a run."}
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{isNormal ? "Explore the app" : "MODULE ACCESS"}</Text>
+          <View style={styles.quickGrid}>
+            {quickLinks.map((item) => (
+              <QuickLink key={item.to} label={item.label} sub={item.sub} onPress={() => router.push(item.to as never)} />
+            ))}
+          </View>
+        </View>
+
+        <View style={[styles.section, isWide && styles.lowerGrid]}>
+          <View style={styles.learningCard}>
+            <Text style={styles.panelTitle}>{isNormal ? "📘 Your learning snapshot" : "LEARNING SNAPSHOT"}</Text>
+            <Text style={styles.learningText}>
+              {isNormal
+                ? `You are currently learning as ${activePersona?.name ?? "an Explorer"} with ${currentCompanion?.name ?? "a guide"} by your side. The next best step is to keep making decisions and let your style evolve.`
+                : `Active persona: ${activePersona?.name ?? "N/A"}. Companion: ${currentCompanion?.name ?? "N/A"}. Continue sessions to refine your trajectory.`}
             </Text>
-          )}
-
-          <TouchableOpacity style={styles.secondaryBtn} onPress={() => setSelectorVisible(true)}>
-            <Text style={styles.secondaryBtnText}>{isNormal ? "Change Guide" : "CHANGE GUIDE"}</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={styles.blueDot} />
-            <Text style={styles.cardHeaderText}>{isNormal ? "🎮 Play Control" : "PLAY CONTROL"}</Text>
           </View>
 
-          <Text style={styles.sessionDesc}>
-            {isNormal
-              ? "Swipe cards to make investment choices, learn from the outcomes, and grow your portfolio over time."
-              : "Continuous gameplay — swipe cards to make investment decisions. Each decision updates your behavioral profile"}{" "}
-            {activePersona ? <Text style={{ color: colors.teal }}>{isNormal ? activePersona.name : `"${activePersona.name}"`}</Text> : null}
-            {isNormal ? " while your guide reacts in real time." : " and adjusts your capital. Log in daily to collect salary."}
-          </Text>
-
-          <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.continueBtn} onPress={() => router.push("/(game)/portfolio")}>
-              <Text style={styles.continueBtnText}>{isNormal ? "View Portfolio →" : "VIEW PORTFOLIO →"}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.ctaBtn, launching && { opacity: 0.5 }]}
-              onPress={handlePlay}
-              disabled={launching}
-            >
-              {launching ? (
-                <ActivityIndicator color={colors.bg} size="small" />
-              ) : (
-                <Text style={styles.ctaBtnText}>{isNormal ? "Start Playing" : "▶  START PLAYING"}</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.blueDot, { backgroundColor: colors.green }]} />
-            <Text style={styles.cardHeaderText}>{isNormal ? "✅ System Status" : "SYSTEM STATUS"}</Text>
-          </View>
-          <View style={styles.dataRow}>
-            <DataBlock label={isNormal ? "Guide system" : "PERSONA ENGINE"} value="ONLINE" accent={colors.green} />
-            <View style={styles.dataSep} />
-            <DataBlock label={isNormal ? "Card flow" : "CARD PIPELINE"} value="READY" accent={colors.green} />
-            <View style={styles.dataSep} />
-            <DataBlock label={isNormal ? "Build" : "VERSION"} value="1.0.0" />
+          <View style={styles.learningCard}>
+            <Text style={styles.panelTitle}>{isNormal ? "✅ System check" : "SYSTEM STATUS"}</Text>
+            <View style={styles.statusRow}>
+              <SnapshotCard label={isNormal ? "Guide system" : "PERSONA ENGINE"} value="ONLINE" accent={colors.green} />
+              <SnapshotCard label={isNormal ? "Card flow" : "CARD PIPELINE"} value="READY" accent={colors.green} />
+            </View>
           </View>
         </View>
       </ScrollView>
-
-      <View style={styles.bottomBar}>
-        <Text style={styles.bottomText}>CARDECON FINANCIAL SIMULATION ENGINE</Text>
-        <Text style={styles.bottomText}>© {new Date().getFullYear()} · ALL RIGHTS RESERVED</Text>
-      </View>
 
       <CompanionSelector
         visible={selectorVisible}
@@ -302,150 +336,249 @@ export default function GameIndexScreen() {
   );
 }
 
-const createDataBlockStyles = (colors: ReturnType<typeof useColors>) =>
-  StyleSheet.create({
-    block: { alignItems: "flex-start" },
-    label: { fontSize: 8, fontFamily: Fonts.sansBold, color: colors.textDim, letterSpacing: 1.5, marginBottom: 2 },
-    value: { fontSize: 18, fontFamily: Fonts.mono, color: colors.textBright, letterSpacing: 1 },
-    sub: { fontSize: 9, fontFamily: Fonts.mono, color: colors.textDim, marginTop: 1 },
-  });
-
 const createStyles = (colors: ReturnType<typeof useColors>, isNormal: boolean) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.bg },
-    topBar: {
-      height: 40,
-      backgroundColor: colors.bgPanel,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.borderPrimary,
-      flexDirection: "row",
+    contentScroll: { flex: 1 },
+    content: {
+      padding: 24,
+      gap: 20,
       alignItems: "center",
-      justifyContent: "space-between",
-      paddingHorizontal: 16,
+      paddingBottom: 36,
     },
-    topLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
-    topRight: { flexDirection: "row", alignItems: "center", gap: 6 },
-    logo: { fontSize: 14, fontFamily: Fonts.mono, color: colors.blue, letterSpacing: 3 },
-    barSep: { width: 1, height: 14, backgroundColor: colors.borderDim },
-    topBarLabel: { fontSize: 9, fontFamily: Fonts.sansBold, color: colors.textDim, letterSpacing: 2 },
-    topBtn: {
+    navBtn: {
       borderWidth: 1,
       borderColor: colors.borderDim,
-      paddingHorizontal: 9,
-      paddingVertical: 4,
       borderRadius: isNormal ? 999 : 2,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
       backgroundColor: isNormal ? colors.bg : "transparent",
     },
-    topBtnText: { fontSize: 8, fontFamily: Fonts.sansBold, color: colors.textDim, letterSpacing: 1.5 },
+    navBtnText: {
+      fontSize: 10,
+      fontFamily: Fonts.sansBold,
+      color: colors.textDim,
+      letterSpacing: isNormal ? 0.4 : 1.2,
+    },
     logoutBtn: {
-      borderWidth: 1,
-      borderColor: colors.borderDim,
-      paddingHorizontal: 10,
-      paddingVertical: 4,
-      borderRadius: isNormal ? 999 : 2,
-      marginLeft: 4,
+      marginLeft: 2,
     },
-    logoutText: { fontSize: 9, fontFamily: Fonts.sansBold, color: colors.textDim, letterSpacing: 1.5 },
-    contentScroll: {
-      flex: 1,
-    },
-    content: {
-      alignItems: "center",
-      justifyContent: "center",
-      padding: 24,
-      gap: 16,
-      flexGrow: 1,
-      paddingBottom: 32,
-    },
-    card: {
+    hero: {
       width: "100%",
-      maxWidth: 620,
+      maxWidth: 1180,
+      gap: 18,
+    },
+    heroWide: {
+      flexDirection: "row",
+      alignItems: "stretch",
+    },
+    heroMain: {
+      flex: 1.3,
       backgroundColor: colors.bgPanel,
       borderWidth: 1,
       borderColor: colors.borderDim,
-      borderRadius: isNormal ? 20 : 2,
-      padding: 20,
+      borderRadius: isNormal ? 28 : 2,
+      padding: 24,
     },
-    cardHeader: {
+    heroSide: {
+      flex: 0.9,
+      gap: 18,
+    },
+    eyebrow: {
+      fontSize: 11,
+      fontFamily: Fonts.sansBold,
+      color: colors.blue,
+      letterSpacing: isNormal ? 0.8 : 2,
+      marginBottom: 10,
+    },
+    heroTitle: {
+      fontSize: isNormal ? 32 : 24,
+      lineHeight: isNormal ? 38 : 30,
+      fontFamily: isNormal ? Fonts.sansBold : Fonts.mono,
+      color: colors.textBright,
+      marginBottom: 12,
+    },
+    heroBody: {
+      fontSize: 14,
+      lineHeight: 22,
+      fontFamily: Fonts.sans,
+      color: colors.textPrimary,
+      marginBottom: 18,
+      maxWidth: 760,
+    },
+    snapshotRow: {
       flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-      marginBottom: 14,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.borderFaint,
-      paddingBottom: 8,
+      flexWrap: "wrap",
+      gap: 12,
+      marginBottom: 18,
     },
-    blueDot: { width: 6, height: 6, borderRadius: 1, backgroundColor: colors.blue },
-    cardHeaderText: { fontSize: 9, fontFamily: Fonts.sansBold, color: colors.blue, letterSpacing: 2 },
-    username: { fontSize: 22, fontFamily: Fonts.mono, color: colors.textBright, letterSpacing: 2, marginBottom: 4 },
-    email: { fontSize: 11, fontFamily: Fonts.mono, color: colors.textDim, marginBottom: 16 },
-    dataRow: { flexDirection: "row", alignItems: "flex-start", gap: 4 },
-    dataSep: { width: 1, height: 36, backgroundColor: colors.borderDim, marginHorizontal: 12, alignSelf: "center" },
-    sessionDesc: { fontSize: 12, fontFamily: Fonts.sans, color: colors.textDim, lineHeight: 18, marginBottom: 16 },
-    buttonRow: { flexDirection: "column", gap: 12, marginBottom: 12 },
-    ctaBtn: {
-      flex: 1,
+    heroActions: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 12,
+    },
+    primaryCta: {
+      minWidth: 190,
       backgroundColor: colors.blue,
-      paddingVertical: 14,
-      paddingHorizontal: 12,
-      alignItems: "center",
       borderRadius: isNormal ? 999 : 2,
-    },
-    ctaBtnText: { fontSize: 12, fontFamily: Fonts.sansBold, color: colors.bg, letterSpacing: isNormal ? 0.5 : 2 },
-    continueBtn: {
-      flex: 1,
-      borderWidth: 1,
-      borderColor: colors.blue + "66",
-      paddingVertical: 14,
-      paddingHorizontal: 12,
+      paddingHorizontal: 20,
+      paddingVertical: 15,
       alignItems: "center",
       justifyContent: "center",
-      borderRadius: isNormal ? 999 : 2,
     },
-    continueBtnText: { fontSize: 11, fontFamily: Fonts.sansBold, color: colors.blue, letterSpacing: isNormal ? 0.5 : 1.5 },
-    guideRow: {
+    primaryCtaText: {
+      fontSize: 13,
+      fontFamily: Fonts.sansBold,
+      color: colors.bg,
+      letterSpacing: isNormal ? 0.3 : 1.4,
+    },
+    secondaryCta: {
+      minWidth: 180,
+      borderWidth: 1,
+      borderColor: colors.blue + "55",
+      borderRadius: isNormal ? 999 : 2,
+      paddingHorizontal: 18,
+      paddingVertical: 15,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.bg,
+    },
+    secondaryCtaText: {
+      fontSize: 12,
+      fontFamily: Fonts.sansBold,
+      color: colors.blue,
+      letterSpacing: isNormal ? 0.2 : 1.2,
+    },
+    guideCard: {
+      backgroundColor: colors.bgPanel,
+      borderWidth: 1,
+      borderColor: colors.borderDim,
+      borderRadius: isNormal ? 24 : 2,
+      padding: 20,
+      gap: 14,
+    },
+    guideTop: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 16,
-      marginBottom: 14,
+      gap: 14,
+      marginTop: 4,
+      marginBottom: 6,
     },
     guideCopy: {
       flex: 1,
-      gap: 8,
+      gap: 4,
     },
     guideName: {
-      fontSize: 18,
+      fontSize: 20,
       fontFamily: Fonts.sansBold,
       color: colors.textBright,
     },
-    guideBody: {
+    guideRole: {
+      fontSize: 12,
+      fontFamily: Fonts.sans,
+      color: colors.textDim,
+      lineHeight: 18,
+    },
+    guideQuote: {
       fontSize: 13,
       lineHeight: 20,
       fontFamily: Fonts.sans,
       color: colors.textPrimary,
+      marginBottom: 14,
     },
-    secondaryBtn: {
+    modeCard: {
+      backgroundColor: colors.bgPanel,
+      borderWidth: 1,
+      borderColor: colors.borderDim,
+      borderRadius: isNormal ? 24 : 2,
+      padding: 20,
+      gap: 14,
+    },
+    panelTitle: {
+      fontSize: 12,
+      fontFamily: Fonts.sansBold,
+      color: colors.blue,
+      letterSpacing: isNormal ? 0.4 : 1.8,
+      marginBottom: 2,
+    },
+    modeGrid: {
+      gap: 10,
+    },
+    modePane: {
+      borderWidth: 1,
+      borderColor: colors.borderDim,
+      borderRadius: 16,
+      padding: 14,
+      backgroundColor: colors.bg,
+    },
+    modePaneActive: {
+      borderColor: colors.blue,
+      backgroundColor: colors.blueDim,
+    },
+    modePaneTitle: {
+      fontSize: 14,
+      fontFamily: Fonts.sansBold,
+      color: colors.textBright,
+      marginBottom: 6,
+    },
+    modePaneBody: {
+      fontSize: 12,
+      fontFamily: Fonts.sans,
+      color: colors.textPrimary,
+      lineHeight: 18,
+    },
+    ghostBtn: {
       alignSelf: "flex-start",
       borderWidth: 1,
       borderColor: colors.borderDim,
       borderRadius: 999,
       paddingHorizontal: 14,
-      paddingVertical: 8,
+      paddingVertical: 9,
+      backgroundColor: colors.bg,
     },
-    secondaryBtnText: {
+    ghostBtnText: {
       fontSize: 11,
       fontFamily: Fonts.sansBold,
       color: colors.textDim,
     },
-    bottomBar: {
-      height: 30,
-      backgroundColor: colors.bgPanel,
-      borderTopWidth: 1,
-      borderTopColor: colors.borderFaint,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      paddingHorizontal: 16,
+    section: {
+      width: "100%",
+      maxWidth: 1180,
+      gap: 14,
     },
-    bottomText: { fontSize: 8, fontFamily: Fonts.mono, color: colors.textMuted, letterSpacing: 1 },
+    sectionTitle: {
+      fontSize: 18,
+      fontFamily: Fonts.sansBold,
+      color: colors.textBright,
+    },
+    quickGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 14,
+    },
+    lowerGrid: {
+      flexDirection: "row",
+      alignItems: "stretch",
+    },
+    learningCard: {
+      flex: 1,
+      minWidth: 260,
+      backgroundColor: colors.bgPanel,
+      borderWidth: 1,
+      borderColor: colors.borderDim,
+      borderRadius: isNormal ? 24 : 2,
+      padding: 20,
+      gap: 12,
+    },
+    learningText: {
+      fontSize: 13,
+      fontFamily: Fonts.sans,
+      lineHeight: 21,
+      color: colors.textPrimary,
+    },
+    statusRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 12,
+    },
   });
