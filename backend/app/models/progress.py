@@ -16,6 +16,25 @@ STRATEGY_META = {
     "alternatives": {"label": "Alternatives",      "stage": 5, "unlock_at": 100},
 }
 
+# Decks are sub-collections within a strategy, mapped to card topics.
+# topics=[] means "all general cards from this strategy" (no topic filter applied).
+DECK_META = {
+    # Savings & Cash
+    "savings_core":      {"label": "Core Savings",      "strategy": "savings",      "topics": [],                 "description": "Foundational savings, budgeting and cash management.", "unlock_at": 0},
+    # Fixed Income
+    "bonds_core":        {"label": "Bond Markets",       "strategy": "bonds",        "topics": ["bonds"],          "description": "Government and corporate debt, yield curves and credit.",  "unlock_at": 20},
+    # Equities
+    "stocks_core":       {"label": "Equity Markets",     "strategy": "stocks",       "topics": ["stocks"],         "description": "Public equities, valuation and market dynamics.",          "unlock_at": 40},
+    "crypto_deck":       {"label": "Cryptocurrency",     "strategy": "stocks",       "topics": ["crypto"],         "description": "Digital assets, blockchain technology and volatility.",    "unlock_at": 52},
+    # Index Funds
+    "index_core":        {"label": "Index & ETFs",       "strategy": "index",        "topics": [],                 "description": "Passive investing, broad market exposure and ETFs.",       "unlock_at": 70},
+    "real_estate_deck":  {"label": "Real Estate",        "strategy": "index",        "topics": ["real_estate"],    "description": "Property, REITs and real asset investing.",                "unlock_at": 78},
+    # Alternatives
+    "derivatives_deck":  {"label": "Derivatives",        "strategy": "alternatives", "topics": ["derivatives"],    "description": "Options, futures and structured financial products.",      "unlock_at": 100},
+}
+
+DECKS = list(DECK_META.keys())
+
 
 class UserProgress(Base):
     __tablename__ = "user_progress"
@@ -29,6 +48,8 @@ class UserProgress(Base):
     )
     unlocked_strategies: Mapped[list] = mapped_column(JSON, nullable=False)
     enabled_strategies: Mapped[list] = mapped_column(JSON, nullable=False)
+    unlocked_decks: Mapped[list] = mapped_column(JSON, nullable=True)   # nullable for migration
+    enabled_decks: Mapped[list] = mapped_column(JSON, nullable=True)    # nullable for migration
     total_cards_played: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.utcnow, nullable=False

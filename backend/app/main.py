@@ -37,11 +37,17 @@ async def lifespan(app: FastAPI):
                             ALTER TABLE game_sessions
                                 ADD COLUMN persona_id UUID REFERENCES personas(id) ON DELETE SET NULL;
                         END IF;
-                        -- Allow persona_vector to be null for sessions using persona_id
                         BEGIN
                             ALTER TABLE game_sessions ALTER COLUMN persona_vector DROP NOT NULL;
                         EXCEPTION WHEN OTHERS THEN NULL;
                         END;
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name='user_progress' AND column_name='unlocked_decks'
+                        ) THEN
+                            ALTER TABLE user_progress ADD COLUMN unlocked_decks JSONB;
+                            ALTER TABLE user_progress ADD COLUMN enabled_decks JSONB;
+                        END IF;
                     END $$;
                 """))
             except Exception:

@@ -125,6 +125,7 @@ async def recommend_next_card(
     session: GameSession,
     redis: Redis,
     enabled_strategies: list[str] | None = None,
+    enabled_decks: list[str] | None = None,
 ) -> Card | None:
     from app.models.progress import STRATEGY_META
     # Compute the max allowed stage from enabled strategies (always include session.stage)
@@ -143,7 +144,33 @@ async def recommend_next_card(
             Card.stage_min <= max_stage,
         )
     )
-    cards = result.scalars().all()
+    all_cards = result.scalars().all()
+
+    # Deck filtering: collect allowed topics from enabled decks
+    if enabled_decks:
+        from app.models.progress import DECK_META
+        allowed_topics: set[str] = set()
+        has_general_deck = False
+        for dk in enabled_decks:
+            meta = DECK_META.get(dk)
+            if meta:
+                if not meta["topics"]:
+                    has_general_deck = True  # deck has no topic restriction
+                else:
+                    allowed_topics.update(meta["topics"])
+        cards = []
+        for card in all_cards:
+            card_topics = card.topics if isinstance(card.topics, list) else []
+            if not card_topics:
+                cards.append(card)  # general card, always include
+            elif has_general_deck:
+                cards.append(card)  # at least one deck with no topic filter is on
+            elif any(t in allowed_topics for t in card_topics):
+                cards.append(card)
+        if not cards:
+            cards = all_cards  # fallback: don't starve the recommender
+    else:
+        cards = all_cards
     if not cards:
         return None
 

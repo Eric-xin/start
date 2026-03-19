@@ -7,6 +7,7 @@ interface AuthState {
   user: UserOut | null;
   isHydrated: boolean;
   setAuth: (token: string, refreshToken: string, user: UserOut) => Promise<void>;
+  setUser: (user: UserOut) => void;
   clearAuth: () => Promise<void>;
   hydrate: () => Promise<void>;
 }
@@ -15,6 +16,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   token: null,
   user: null,
   isHydrated: false,
+
+  setUser: (user) => set({ user }),
 
   setAuth: async (token, refreshToken, user) => {
     await setItem("access_token", token);

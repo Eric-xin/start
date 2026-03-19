@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
+from pydantic import BaseModel
 from app.database import get_db
 from app.models.user import User
 from app.schemas.user import UserOut, UserUpdate
+from app.core.security import verify_password, hash_password
 from app.core.dependencies import get_current_active_user
 
 router = APIRouter(prefix="/api/users", tags=["users"])
@@ -34,3 +36,22 @@ async def update_me(
 
     await db.flush()
     return current_user
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+@router.post("/me/change-password", status_code=204)
+async def change_password(
+    data: ChangePasswordRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if not verify_password(data.current_password, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    if len(data.new_password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+    current_user.password_hash = hash_password(data.new_password)
+    await db.flush()

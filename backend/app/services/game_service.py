@@ -7,7 +7,7 @@ from redis.asyncio import Redis
 from app.models.game import GameSession, GameEvent, GameConfig, SwipeAction
 from app.models.card import Card
 from app.models.persona import Persona, PersonaSnapshot
-from app.models.progress import UserProgress, STRATEGY_META, STRATEGIES
+from app.models.progress import UserProgress, STRATEGY_META, STRATEGIES, DECK_META, DECKS
 from app.services import persona_engine as pe
 from app.services.card_recommender import recommend_next_card
 import numpy as np
@@ -41,30 +41,54 @@ async def get_or_create_progress(db: AsyncSession, user_id: uuid.UUID) -> UserPr
             user_id=user_id,
             unlocked_strategies=["savings"],
             enabled_strategies=["savings"],
+            unlocked_decks=["savings_core"],
+            enabled_decks=["savings_core"],
             total_cards_played=0,
         )
         db.add(progress)
         await db.flush()
+    # Migrate old rows that predate deck columns
+    if progress.unlocked_decks is None:
+        progress.unlocked_decks = ["savings_core"]
+        progress.enabled_decks = ["savings_core"]
     return progress
 
 
 def _check_strategy_unlocks(progress: UserProgress) -> bool:
-    """Unlock new strategies based on total cards played. Returns True if new unlock."""
+    """Unlock new strategies and decks based on total cards played."""
     total = progress.total_cards_played
-    unlocked = list(progress.unlocked_strategies)
     changed = False
+
+    # Strategies
+    unlocked_s = list(progress.unlocked_strategies)
     for key, meta in STRATEGY_META.items():
-        if key not in unlocked and total >= meta["unlock_at"]:
-            unlocked.append(key)
+        if key not in unlocked_s and total >= meta["unlock_at"]:
+            unlocked_s.append(key)
             changed = True
     if changed:
-        progress.unlocked_strategies = unlocked
-        # Auto-enable newly unlocked strategies
-        enabled = list(progress.enabled_strategies)
-        for key in unlocked:
-            if key not in enabled:
-                enabled.append(key)
-        progress.enabled_strategies = enabled
+        progress.unlocked_strategies = unlocked_s
+        enabled_s = list(progress.enabled_strategies)
+        for key in unlocked_s:
+            if key not in enabled_s:
+                enabled_s.append(key)
+        progress.enabled_strategies = enabled_s
+
+    # Decks
+    unlocked_d = list(progress.unlocked_decks or [])
+    deck_changed = False
+    for key, meta in DECK_META.items():
+        if key not in unlocked_d and total >= meta["unlock_at"]:
+            unlocked_d.append(key)
+            deck_changed = True
+    if deck_changed:
+        progress.unlocked_decks = unlocked_d
+        enabled_d = list(progress.enabled_decks or [])
+        for key in unlocked_d:
+            if key not in enabled_d:
+                enabled_d.append(key)
+        progress.enabled_decks = enabled_d
+        changed = True
+
     return changed
 
 
@@ -248,9 +272,13 @@ async def process_swipe(
     cooldown_key = f"cooldown:{session.id}:{card.id}"
     await redis.setex(cooldown_key, card.cooldown * COOLDOWN_TTL_SECS, "1")
 
-    # Get enabled stages from user progress for card recommender
-    enabled = progress.enabled_strategies if progress else STRATEGIES
-    next_card = await recommend_next_card(db, session, redis, enabled_strategies=enabled)
+    enabled_strat = progress.enabled_strategies if progress else STRATEGIES
+    enabled_deck = progress.enabled_decks if progress else None
+    next_card = await recommend_next_card(
+        db, session, redis,
+        enabled_strategies=enabled_strat,
+        enabled_decks=enabled_deck,
+    )
 
     lesson = _get_lesson(card, action)
     return {
