@@ -11,11 +11,12 @@ from app.models.persona import Persona, PersonaSnapshot
 from app.models.progress import UserProgress, STRATEGY_META, STRATEGIES, DECK_META, DECKS
 from app.services import persona_engine as pe
 from app.services.card_recommender import recommend_next_card
+from app.services.translation_service import localize_card_out, localize_text
 from app.schemas.card import CardOut
 import numpy as np
 
 
-def resolve_card(card: Card) -> CardOut:
+def resolve_card(card: Card, language: str | None = None) -> CardOut:
     """Build a CardOut with {value} in the body replaced by a random value from the card's range."""
     out = CardOut.model_validate(card)
     if card.value_min is not None and card.value_max is not None and card.value_step is not None:
@@ -24,7 +25,7 @@ def resolve_card(card: Card) -> CardOut:
         value = card.value_min + random.randint(0, steps) * step
         display = str(int(value)) if value == int(value) else str(value)
         out.body = card.body.replace("{value}", display)
-    return out
+    return localize_card_out(out, language)
 
 
 COOLDOWN_TTL_SECS = 30
@@ -299,6 +300,7 @@ async def process_swipe(
     card: Card,
     action: str,
     redis: Redis,
+    language: str | None = None,
 ) -> dict:
     if session.is_daily and session.daily_completed:
         return {
@@ -407,9 +409,9 @@ async def process_swipe(
             enabled_strategies=enabled_strat,
             enabled_decks=enabled_deck,
         )
-    next_card_out = resolve_card(next_card_orm) if next_card_orm else None
+    next_card_out = resolve_card(next_card_orm, language) if next_card_orm else None
 
-    lesson = _get_lesson(card, action)
+    lesson = localize_text(_get_lesson(card, action), language)
     return {
         "lesson": lesson,
         "reward": reward,

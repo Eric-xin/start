@@ -4,10 +4,12 @@ import {
   ActivityIndicator, Alert, TouchableOpacity, Switch,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import {
   getProgress, updateProgress,
   ProgressData, StrategyInfo, DeckInfo,
 } from "../../services/progress";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
 import { Colors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 
@@ -17,14 +19,6 @@ const STRATEGY_ICONS: Record<string, string> = {
   stocks: "📈",
   index: "🗂",
   alternatives: "🔮",
-};
-
-const STRATEGY_DESCRIPTIONS: Record<string, string> = {
-  savings: "Cash, money market funds, and savings accounts. Low risk, low return.",
-  bonds: "Government and corporate debt instruments. Fixed income with predictable cash flows.",
-  stocks: "Equity ownership in public companies. Higher volatility, higher expected return.",
-  index: "Diversified market exposure via index funds and ETFs. Passive investing at its core.",
-  alternatives: "Commodities, derivatives, real estate, and crypto. Advanced instruments.",
 };
 
 const DECK_ICONS: Record<string, string> = {
@@ -39,6 +33,7 @@ const DECK_ICONS: Record<string, string> = {
 
 export default function DecksScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [progress, setProgress] = useState<ProgressData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -46,7 +41,7 @@ export default function DecksScreen() {
   useEffect(() => {
     getProgress()
       .then(setProgress)
-      .catch(() => Alert.alert("Error", "Could not load deck settings."))
+      .catch(() => Alert.alert(t("profile.error"), t("decks.couldNotLoad")))
       .finally(() => setLoading(false));
   }, []);
 
@@ -58,7 +53,7 @@ export default function DecksScreen() {
     const enabled = new Set(progress.enabled_strategies);
     if (currentlyEnabled) {
       if (enabled.size <= 1) {
-        Alert.alert("Required", "At least one strategy must remain enabled.");
+        Alert.alert(t("decks.required"), t("decks.atLeastOneStrategy"));
         return;
       }
       enabled.delete(key);
@@ -71,7 +66,7 @@ export default function DecksScreen() {
       const updated = await updateProgress({ enabled_strategies: Array.from(enabled) });
       setProgress(updated);
     } catch {
-      Alert.alert("Error", "Could not update strategy settings.");
+      Alert.alert(t("profile.error"), t("decks.couldNotUpdateStrategy"));
     } finally {
       setSaving(false);
     }
@@ -85,7 +80,7 @@ export default function DecksScreen() {
     const enabled = new Set(progress.enabled_decks);
     if (currentlyEnabled) {
       if (enabled.size <= 1) {
-        Alert.alert("Required", "At least one deck must remain enabled.");
+        Alert.alert(t("decks.required"), t("decks.atLeastOneDeck"));
         return;
       }
       enabled.delete(key);
@@ -98,7 +93,7 @@ export default function DecksScreen() {
       const updated = await updateProgress({ enabled_decks: Array.from(enabled) });
       setProgress(updated);
     } catch {
-      Alert.alert("Error", "Could not update deck settings.");
+      Alert.alert(t("profile.error"), t("decks.couldNotUpdateDeck"));
     } finally {
       setSaving(false);
     }
@@ -129,10 +124,11 @@ export default function DecksScreen() {
       <View style={styles.topBar}>
         <Text style={styles.logo}>CARDECON</Text>
         <View style={styles.barSep} />
-        <Text style={styles.topLabel}>INVESTMENT DECKS</Text>
+        <Text style={styles.topLabel}>{t("decks.title")}</Text>
         {saving && <ActivityIndicator color={Colors.blue} size="small" style={{ marginLeft: "auto" }} />}
+        <LanguageSwitcher compact />
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backText}>BACK →</Text>
+          <Text style={styles.backText}>{t("decks.back")}</Text>
         </TouchableOpacity>
       </View>
 
@@ -140,37 +136,33 @@ export default function DecksScreen() {
         {/* Stats strip */}
         <View style={styles.statsRow}>
           <View style={styles.statBlock}>
-            <Text style={styles.statLabel}>TOTAL CARDS</Text>
+            <Text style={styles.statLabel}>{t("decks.totalCards")}</Text>
             <Text style={styles.statValue}>{totalCards}</Text>
           </View>
           <View style={[styles.statBlock, styles.statBorder]}>
-            <Text style={styles.statLabel}>STRATEGIES</Text>
+            <Text style={styles.statLabel}>{t("decks.strategies")}</Text>
             <Text style={[styles.statValue, { color: Colors.teal }]}>{unlockedStrategies}/5</Text>
           </View>
           <View style={[styles.statBlock, styles.statBorder]}>
-            <Text style={styles.statLabel}>DECKS</Text>
+            <Text style={styles.statLabel}>{t("decks.decks")}</Text>
             <Text style={[styles.statValue, { color: Colors.blue }]}>{unlockedDecks}/7</Text>
           </View>
           <View style={[styles.statBlock, styles.statBorder]}>
-            <Text style={styles.statLabel}>ACTIVE</Text>
+            <Text style={styles.statLabel}>{t("decks.active")}</Text>
             <Text style={[styles.statValue, { color: Colors.green }]}>{enabledDecks}</Text>
           </View>
         </View>
 
         {/* Info banner */}
         <View style={styles.infoCard}>
-          <Text style={styles.infoText}>
-            Strategies are the top-level investment categories. Each strategy contains one or more
-            specialized decks that filter which cards appear in your sessions. Enable or disable
-            individual decks to focus your learning. Unlock new strategies and decks by playing more cards.
-          </Text>
+          <Text style={styles.infoText}>{t("decks.info")}</Text>
         </View>
 
         {/* Strategies with nested decks */}
         {progress?.strategies.map((strat) => {
           const decks = decksByStrategy[strat.key] ?? [];
           const icon = STRATEGY_ICONS[strat.key] ?? "•";
-          const desc = STRATEGY_DESCRIPTIONS[strat.key] ?? "";
+          const desc = t(`decks.strategyDescriptions.${strat.key}`, { defaultValue: "" });
 
           return (
             <View
@@ -185,7 +177,7 @@ export default function DecksScreen() {
                     <Text style={[styles.strategyLabel, !strat.is_unlocked && { color: Colors.textMuted }]}>
                       {strat.label.toUpperCase()}
                     </Text>
-                    <Text style={styles.strategyStage}>STAGE {strat.stage}</Text>
+                    <Text style={styles.strategyStage}>{t("gameSessions.stage")} {strat.stage}</Text>
                   </View>
                 </View>
                 <View style={styles.strategyRight}>
@@ -199,8 +191,8 @@ export default function DecksScreen() {
                     />
                   ) : (
                     <View style={styles.lockBadge}>
-                      <Text style={styles.lockText}>🔒 LOCKED</Text>
-                      <Text style={styles.unlockAt}>{strat.unlock_at} cards</Text>
+                      <Text style={styles.lockText}>🔒 {t("decks.locked")}</Text>
+                      <Text style={styles.unlockAt}>{t("decks.unlockAtCards", { count: strat.unlock_at })}</Text>
                     </View>
                   )}
                 </View>
@@ -215,7 +207,7 @@ export default function DecksScreen() {
               {strat.is_unlocked && (
                 <View style={[styles.stratStatus, strat.is_enabled && styles.stratStatusOn]}>
                   <Text style={[styles.stratStatusText, strat.is_enabled && { color: Colors.green }]}>
-                    {strat.is_enabled ? "● STRATEGY ACTIVE" : "○ STRATEGY DISABLED"}
+                    {strat.is_enabled ? t("decks.strategyActive") : t("decks.strategyDisabled")}
                   </Text>
                 </View>
               )}
@@ -223,7 +215,7 @@ export default function DecksScreen() {
               {/* Decks within this strategy */}
               {decks.length > 0 && (
                 <View style={styles.decksContainer}>
-                  <Text style={styles.decksLabel}>CARD DECKS</Text>
+                  <Text style={styles.decksLabel}>{t("decks.cardDecks")}</Text>
                   {decks.map((deck, idx) => {
                     const deckIcon = DECK_ICONS[deck.key] ?? "📁";
                     return (
@@ -245,7 +237,7 @@ export default function DecksScreen() {
                               <Text style={styles.deckDesc}>{deck.description}</Text>
                             ) : null}
                             {!deck.is_unlocked && (
-                              <Text style={styles.deckUnlockAt}>Unlocks at {deck.unlock_at} cards</Text>
+                              <Text style={styles.deckUnlockAt}>{t("decks.unlocksAt", { count: deck.unlock_at })}</Text>
                             )}
                           </View>
                         </View>

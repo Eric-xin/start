@@ -4,21 +4,23 @@ import {
   ActivityIndicator, Alert, TouchableOpacity, TextInput,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { getPersona, getTrajectory, updatePersona, PersonaData, TrajectoryData } from "../../../services/persona";
 import { PCAMap } from "../../../components/PCAMap";
+import LanguageSwitcher from "../../../components/LanguageSwitcher";
 import { Colors } from "../../../constants/colors";
 import { Fonts } from "../../../constants/fonts";
 
-const TRAIT_LABELS: Record<string, string> = {
-  risk_appetite: "Risk Appetite",
-  fomo_sensitivity: "FOMO Sensitivity",
-  loss_aversion: "Loss Aversion",
-  patience: "Patience",
-  diversification_bias: "Diversification Bias",
-  overconfidence: "Overconfidence",
-};
+const TRAIT_KEYS = [
+  "risk_appetite",
+  "fomo_sensitivity",
+  "loss_aversion",
+  "patience",
+  "diversification_bias",
+  "overconfidence",
+] as const;
 
-const TRAIT_DESCRIPTIONS: Record<string, string> = {
+const TRAIT_DESCRIPTION_DEFAULTS: Record<string, string> = {
   risk_appetite: "Willingness to accept volatility for higher returns",
   fomo_sensitivity: "Tendency to act on fear of missing market moves",
   loss_aversion: "Emotional weight placed on losses vs. equivalent gains",
@@ -28,24 +30,30 @@ const TRAIT_DESCRIPTIONS: Record<string, string> = {
 };
 
 function TraitBar({ trait, value }: { trait: string; value: number }) {
+  const { t } = useTranslation();
   const pct = Math.round(value);
   const color = value > 65 ? Colors.red : value > 50 ? Colors.amber : Colors.green;
+  const traitLabel = t(`personaDetail.traits.${trait}`, { defaultValue: trait });
+  const traitDescription = t(`personaDetail.traitDescriptions.${trait}`, {
+    defaultValue: TRAIT_DESCRIPTION_DEFAULTS[trait] ?? "",
+  });
   return (
     <View style={styles.traitCard}>
       <View style={styles.traitHeader}>
-        <Text style={styles.traitName}>{TRAIT_LABELS[trait] ?? trait}</Text>
+        <Text style={styles.traitName}>{traitLabel}</Text>
         <Text style={[styles.traitScore, { color }]}>{pct}/100</Text>
       </View>
       <View style={styles.traitTrack}>
         <View style={[styles.traitFill, { width: `${pct}%` as any, backgroundColor: color }]} />
       </View>
-      <Text style={styles.traitDesc}>{TRAIT_DESCRIPTIONS[trait] ?? ""}</Text>
+      <Text style={styles.traitDesc}>{traitDescription}</Text>
     </View>
   );
 }
 
 export default function PersonaDetailScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [persona, setPersona] = useState<PersonaData | null>(null);
   const [trajectory, setTrajectory] = useState<TrajectoryData | null>(null);
@@ -62,7 +70,7 @@ export default function PersonaDetailScreen() {
         setNameInput(p.name);
         setTrajectory(t);
       })
-      .catch(() => Alert.alert("Error", "Could not load persona."))
+      .catch(() => Alert.alert(t("profile.error"), t("personaDetail.couldNotLoad")))
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -74,7 +82,7 @@ export default function PersonaDetailScreen() {
       setPersona(updated);
       setEditName(false);
     } catch {
-      Alert.alert("Error", "Could not rename persona.");
+      Alert.alert(t("profile.error"), t("personaDetail.couldNotRename"));
     } finally {
       setSaving(false);
     }
@@ -87,7 +95,7 @@ export default function PersonaDetailScreen() {
       const updated = await updatePersona(persona.id, { is_active: true });
       setPersona(updated);
     } catch {
-      Alert.alert("Error", "Could not activate persona.");
+      Alert.alert(t("profile.error"), t("personaDetail.couldNotActivate"));
     } finally {
       setSaving(false);
     }
@@ -109,9 +117,10 @@ export default function PersonaDetailScreen() {
       <View style={styles.topBar}>
         <Text style={styles.logo}>CARDECON</Text>
         <View style={styles.barSep} />
-        <Text style={styles.topLabel}>PERSONA ANALYSIS</Text>
+        <Text style={styles.topLabel}>{t("personaDetail.title")}</Text>
+        <LanguageSwitcher compact />
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backText}>BACK →</Text>
+          <Text style={styles.backText}>{t("personaDetail.back")}</Text>
         </TouchableOpacity>
       </View>
 
@@ -121,7 +130,7 @@ export default function PersonaDetailScreen() {
           <View style={styles.cardHeader}>
             <View style={[styles.statusDot, { backgroundColor: persona.is_active ? Colors.green : Colors.textMuted }]} />
             <Text style={styles.cardHeaderText}>
-              {persona.is_active ? "ACTIVE PERSONA" : "PERSONA"}
+              {persona.is_active ? t("personaDetail.activePersona") : t("personaDetail.persona")}
             </Text>
           </View>
 
@@ -135,32 +144,32 @@ export default function PersonaDetailScreen() {
                 selectionColor={Colors.blue}
               />
               <TouchableOpacity style={styles.saveBtn} onPress={handleRename} disabled={saving}>
-                <Text style={styles.saveBtnText}>{saving ? "..." : "SAVE"}</Text>
+                <Text style={styles.saveBtnText}>{saving ? t("profile.saving") : t("personaDetail.save")}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setEditName(false)}>
-                <Text style={styles.cancelBtnText}>CANCEL</Text>
+                <Text style={styles.cancelBtnText}>{t("personaDetail.cancel")}</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.nameRow}>
               <Text style={styles.personaName}>{persona.name}</Text>
               <TouchableOpacity onPress={() => setEditName(true)}>
-                <Text style={styles.editLink}>RENAME</Text>
+                <Text style={styles.editLink}>{t("personaDetail.rename")}</Text>
               </TouchableOpacity>
             </View>
           )}
 
           <View style={styles.metaRow}>
             <View style={styles.metaBadge}>
-              <Text style={styles.metaLabel}>CARDS PLAYED</Text>
+              <Text style={styles.metaLabel}>{t("personaDetail.cardsPlayed")}</Text>
               <Text style={styles.metaValue}>{persona.cards_played}</Text>
             </View>
             <View style={styles.metaBadge}>
-              <Text style={styles.metaLabel}>SNAPSHOTS</Text>
+              <Text style={styles.metaLabel}>{t("personaDetail.snapshots")}</Text>
               <Text style={styles.metaValue}>{trajectory?.snapshots.length ?? 0}</Text>
             </View>
             <View style={styles.metaBadge}>
-              <Text style={styles.metaLabel}>CREATED</Text>
+              <Text style={styles.metaLabel}>{t("personaDetail.created")}</Text>
               <Text style={styles.metaValue}>{new Date(persona.created_at).toLocaleDateString()}</Text>
             </View>
           </View>
@@ -171,7 +180,7 @@ export default function PersonaDetailScreen() {
               onPress={handleActivate}
               disabled={saving}
             >
-              <Text style={styles.activateBtnText}>▶ ACTIVATE THIS PERSONA</Text>
+              <Text style={styles.activateBtnText}>{`▶ ${t("personaDetail.activatePersona")}`}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -181,7 +190,7 @@ export default function PersonaDetailScreen() {
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <View style={styles.blueDot} />
-              <Text style={styles.cardHeaderText}>BEHAVIORAL INTERPRETATION</Text>
+              <Text style={styles.cardHeaderText}>{t("personaDetail.interpretation")}</Text>
             </View>
             <Text style={styles.interpretation}>{persona.interpretation}</Text>
           </View>
@@ -191,12 +200,9 @@ export default function PersonaDetailScreen() {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <View style={styles.blueDot} />
-            <Text style={styles.cardHeaderText}>PERSONA TRAJECTORY (PCA)</Text>
+            <Text style={styles.cardHeaderText}>{t("personaDetail.trajectory")}</Text>
           </View>
-          <Text style={styles.pcaDesc}>
-            Each dot represents a snapshot of your persona vector taken every 10 cards,
-            projected to 2D via principal component analysis.
-          </Text>
+          <Text style={styles.pcaDesc}>{t("personaDetail.trajectoryDesc")}</Text>
           <View style={styles.pcaContainer}>
             <PCAMap
               snapshots={trajectory?.snapshots ?? []}
@@ -211,9 +217,9 @@ export default function PersonaDetailScreen() {
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <View style={styles.blueDot} />
-              <Text style={styles.cardHeaderText}>TRAIT BREAKDOWN</Text>
+              <Text style={styles.cardHeaderText}>{t("personaDetail.traitBreakdown")}</Text>
             </View>
-            {Object.entries(TRAIT_LABELS).map(([key]) => (
+            {TRAIT_KEYS.map((key) => (
               <TraitBar key={key} trait={key} value={(persona.traits as any)[key] ?? 50} />
             ))}
           </View>

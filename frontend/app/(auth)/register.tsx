@@ -4,7 +4,9 @@ import {
   KeyboardAvoidingView, Platform, useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { register } from "../../services/auth";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
 import { Colors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 
@@ -22,25 +24,26 @@ function GridBg() {
   );
 }
 
-function parseError(e: any): string {
+function parseError(e: any, t: (key: string) => string): string {
   const detail = e?.response?.data?.detail;
-  if (!detail) return "Unable to connect. Check your network.";
+  if (!detail) return t("auth.errors.unableConnect");
   if (Array.isArray(detail)) {
     const msg = detail[0]?.msg ?? "";
-    if (msg.toLowerCase().includes("email")) return "Enter a valid email address.";
-    if (msg.toLowerCase().includes("password")) return "Password must be at least 8 characters.";
+    if (msg.toLowerCase().includes("email")) return t("auth.errors.validEmail");
+    if (msg.toLowerCase().includes("password")) return t("auth.minPassword");
     return msg;
   }
   const s = String(detail).toLowerCase();
-  if (s.includes("email") && s.includes("exist")) return "That email is already registered. Try logging in.";
-  if (s.includes("username") && s.includes("exist")) return "That username is already taken. Choose a different one.";
-  if (s.includes("email")) return "That email is already registered. Try logging in.";
-  if (s.includes("username")) return "That username is already taken. Choose a different one.";
+  if (s.includes("email") && s.includes("exist")) return t("auth.errors.emailTaken");
+  if (s.includes("username") && s.includes("exist")) return t("auth.errors.usernameTaken");
+  if (s.includes("email")) return t("auth.errors.emailTaken");
+  if (s.includes("username")) return t("auth.errors.usernameTaken");
   return String(detail);
 }
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -51,11 +54,11 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     setError(null);
     if (!email.trim() || !username.trim() || !password) {
-      setError("All fields are required.");
+      setError(t("auth.allFieldsRequired"));
       return;
     }
     if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+      setError(t("auth.minPassword"));
       return;
     }
     setLoading(true);
@@ -63,7 +66,7 @@ export default function RegisterScreen() {
       await register(email.trim(), username.trim(), password);
       setSuccess(true);
     } catch (e: any) {
-      setError(parseError(e));
+      setError(parseError(e, t));
     } finally {
       setLoading(false);
     }
@@ -78,29 +81,30 @@ export default function RegisterScreen() {
 
       <View style={styles.topBar}>
         <Text style={styles.logo}>CARDECON</Text>
-        <Text style={styles.topBarSub}>NEW INVESTOR REGISTRATION</Text>
+        <Text style={styles.topBarSub}>{t("auth.topSubRegister")}</Text>
       </View>
 
       <View style={styles.center}>
         <View style={styles.panel}>
           <View style={styles.panelHeader}>
             <View style={styles.blueDot} />
-            <Text style={styles.panelTitle}>CREATE INVESTOR PROFILE</Text>
+            <Text style={styles.panelTitle}>{t("auth.panelRegister")}</Text>
           </View>
+
+          <LanguageSwitcher />
 
           {success ? (
             <View style={styles.successBlock}>
               <Text style={styles.successIcon}>✓</Text>
-              <Text style={styles.successTitle}>ACCOUNT CREATED</Text>
+              <Text style={styles.successTitle}>{t("auth.createSuccessTitle")}</Text>
               <Text style={styles.successBody}>
-                Your investor profile has been created.{"\n"}
-                Check your email to verify your account, then log in to begin.
+                {t("auth.createSuccessBody")}
               </Text>
               <TouchableOpacity
                 style={styles.submitBtn}
                 onPress={() => router.replace("/(auth)/login")}
               >
-                <Text style={styles.submitText}>▶  PROCEED TO LOGIN</Text>
+                <Text style={styles.submitText}>{`▶  ${t("auth.proceedToLogin")}`}</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -112,7 +116,7 @@ export default function RegisterScreen() {
                 </View>
               )}
 
-              <Text style={styles.fieldLabel}>EMAIL ADDRESS</Text>
+              <Text style={styles.fieldLabel}>{t("auth.emailAddress")}</Text>
               <TextInput
                 style={[styles.input, error && styles.inputError]}
                 value={email}
@@ -126,7 +130,7 @@ export default function RegisterScreen() {
                 returnKeyType="next"
               />
 
-              <Text style={styles.fieldLabel}>USERNAME</Text>
+              <Text style={styles.fieldLabel}>{t("auth.username")}</Text>
               <TextInput
                 style={[styles.input, error && styles.inputError]}
                 value={username}
@@ -139,7 +143,7 @@ export default function RegisterScreen() {
                 returnKeyType="next"
               />
 
-              <Text style={styles.fieldLabel}>PASSWORD</Text>
+              <Text style={styles.fieldLabel}>{t("auth.password")}</Text>
               <TextInput
                 style={[styles.input, error && styles.inputError]}
                 value={password}
@@ -158,7 +162,7 @@ export default function RegisterScreen() {
                 disabled={loading}
               >
                 <Text style={styles.submitText}>
-                  {loading ? "REGISTERING..." : "▶  CREATE ACCOUNT"}
+                  {loading ? t("auth.registering") : `▶  ${t("auth.registerAction")}`}
                 </Text>
               </TouchableOpacity>
             </>
@@ -167,13 +171,13 @@ export default function RegisterScreen() {
           <View style={styles.divider} />
 
           <TouchableOpacity style={styles.linkBtn} onPress={() => router.back()}>
-            <Text style={styles.linkText}>← BACK TO LOGIN</Text>
+            <Text style={styles.linkText}>{t("auth.backToLogin")}</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <View style={styles.bottomBar}>
-        <Text style={styles.bottomText}>SECURE REGISTRATION · DATA ENCRYPTED AT REST</Text>
+        <Text style={styles.bottomText}>{t("auth.secureRegistration")}</Text>
       </View>
     </KeyboardAvoidingView>
   );

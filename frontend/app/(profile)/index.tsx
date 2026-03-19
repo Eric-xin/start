@@ -4,22 +4,24 @@ import {
   ActivityIndicator, Alert, TextInput, useWindowDimensions, Switch,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/authStore";
 import { updateUser, changePassword } from "../../services/user";
 import { listPersonas, PersonaData } from "../../services/persona";
 import { getProgress, updateProgress, ProgressData } from "../../services/progress";
 import { getSessions, SessionData } from "../../services/game";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
 import { Colors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 
-const TRAIT_LABELS: Record<string, string> = {
-  risk_appetite: "Risk Appetite",
-  fomo_sensitivity: "FOMO",
-  loss_aversion: "Loss Aversion",
-  patience: "Patience",
-  diversification_bias: "Diversification",
-  overconfidence: "Overconfidence",
-};
+const TRAIT_KEYS = [
+  "risk_appetite",
+  "fomo_sensitivity",
+  "loss_aversion",
+  "patience",
+  "diversification_bias",
+  "overconfidence",
+] as const;
 
 const STRATEGY_ICONS: Record<string, string> = {
   savings: "💵", bonds: "📄", stocks: "📈", index: "🗂", alternatives: "🔮",
@@ -52,6 +54,7 @@ function EditField({
   label: string; value: string; onSave: (v: string) => Promise<void>;
   placeholder?: string; secure?: boolean; keyboardType?: any;
 }) {
+  const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
   const [input, setInput] = useState(value);
   const [saving, setSaving] = useState(false);
@@ -63,7 +66,7 @@ function EditField({
       await onSave(input.trim());
       setEditing(false);
     } catch (e: any) {
-      Alert.alert("Error", e?.response?.data?.detail ?? "Update failed.");
+      Alert.alert(t("profile.error"), e?.response?.data?.detail ?? t("profile.updateFailed"));
     } finally {
       setSaving(false);
     }
@@ -84,7 +87,7 @@ function EditField({
             selectionColor={Colors.blue}
           />
           <TouchableOpacity style={ef.saveBtn} onPress={handleSave} disabled={saving}>
-            <Text style={ef.saveTxt}>{saving ? "..." : "SAVE"}</Text>
+            <Text style={ef.saveTxt}>{saving ? t("profile.saving") : t("profile.save")}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => { setInput(value); setEditing(false); }}>
             <Text style={ef.cancelTxt}>✕</Text>
@@ -93,7 +96,7 @@ function EditField({
       ) : (
         <TouchableOpacity style={ef.row} onPress={() => setEditing(true)}>
           <Text style={ef.value}>{secure ? "••••••••" : (value || placeholder || "—")}</Text>
-          <Text style={ef.editTxt}>EDIT</Text>
+          <Text style={ef.editTxt}>{t("profile.edit")}</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -132,6 +135,7 @@ const tm = StyleSheet.create({
 
 // ─── Password Change Modal ──────────────────────────────────────────────────
 function PasswordSection() {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [cur, setCur] = useState("");
   const [next, setNext] = useState("");
@@ -139,15 +143,15 @@ function PasswordSection() {
   const [saving, setSaving] = useState(false);
 
   const handleChange = async () => {
-    if (next.length < 8) { Alert.alert("Too short", "Password must be at least 8 characters."); return; }
-    if (next !== confirm) { Alert.alert("Mismatch", "Passwords do not match."); return; }
+    if (next.length < 8) { Alert.alert(t("profile.tooShort"), t("profile.passwordMinError")); return; }
+    if (next !== confirm) { Alert.alert(t("profile.mismatch"), t("profile.passwordMismatchError")); return; }
     setSaving(true);
     try {
       await changePassword(cur, next);
-      Alert.alert("Success", "Password updated.");
+      Alert.alert(t("profile.success"), t("profile.passwordUpdated"));
       setCur(""); setNext(""); setConfirm(""); setOpen(false);
     } catch (e: any) {
-      Alert.alert("Error", e?.response?.data?.detail ?? "Failed to change password.");
+      Alert.alert(t("profile.error"), e?.response?.data?.detail ?? t("profile.updateFailed"));
     } finally {
       setSaving(false);
     }
@@ -156,20 +160,20 @@ function PasswordSection() {
   if (!open) {
     return (
       <TouchableOpacity style={pw.row} onPress={() => setOpen(true)}>
-        <Text style={pw.label}>PASSWORD</Text>
+        <Text style={pw.label}>{t("profile.password")}</Text>
         <Text style={pw.value}>••••••••</Text>
-        <Text style={pw.edit}>CHANGE</Text>
+        <Text style={pw.edit}>{t("profile.change")}</Text>
       </TouchableOpacity>
     );
   }
 
   return (
     <View style={pw.form}>
-      <Text style={pw.formLabel}>CHANGE PASSWORD</Text>
+      <Text style={pw.formLabel}>{t("profile.changePassword")}</Text>
       {[
-        { label: "CURRENT", val: cur, set: setCur },
-        { label: "NEW", val: next, set: setNext },
-        { label: "CONFIRM NEW", val: confirm, set: setConfirm },
+        { label: t("profile.current"), val: cur, set: setCur },
+        { label: t("profile.new"), val: next, set: setNext },
+        { label: t("profile.confirmNew"), val: confirm, set: setConfirm },
       ].map(({ label, val, set }) => (
         <View key={label} style={pw.field}>
           <Text style={pw.fieldLabel}>{label}</Text>
@@ -184,10 +188,10 @@ function PasswordSection() {
       ))}
       <View style={pw.actions}>
         <TouchableOpacity style={[pw.saveBtn, saving && { opacity: 0.5 }]} onPress={handleChange} disabled={saving}>
-          <Text style={pw.saveBtnTxt}>{saving ? "SAVING..." : "UPDATE PASSWORD"}</Text>
+          <Text style={pw.saveBtnTxt}>{saving ? t("profile.saving") : t("profile.updatePassword")}</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setOpen(false)}>
-          <Text style={pw.cancel}>CANCEL</Text>
+          <Text style={pw.cancel}>{t("profile.cancel")}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -212,6 +216,7 @@ const pw = StyleSheet.create({
 // ─── Main screen ─────────────────────────────────────────────────────────────
 export default function ProfileScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { user, setUser, clearAuth } = useAuthStore();
   const { width } = useWindowDimensions();
   const isWide = width >= 760;
@@ -247,7 +252,7 @@ export default function ProfileScreen() {
     if (!progress) return;
     const enabled = new Set(progress.enabled_decks);
     if (currentlyEnabled) {
-      if (enabled.size <= 1) { Alert.alert("Required", "At least one deck must remain enabled."); return; }
+      if (enabled.size <= 1) { Alert.alert(t("profile.required"), t("profile.atLeastOneDeck")); return; }
       enabled.delete(key);
     } else {
       enabled.add(key);
@@ -256,7 +261,7 @@ export default function ProfileScreen() {
     try {
       const updated = await updateProgress({ enabled_decks: Array.from(enabled) });
       setProgress(updated);
-    } catch { Alert.alert("Error", "Could not update deck."); }
+    } catch { Alert.alert(t("profile.error"), t("profile.couldNotUpdateDeck")); }
     finally { setTogglingDeck(null); }
   };
 
@@ -264,13 +269,13 @@ export default function ProfileScreen() {
     if (!progress) return;
     const enabled = new Set(progress.enabled_strategies);
     if (currentlyEnabled) {
-      if (enabled.size <= 1) { Alert.alert("Required", "At least one strategy must remain enabled."); return; }
+      if (enabled.size <= 1) { Alert.alert(t("profile.required"), t("profile.atLeastOneStrategy")); return; }
       enabled.delete(key);
     } else { enabled.add(key); }
     try {
       const updated = await updateProgress({ enabled_strategies: Array.from(enabled) });
       setProgress(updated);
-    } catch { Alert.alert("Error", "Could not update strategy."); }
+    } catch { Alert.alert(t("profile.error"), t("profile.couldNotUpdateStrategy")); }
   };
 
   if (loading) {
@@ -289,21 +294,21 @@ export default function ProfileScreen() {
     <>
       {/* Account settings */}
       <View style={s.card}>
-        <SectionHeader title="ACCOUNT SETTINGS" />
-        <EditField label="USERNAME" value={user?.username ?? ""} onSave={handleSaveUsername} placeholder="username" />
-        <EditField label="EMAIL ADDRESS" value={user?.email ?? ""} onSave={handleSaveEmail} placeholder="email" keyboardType="email-address" />
+        <SectionHeader title={t("profile.accountSettings")} />
+        <EditField label={t("profile.username")} value={user?.username ?? ""} onSave={handleSaveUsername} placeholder={t("profile.username").toLowerCase()} />
+        <EditField label={t("profile.emailAddress")} value={user?.email ?? ""} onSave={handleSaveEmail} placeholder={t("profile.emailAddress").toLowerCase()} keyboardType="email-address" />
         <PasswordSection />
         <View style={s.accountMeta}>
           <View style={s.metaBadge}>
-            <Text style={s.metaLabel}>TIER</Text>
-            <Text style={[s.metaValue, { color: Colors.blue }]}>{user?.subscription_tier?.toUpperCase() ?? "NORMAL"}</Text>
+            <Text style={s.metaLabel}>{t("profile.tier")}</Text>
+            <Text style={[s.metaValue, { color: Colors.blue }]}>{user?.subscription_tier?.toUpperCase() ?? "—"}</Text>
           </View>
           <View style={s.metaBadge}>
-            <Text style={s.metaLabel}>ROLE</Text>
-            <Text style={s.metaValue}>{user?.role?.toUpperCase() ?? "USER"}</Text>
+            <Text style={s.metaLabel}>{t("profile.role")}</Text>
+            <Text style={s.metaValue}>{user?.role?.toUpperCase() ?? "—"}</Text>
           </View>
           <View style={s.metaBadge}>
-            <Text style={s.metaLabel}>MEMBER SINCE</Text>
+            <Text style={s.metaLabel}>{t("profile.memberSince")}</Text>
             <Text style={s.metaValue}>{user?.created_at ? new Date(user.created_at as any).getFullYear() : "—"}</Text>
           </View>
         </View>
@@ -312,8 +317,8 @@ export default function ProfileScreen() {
       {/* Active Persona */}
       <View style={s.card}>
         <SectionHeader
-          title="ACTIVE PERSONA"
-          action="MANAGE →"
+          title={t("profile.activePersona")}
+          action={t("profile.manage")}
           onAction={() => router.push("/(profile)/personas")}
         />
         {activePersona ? (
@@ -321,19 +326,23 @@ export default function ProfileScreen() {
             <View style={s.personaRow}>
               <View>
                 <Text style={s.personaName}>{activePersona.name}</Text>
-                <Text style={s.personaSub}>{activePersona.cards_played} cards played</Text>
+                <Text style={s.personaSub}>{t("profile.cardsPlayedN", { count: activePersona.cards_played })}</Text>
               </View>
               <TouchableOpacity
                 style={s.viewBtn}
                 onPress={() => router.push(`/(profile)/persona/${activePersona.id}`)}
               >
-                <Text style={s.viewBtnText}>VIEW TRAJECTORY →</Text>
+                <Text style={s.viewBtnText}>{t("profile.viewTrajectory")}</Text>
               </TouchableOpacity>
             </View>
             {activePersona.traits && (
               <View style={{ marginTop: 10 }}>
-                {Object.entries(TRAIT_LABELS).map(([k, l]) => (
-                  <TraitMini key={k} label={l} value={(activePersona.traits as any)[k] ?? 50} />
+                {TRAIT_KEYS.map((key) => (
+                  <TraitMini
+                    key={key}
+                    label={t(`personaDetail.traits.${key}`)}
+                    value={(activePersona.traits as any)[key] ?? 50}
+                  />
                 ))}
               </View>
             )}
@@ -342,19 +351,19 @@ export default function ProfileScreen() {
             )}
           </>
         ) : (
-          <Text style={s.emptyTxt}>No personas yet. A default will be created on your first session.</Text>
+          <Text style={s.emptyTxt}>{t("profile.noPersonas")}</Text>
         )}
       </View>
 
       {/* Recent Sessions */}
       <View style={s.card}>
         <SectionHeader
-          title="RECENT SESSIONS"
-          action="VIEW ALL →"
+          title={t("profile.recentSessions")}
+          action={t("profile.viewAll")}
           onAction={() => router.push("/(game)/sessions")}
         />
         {sessions.length === 0 ? (
-          <Text style={s.emptyTxt}>No sessions yet.</Text>
+          <Text style={s.emptyTxt}>{t("profile.noSessions")}</Text>
         ) : (
           sessions.slice(0, 3).map((sess) => {
             const delta = sess.capital - 10000;
@@ -367,7 +376,7 @@ export default function ProfileScreen() {
               >
                 <View style={{ flex: 1 }}>
                   <Text style={s.sessionCapital}>${Math.round(sess.capital).toLocaleString()}</Text>
-                  <Text style={s.sessionMeta}>Stage {sess.stage} · {new Date(sess.updated_at).toLocaleDateString()}</Text>
+                  <Text style={s.sessionMeta}>{t("profile.stage")} {sess.stage} · {new Date(sess.updated_at).toLocaleDateString()}</Text>
                 </View>
                 <Text style={[s.sessionDelta, { color: isUp ? Colors.green : Colors.red }]}>
                   {isUp ? "+" : ""}{((delta / 10000) * 100).toFixed(1)}%
@@ -385,18 +394,18 @@ export default function ProfileScreen() {
     <>
       {/* Progress overview */}
       <View style={s.card}>
-        <SectionHeader title="PROGRESS" />
+        <SectionHeader title={t("profile.progress")} />
         <View style={s.statsRow}>
           <View style={s.statBlock}>
-            <Text style={s.statLabel}>CARDS PLAYED</Text>
+            <Text style={s.statLabel}>{t("profile.cardsPlayed")}</Text>
             <Text style={s.statValue}>{progress?.total_cards_played ?? 0}</Text>
           </View>
           <View style={s.statBlock}>
-            <Text style={s.statLabel}>STRATEGIES</Text>
+            <Text style={s.statLabel}>{t("decks.strategies")}</Text>
             <Text style={[s.statValue, { color: Colors.teal }]}>{progress?.unlocked_strategies.length ?? 1}/5</Text>
           </View>
           <View style={s.statBlock}>
-            <Text style={s.statLabel}>DECKS</Text>
+            <Text style={s.statLabel}>{t("decks.decks")}</Text>
             <Text style={[s.statValue, { color: Colors.blue }]}>{progress?.unlocked_decks.length ?? 1}/{progress?.decks.length ?? 7}</Text>
           </View>
         </View>
@@ -405,11 +414,11 @@ export default function ProfileScreen() {
       {/* Strategies & Decks */}
       <View style={s.card}>
         <SectionHeader
-          title="STRATEGIES & DECKS"
-          action="FULL SETTINGS →"
+          title={t("profile.strategiesDecks")}
+          action={t("profile.fullSettings")}
           onAction={() => router.push("/(profile)/decks")}
         />
-        <Text style={s.deckHint}>Enable or disable strategies and individual decks. Locked items unlock as you play.</Text>
+        <Text style={s.deckHint}>{t("profile.deckHint")}</Text>
 
         {progress?.strategies.map((strat) => {
           const decks = decksByStrategy[strat.key] ?? [];
@@ -423,7 +432,7 @@ export default function ProfileScreen() {
                     {strat.label}
                   </Text>
                   {!strat.is_unlocked && (
-                    <Text style={s.unlockHint}>Unlocks at {strat.unlock_at} cards</Text>
+                    <Text style={s.unlockHint}>{t("profile.unlocksAt", { count: strat.unlock_at })}</Text>
                   )}
                 </View>
                 {strat.is_unlocked ? (
@@ -436,7 +445,7 @@ export default function ProfileScreen() {
                     style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
                   />
                 ) : (
-                  <View style={s.lockTag}><Text style={s.lockTagTxt}>LOCKED</Text></View>
+                  <View style={s.lockTag}><Text style={s.lockTagTxt}>{t("profile.locked")}</Text></View>
                 )}
               </View>
 
@@ -449,7 +458,7 @@ export default function ProfileScreen() {
                       {deck.label}
                     </Text>
                     {!deck.is_unlocked && (
-                      <Text style={s.unlockHint}>{deck.unlock_at} cards</Text>
+                      <Text style={s.unlockHint}>{t("profile.unlocksAt", { count: deck.unlock_at })}</Text>
                     )}
                   </View>
                   {deck.is_unlocked ? (
@@ -466,7 +475,7 @@ export default function ProfileScreen() {
                       />
                     )
                   ) : (
-                    <View style={s.lockTag}><Text style={s.lockTagTxt}>LOCKED</Text></View>
+                    <View style={s.lockTag}><Text style={s.lockTagTxt}>{t("profile.locked")}</Text></View>
                   )}
                 </View>
               ))}
@@ -480,7 +489,7 @@ export default function ProfileScreen() {
         style={s.logoutBtn}
         onPress={async () => { await clearAuth(); router.replace("/(auth)/login"); }}
       >
-        <Text style={s.logoutTxt}>LOG OUT</Text>
+        <Text style={s.logoutTxt}>{t("profile.logout")}</Text>
       </TouchableOpacity>
     </>
   );
@@ -491,10 +500,11 @@ export default function ProfileScreen() {
       <View style={s.topBar}>
         <Text style={s.logo}>CARDECON</Text>
         <View style={s.barSep} />
-        <Text style={s.topLabel}>PROFILE</Text>
+        <Text style={s.topLabel}>{t("profile.profile")}</Text>
         <View style={{ flex: 1 }} />
+        <LanguageSwitcher compact />
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <Text style={s.backText}>BACK →</Text>
+          <Text style={s.backText}>{t("profile.back")}</Text>
         </TouchableOpacity>
       </View>
 

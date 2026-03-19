@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { View, Text, StyleSheet, TouchableWithoutFeedback } from "react-native";
+import { useTranslation } from "react-i18next";
 import Animated, {
   useSharedValue, useAnimatedStyle,
   withTiming, withSequence, withDelay,
@@ -18,12 +19,13 @@ interface Props {
 const AUTO_DISMISS_MS = 2600;
 
 export function LessonOverlay({ text, direction, reward, onDismiss }: Props) {
+  const { t } = useTranslation();
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(20);
 
   const accepted = direction === "right";
   const accentColor = accepted ? Colors.green : Colors.red;
-  const label = accepted ? "ACCEPTED" : "DECLINED";
+  const label = accepted ? t("lessonOverlay.accepted") : t("lessonOverlay.declined");
   const arrow = accepted ? "→" : "←";
   const rewardSign = reward >= 0 ? "+" : "";
 
@@ -63,12 +65,12 @@ export function LessonOverlay({ text, direction, reward, onDismiss }: Props) {
           {/* Reward + dismiss hint */}
           <View style={styles.footer}>
             <View style={[styles.rewardPill, { borderColor: accentColor + "66" }]}>
-              <Text style={[styles.rewardLabel, { color: Colors.textDim }]}>RETURN</Text>
+              <Text style={[styles.rewardLabel, { color: Colors.textDim }]}>{t("lessonOverlay.return")}</Text>
               <Text style={[styles.rewardValue, { color: accentColor }]}>
                 {rewardSign}{reward.toFixed(2)}
               </Text>
             </View>
-            <Text style={styles.tapHint}>TAP TO CONTINUE</Text>
+            <Text style={styles.tapHint}>{t("lessonOverlay.tapToContinue")}</Text>
           </View>
         </View>
       </Animated.View>

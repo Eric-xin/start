@@ -4,6 +4,7 @@ import {
   Alert, useWindowDimensions, Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { useGameStore } from "../../store/gameStore";
 import { swipe, getNextCard } from "../../services/game";
 import { CardContainer } from "../../components/Card/CardContainer";
@@ -56,6 +57,7 @@ function TerminalGrid() {
 
 // ─── Top Status Bar ─────────────────────────────────────────────────────────
 function TopStatusBar({ session }: { session: any }) {
+  const { t } = useTranslation();
   const now = new Date();
   const timeStr = now.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
@@ -64,13 +66,13 @@ function TopStatusBar({ session }: { session: any }) {
       <View style={tbStyles.left}>
         <Text style={tbStyles.logo}>CARDECON</Text>
         <View style={tbStyles.sep} />
-        <Text style={tbStyles.label}>STAGE</Text>
+        <Text style={tbStyles.label}>{t("hud.stage")}</Text>
         <Text style={tbStyles.value}>{session.stage}/5</Text>
         <View style={tbStyles.sep} />
-        <Text style={tbStyles.label}>RANK</Text>
+        <Text style={tbStyles.label}>{t("hud.rank")}</Text>
         <Text style={tbStyles.value}>{session.investor_rank}</Text>
         <View style={tbStyles.sep} />
-        <Text style={tbStyles.label}>CAPITAL</Text>
+        <Text style={tbStyles.label}>{t("hud.capital")}</Text>
         <Text style={[tbStyles.value, { color: session.capital >= 10000 ? Colors.green : Colors.red }]}>
           ${Math.round(session.capital).toLocaleString()}
         </Text>
@@ -152,6 +154,7 @@ function GhostCard() {
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 export default function PlayScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { width, height } = useWindowDimensions();
 
   const isWide = width >= Layout.wideBreakpoint;
@@ -173,7 +176,7 @@ export default function PlayScreen() {
     }
     getNextCard(session.id)
       .then((c) => { if (mounted.current && c) setCurrentCard(c); })
-      .catch(() => Alert.alert("Error", "Could not load card."))
+      .catch(() => Alert.alert(t("profile.error"), t("auth.errors.unableConnect")))
       .finally(() => { if (mounted.current) setInitializing(false); });
     return () => { mounted.current = false; };
   }, []);
@@ -192,7 +195,7 @@ export default function PlayScreen() {
     } catch {
       setSwipeLocked(false);
       setCurrentCard(currentCard); // restore on error
-      Alert.alert("Error", "Swipe failed. Check connection.");
+      Alert.alert(t("profile.error"), t("auth.errors.unableConnect"));
     }
   }, [session, currentCard, isSwipeLocked]);
 
@@ -204,9 +207,9 @@ export default function PlayScreen() {
       setSwipeLocked(false);
       if (session?.is_daily && session.daily_completed) {
         Alert.alert(
-          "Daily Complete",
-          `Great run. Streak +1 and +$${Math.round(session.streak_bonus_awarded).toLocaleString()} capital bonus.`,
-          [{ text: "Back to Index", onPress: () => router.replace("/(game)/index") }]
+          t("play.dailyComplete"),
+          t("play.dailyCompleteMsg", { amount: Math.round(session.streak_bonus_awarded).toLocaleString() }),
+          [{ text: t("play.backToIndex"), onPress: () => router.replace("/(game)/index") }]
         );
       }
       return;
@@ -220,7 +223,7 @@ export default function PlayScreen() {
     return (
       <View style={styles.loading}>
         <ActivityIndicator color={Colors.blue} size="large" />
-        <Text style={styles.loadingText}>INITIALIZING SESSION</Text>
+        <Text style={styles.loadingText}>{t("play.initializingSession")}</Text>
       </View>
     );
   }
@@ -255,7 +258,7 @@ export default function PlayScreen() {
         <View style={[styles.arena, { width: cardAreaW, height: cardAreaH }]}>
           {/* Panel border label */}
           <View style={styles.panelLabel}>
-            <Text style={styles.panelLabelText}>DECISION ENGINE</Text>
+            <Text style={styles.panelLabelText}>{t("play.decisionEngine")}</Text>
           </View>
 
           {/* Ghost card — visible when a card is active OR lesson is showing */}
@@ -283,8 +286,8 @@ export default function PlayScreen() {
             <View style={styles.emptyState}>
               <Text style={styles.emptyText}>
                 {session.is_daily && session.daily_completed
-                  ? "DAILY SESSION COMPLETE"
-                  : "LOADING NEXT DECISION..."}
+                  ? t("play.dailySessionComplete")
+                  : t("play.loadingNextDecision")}
               </Text>
               <ActivityIndicator color={Colors.blue} size="small" style={{ marginTop: 10 }} />
             </View>
@@ -300,8 +303,8 @@ export default function PlayScreen() {
           {/* Swipe hints */}
           {currentCard && !isSwipeLocked && !lesson && (
             <View style={styles.swipeHints} pointerEvents="none">
-              <Text style={[styles.swipeHintText, { color: Colors.red }]}>← DECLINE</Text>
-              <Text style={[styles.swipeHintText, { color: Colors.green }]}>ACCEPT →</Text>
+              <Text style={[styles.swipeHintText, { color: Colors.red }]}>← {t("play.decline")}</Text>
+              <Text style={[styles.swipeHintText, { color: Colors.green }]}>{t("play.accept")} →</Text>
             </View>
           )}
         </View>
@@ -309,7 +312,7 @@ export default function PlayScreen() {
         {/* Right panel — portfolio donut (Rank 4+, wide) */}
         {showDonut && (
           <View style={[styles.sidePanel, { width: donutW, alignItems: "center", paddingTop: 24 }]}>
-            <Text style={styles.panelLabelText}>PORTFOLIO</Text>
+            <Text style={styles.panelLabelText}>{t("play.portfolio")}</Text>
             <PortfolioDonut weights={session.portfolio_weights} size={100} />
           </View>
         )}

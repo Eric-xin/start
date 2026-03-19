@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from redis.asyncio import Redis
@@ -101,6 +101,7 @@ async def get_session(
 async def swipe(
     session_id: uuid.UUID,
     data: SwipeRequest,
+    x_language: str | None = Header(default=None),
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
     redis: Redis = Depends(get_redis),
@@ -113,7 +114,7 @@ async def swipe(
         raise HTTPException(status_code=404, detail="Card not found")
 
     response_data = await game_service.process_swipe(
-        db, session, card, data.action.value, redis
+        db, session, card, data.action.value, redis, x_language
     )
     return SwipeResponse(**response_data)
 
@@ -121,6 +122,7 @@ async def swipe(
 @router.get("/sessions/{session_id}/history", response_model=list[GameEventOut])
 async def get_session_history(
     session_id: uuid.UUID,
+    x_language: str | None = Header(default=None),
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -140,7 +142,7 @@ async def get_session_history(
             card_id=event.card_id,
             action=event.action.value if hasattr(event.action, "value") else event.action,
             reward=event.reward,
-            card=resolve_card(card) if card else None,
+            card=resolve_card(card, x_language) if card else None,
             created_at=event.created_at,
         ))
     return out
@@ -149,6 +151,7 @@ async def get_session_history(
 @router.get("/sessions/{session_id}/next-card", response_model=CardOut | None)
 async def next_card(
     session_id: uuid.UUID,
+    x_language: str | None = Header(default=None),
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
     redis: Redis = Depends(get_redis),
@@ -163,4 +166,4 @@ async def next_card(
         enabled_strategies=progress.enabled_strategies,
         enabled_decks=progress.enabled_decks,
     )
-    return resolve_card(card) if card else None
+    return resolve_card(card, x_language) if card else None

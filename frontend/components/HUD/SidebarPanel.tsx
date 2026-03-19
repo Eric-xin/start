@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
 import { Colors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { Layout } from "../../constants/layout";
@@ -43,15 +44,20 @@ const rStyles = StyleSheet.create({
 });
 
 export function SidebarPanel({ session }: Props) {
+  const { t } = useTranslation();
   const tickers = getTickerData(session);
-  const sentiment = session.capital > 11000 ? "BULLISH" : session.capital < 9500 ? "BEARISH" : "NEUTRAL";
+  const sentiment = session.capital > 11000
+    ? t("hud.sentimentBullish")
+    : session.capital < 9500
+      ? t("hud.sentimentBearish")
+      : t("hud.sentimentNeutral");
   const sentimentColor = session.capital > 11000 ? Colors.green : session.capital < 9500 ? Colors.red : Colors.amber;
 
   return (
     <View style={styles.sidebar}>
       {/* Market data panel */}
       <View style={styles.section}>
-        <Text style={styles.sectionHeader}>MARKET DATA</Text>
+        <Text style={styles.sectionHeader}>{t("hud.marketData")}</Text>
         {tickers.map((t) => (
           <View key={t.sym} style={styles.tickerRow}>
             <Text style={styles.sym}>{t.sym}</Text>
@@ -67,23 +73,23 @@ export function SidebarPanel({ session }: Props) {
 
       {/* Macro panel */}
       <View style={styles.section}>
-        <Text style={styles.sectionHeader}>MACRO</Text>
-        <Row label="SENTIMENT" value={sentiment} valueColor={sentimentColor} />
-        <Row label="10Y YIELD" value={`${(3.5 + session.stage * 0.3).toFixed(2)}%`} />
-        <Row label="FED RATE" value={`${(4.25 + session.stage * 0.15).toFixed(2)}%`} />
-        <Row label="CPI YoY" value={`${(2.8 + session.stage * 0.4).toFixed(1)}%`} />
+        <Text style={styles.sectionHeader}>{t("hud.macro")}</Text>
+        <Row label={t("hud.sentiment")} value={sentiment} valueColor={sentimentColor} />
+        <Row label={t("hud.tenYearYield")} value={`${(3.5 + session.stage * 0.3).toFixed(2)}%`} />
+        <Row label={t("hud.fedRate")} value={`${(4.25 + session.stage * 0.15).toFixed(2)}%`} />
+        <Row label={t("hud.cpiYoy")} value={`${(2.8 + session.stage * 0.4).toFixed(1)}%`} />
       </View>
 
       <View style={styles.divider} />
 
       {/* Session panel */}
       <View style={styles.section}>
-        <Text style={styles.sectionHeader}>SESSION</Text>
-        <Row label="STAGE" value={`${session.stage} / 5`} />
-        <Row label="PROGRESS" value={`${(session.progress * 100).toFixed(0)}%`} />
-        <Row label="PEAK" value={`$${Math.round(session.peak_capital).toLocaleString()}`} />
+        <Text style={styles.sectionHeader}>{t("hud.session")}</Text>
+        <Row label={t("hud.stage")} value={`${session.stage} / 5`} />
+        <Row label={t("hud.progress")} value={`${(session.progress * 100).toFixed(0)}%`} />
+        <Row label={t("hud.peak")} value={`$${Math.round(session.peak_capital).toLocaleString()}`} />
         <Row
-          label="P&L"
+          label={t("hud.pnl")}
           value={`${session.capital >= 10000 ? "+" : ""}$${Math.round(session.capital - 10000).toLocaleString()}`}
           valueColor={session.capital >= 10000 ? Colors.green : Colors.red}
         />

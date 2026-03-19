@@ -4,8 +4,10 @@ import {
   ActivityIndicator, ScrollView, useWindowDimensions,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { getSession, getSessionHistory, SessionData, GameEventData } from "../../../services/game";
 import { useGameStore } from "../../../store/gameStore";
+import LanguageSwitcher from "../../../components/LanguageSwitcher";
 import { Colors } from "../../../constants/colors";
 import { Fonts } from "../../../constants/fonts";
 
@@ -30,6 +32,7 @@ const BAND_COLORS: Record<string, string> = {
 };
 
 function EventCard({ event, index }: { event: GameEventData; index: number }) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const card = event.card;
   const accepted = event.action === "right";
@@ -67,7 +70,7 @@ function EventCard({ event, index }: { event: GameEventData; index: number }) {
           <View style={styles.eventTitleBlock}>
             <Text style={styles.eventEmoji}>{card?.emoji ?? "•"}</Text>
             <Text style={styles.eventTitle} numberOfLines={expanded ? undefined : 1}>
-              {card?.title ?? "Unknown Card"}
+              {card?.title ?? t("gameSessionDetail.unknownCard")}
             </Text>
           </View>
 
@@ -75,7 +78,7 @@ function EventCard({ event, index }: { event: GameEventData; index: number }) {
           <View style={styles.eventRight}>
             <View style={[styles.decisionBadge, { borderColor: accentColor + "55" }]}>
               <Text style={[styles.decisionText, { color: accentColor }]}>
-                {accepted ? "ACCEPTED" : "DECLINED"}
+                {accepted ? t("gameSessionDetail.acceptedTag") : t("gameSessionDetail.declinedTag")}
               </Text>
             </View>
             <Text style={[styles.rewardText, { color: accentColor }]}>
@@ -89,12 +92,12 @@ function EventCard({ event, index }: { event: GameEventData; index: number }) {
           <View style={styles.eventDetail}>
             <View style={styles.choiceRow}>
               <View style={[styles.choiceChip, { borderColor: Colors.red + "55" }]}>
-                <Text style={[styles.choiceLabel, { color: Colors.red }]}>← DECLINE</Text>
+                <Text style={[styles.choiceLabel, { color: Colors.red }]}>← {t("gameSessionDetail.decline")}</Text>
                 <Text style={styles.choiceText}>{card.left_choice}</Text>
               </View>
               <View style={[styles.choiceChip, styles.choiceChipActive, { borderColor: accentColor }]}>
                 <Text style={[styles.choiceLabel, { color: accentColor }]}>
-                  {accepted ? "✓ YOUR CHOICE" : "✓ YOUR CHOICE"}
+                  ✓ {t("gameSessionDetail.yourChoice")}
                 </Text>
                 <Text style={styles.choiceText}>
                   {accepted ? card.right_choice : card.left_choice}
@@ -102,7 +105,7 @@ function EventCard({ event, index }: { event: GameEventData; index: number }) {
               </View>
               {accepted && (
                 <View style={[styles.choiceChip, { borderColor: Colors.green + "55" }]}>
-                  <Text style={[styles.choiceLabel, { color: Colors.green }]}>ACCEPT →</Text>
+                  <Text style={[styles.choiceLabel, { color: Colors.green }]}>{t("gameSessionDetail.accept")} →</Text>
                   <Text style={styles.choiceText}>{card.right_choice}</Text>
                 </View>
               )}
@@ -110,14 +113,14 @@ function EventCard({ event, index }: { event: GameEventData; index: number }) {
 
             {lesson && (
               <View style={styles.lessonBlock}>
-                <Text style={styles.lessonLabel}>LESSON</Text>
+                <Text style={styles.lessonLabel}>{t("gameSessionDetail.lesson")}</Text>
                 <Text style={styles.lessonText}>{lesson}</Text>
               </View>
             )}
 
             <View style={styles.detailMeta}>
               <Text style={styles.detailMetaText}>
-                Difficulty {Math.round(card.difficulty * 100)}% · {card.topics.join(", ") || "general"}
+                {t("gameSessionDetail.difficulty")} {Math.round(card.difficulty * 100)}% · {card.topics.join(", ") || t("gameSessionDetail.general")}
               </Text>
               <Text style={styles.detailMetaText}>
                 {new Date(event.created_at).toLocaleTimeString()}
@@ -127,7 +130,7 @@ function EventCard({ event, index }: { event: GameEventData; index: number }) {
         )}
 
         {!expanded && (
-          <Text style={styles.tapHint}>TAP TO {expanded ? "COLLAPSE" : "EXPAND"}</Text>
+          <Text style={styles.tapHint}>{expanded ? t("gameSessionDetail.tapToCollapse") : t("gameSessionDetail.tapToExpand")}</Text>
         )}
       </View>
     </TouchableOpacity>
@@ -136,6 +139,7 @@ function EventCard({ event, index }: { event: GameEventData; index: number }) {
 
 export default function SessionDetailScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { setSession } = useGameStore();
   const [session, setSessionState] = useState<SessionData | null>(null);
@@ -176,14 +180,15 @@ export default function SessionDetailScreen() {
       <View style={styles.topBar}>
         <Text style={styles.logo}>CARDECON</Text>
         <View style={styles.barSep} />
-        <Text style={styles.topLabel}>SESSION REVIEW</Text>
+        <Text style={styles.topLabel}>{t("gameSessionDetail.title")}</Text>
         {session && (
           <TouchableOpacity style={styles.continueTopBtn} onPress={handleContinue}>
-            <Text style={styles.continueTopBtnText}>CONTINUE SESSION →</Text>
+            <Text style={styles.continueTopBtnText}>{t("gameSessionDetail.continueSession")}</Text>
           </TouchableOpacity>
         )}
+        <LanguageSwitcher compact />
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backText}>BACK →</Text>
+          <Text style={styles.backText}>{t("gameSessionDetail.back")}</Text>
         </TouchableOpacity>
       </View>
 
@@ -193,29 +198,29 @@ export default function SessionDetailScreen() {
           <View style={styles.summaryCard}>
             <View style={styles.summaryRow}>
               <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>FINAL CAPITAL</Text>
+                <Text style={styles.summaryLabel}>{t("gameSessionDetail.finalCapital")}</Text>
                 <Text style={[styles.summaryValue, { color: session.capital >= 10000 ? Colors.green : Colors.red }]}>
                   ${Math.round(session.capital).toLocaleString()}
                 </Text>
               </View>
               <View style={styles.summarySep} />
               <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>DECISIONS</Text>
+                <Text style={styles.summaryLabel}>{t("gameSessionDetail.decisions")}</Text>
                 <Text style={styles.summaryValue}>{history.length}</Text>
               </View>
               <View style={styles.summarySep} />
               <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>ACCEPTED</Text>
+                <Text style={styles.summaryLabel}>{t("gameSessionDetail.accepted")}</Text>
                 <Text style={[styles.summaryValue, { color: Colors.green }]}>{acceptedCount}</Text>
               </View>
               <View style={styles.summarySep} />
               <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>DECLINED</Text>
+                <Text style={styles.summaryLabel}>{t("gameSessionDetail.declined")}</Text>
                 <Text style={[styles.summaryValue, { color: Colors.red }]}>{declinedCount}</Text>
               </View>
               <View style={styles.summarySep} />
               <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>STAGE</Text>
+                <Text style={styles.summaryLabel}>{t("gameSessionDetail.stage")}</Text>
                 <Text style={styles.summaryValue}>{session.stage}/5</Text>
               </View>
             </View>
@@ -225,13 +230,13 @@ export default function SessionDetailScreen() {
         {/* Cards header */}
         <View style={styles.sectionHeader}>
           <View style={styles.sectionDot} />
-          <Text style={styles.sectionTitle}>DECISION LOG</Text>
-          <Text style={styles.sectionSub}>{history.length} DECISIONS · TAP EACH TO EXPAND</Text>
+          <Text style={styles.sectionTitle}>{t("gameSessionDetail.decisionLog")}</Text>
+          <Text style={styles.sectionSub}>{t("gameSessionDetail.decisionsTapExpand", { count: history.length })}</Text>
         </View>
 
         {/* Event cards */}
         {history.length === 0 ? (
-          <Text style={styles.emptyText}>No decisions recorded yet.</Text>
+          <Text style={styles.emptyText}>{t("gameSessionDetail.noDecisions")}</Text>
         ) : (
           history.map((event, i) => (
             <EventCard key={event.id} event={event} index={i} />

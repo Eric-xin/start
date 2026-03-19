@@ -1,5 +1,6 @@
 import axios from "axios";
 import { getItem, deleteItem } from "./storage";
+import i18n from "../i18n";
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -15,6 +16,7 @@ api.interceptors.request.use(async (config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  config.headers["X-Language"] = i18n.language || "en";
   return config;
 });
 

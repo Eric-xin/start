@@ -4,14 +4,17 @@ import {
   ActivityIndicator, Alert, TouchableOpacity, TextInput,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import {
   listPersonas, createPersona, deletePersona, updatePersona, PersonaData,
 } from "../../services/persona";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
 import { Colors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 
 export default function PersonasScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [personas, setPersonas] = useState<PersonaData[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -23,7 +26,7 @@ export default function PersonasScreen() {
       const data = await listPersonas();
       setPersonas(data);
     } catch {
-      Alert.alert("Error", "Could not load personas.");
+      Alert.alert(t("profile.error"), t("personas.couldNotLoad"));
     } finally {
       setLoading(false);
     }
@@ -32,7 +35,7 @@ export default function PersonasScreen() {
   useEffect(() => { load(); }, []);
 
   const handleCreate = async () => {
-    const name = newName.trim() || "New Persona";
+    const name = newName.trim() || t("personas.defaultNewPersona");
     setCreating(true);
     try {
       await createPersona(name);
@@ -40,7 +43,7 @@ export default function PersonasScreen() {
       setShowCreate(false);
       await load();
     } catch {
-      Alert.alert("Error", "Could not create persona.");
+      Alert.alert(t("profile.error"), t("personas.couldNotCreate"));
     } finally {
       setCreating(false);
     }
@@ -52,28 +55,28 @@ export default function PersonasScreen() {
       await updatePersona(persona.id, { is_active: true });
       await load();
     } catch {
-      Alert.alert("Error", "Could not activate persona.");
+      Alert.alert(t("profile.error"), t("personas.couldNotActivate"));
     }
   };
 
   const handleDelete = (persona: PersonaData) => {
     if (persona.is_active) {
-      Alert.alert("Cannot Delete", "Activate another persona first before deleting this one.");
+      Alert.alert(t("personas.cannotDelete"), t("personas.activateAnotherFirst"));
       return;
     }
     Alert.alert(
-      "Delete Persona",
-      `Delete "${persona.name}"? All trajectory snapshots will be lost.`,
+      t("personas.deletePersona"),
+      t("personas.deletePrompt", { name: persona.name }),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("personas.cancel"), style: "cancel" },
         {
-          text: "Delete", style: "destructive",
+          text: t("personas.deleteAction"), style: "destructive",
           onPress: async () => {
             try {
               await deletePersona(persona.id);
               await load();
             } catch (e: any) {
-              Alert.alert("Error", e?.response?.data?.detail ?? "Could not delete.");
+              Alert.alert(t("profile.error"), e?.response?.data?.detail ?? t("personas.couldNotDelete"));
             }
           },
         },
@@ -95,15 +98,16 @@ export default function PersonasScreen() {
       <View style={styles.topBar}>
         <Text style={styles.logo}>CARDECON</Text>
         <View style={styles.barSep} />
-        <Text style={styles.topLabel}>PERSONAS</Text>
+        <Text style={styles.topLabel}>{t("personas.title")}</Text>
+        <LanguageSwitcher compact />
         <TouchableOpacity
           style={styles.createBtn}
           onPress={() => setShowCreate(!showCreate)}
         >
-          <Text style={styles.createBtnText}>+ NEW</Text>
+          <Text style={styles.createBtnText}>{t("personas.newPersona")}</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backText}>BACK →</Text>
+          <Text style={styles.backText}>{t("personas.back")}</Text>
         </TouchableOpacity>
       </View>
 
@@ -113,14 +117,14 @@ export default function PersonasScreen() {
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <View style={styles.blueDot} />
-              <Text style={styles.cardHeaderText}>CREATE PERSONA</Text>
+              <Text style={styles.cardHeaderText}>{t("personas.createPersona")}</Text>
             </View>
-            <Text style={styles.fieldLabel}>PERSONA NAME</Text>
+            <Text style={styles.fieldLabel}>{t("personas.personaName")}</Text>
             <TextInput
               style={styles.input}
               value={newName}
               onChangeText={setNewName}
-              placeholder="e.g. Risk Taker, Conservative..."
+              placeholder={t("personas.personaName")}
               placeholderTextColor={Colors.textMuted}
               selectionColor={Colors.blue}
               autoFocus
@@ -131,10 +135,10 @@ export default function PersonasScreen() {
                 onPress={handleCreate}
                 disabled={creating}
               >
-                <Text style={styles.ctaBtnText}>{creating ? "CREATING..." : "▶ CREATE"}</Text>
+                <Text style={styles.ctaBtnText}>{creating ? t("personas.creating") : `▶ ${t("personas.create")}`}</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setShowCreate(false)}>
-                <Text style={styles.cancelText}>CANCEL</Text>
+                <Text style={styles.cancelText}>{t("profile.cancel")}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -150,12 +154,12 @@ export default function PersonasScreen() {
                   <Text style={styles.personaName}>{persona.name}</Text>
                   {persona.is_active && (
                     <View style={styles.activeBadge}>
-                      <Text style={styles.activeBadgeText}>ACTIVE</Text>
+                      <Text style={styles.activeBadgeText}>{t("personas.active")}</Text>
                     </View>
                   )}
                 </View>
                 <Text style={styles.personaMeta}>
-                  {persona.cards_played} cards played · Created {new Date(persona.created_at).toLocaleDateString()}
+                  {t("personas.cardsPlayedMeta", { count: persona.cards_played })} · {t("personas.created")} {new Date(persona.created_at).toLocaleDateString()}
                 </Text>
               </View>
               <View style={styles.personaActions}>
@@ -164,21 +168,21 @@ export default function PersonasScreen() {
                     style={styles.actionBtn}
                     onPress={() => handleActivate(persona)}
                   >
-                    <Text style={styles.actionBtnText}>ACTIVATE</Text>
+                    <Text style={styles.actionBtnText}>{t("personas.activate")}</Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity
                   style={styles.actionBtn}
                   onPress={() => router.push(`/(profile)/persona/${persona.id}`)}
                 >
-                  <Text style={styles.actionBtnText}>VIEW →</Text>
+                  <Text style={styles.actionBtnText}>{t("personas.view")}</Text>
                 </TouchableOpacity>
                 {!persona.is_active && (
                   <TouchableOpacity
                     style={[styles.actionBtn, styles.deleteBtn]}
                     onPress={() => handleDelete(persona)}
                   >
-                    <Text style={[styles.actionBtnText, { color: Colors.red }]}>DEL</Text>
+                    <Text style={[styles.actionBtnText, { color: Colors.red }]}>{t("personas.delete")}</Text>
                   </TouchableOpacity>
                 )}
               </View>

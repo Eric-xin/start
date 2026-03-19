@@ -4,15 +4,16 @@ import {
   ActivityIndicator, Alert, useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { createDailySession, createSession, getDailyStatus, getSessions, SessionData, DailyStatusData } from "../../services/game";
 import { listPersonas, PersonaData } from "../../services/persona";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
 import { useAuthStore } from "../../store/authStore";
 import { useGameStore } from "../../store/gameStore";
 import { Colors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 
-const RANK_LABELS = ["—", "ANALYST I", "ASSOCIATE II", "DIRECTOR III", "MD IV"];
-const WEEKDAY_LABELS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+const DEFAULT_WEEKDAY_LABELS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
 function getWeekStartLocal(date: Date) {
   const start = new Date(date);
@@ -29,7 +30,7 @@ function hasSessionBeenPlayed(session: SessionData) {
   return session.progress > 0;
 }
 
-function buildCurrentWeekDays(sessions: SessionData[]) {
+function buildCurrentWeekDays(sessions: SessionData[], weekdayLabels: string[]) {
   const weekStart = getWeekStartLocal(new Date());
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 7);
@@ -47,8 +48,8 @@ function buildCurrentWeekDays(sessions: SessionData[]) {
     const dayDate = new Date(weekStart);
     dayDate.setDate(weekStart.getDate() + i);
     return {
-      key: WEEKDAY_LABELS[i],
-      label: WEEKDAY_LABELS[i],
+      key: DEFAULT_WEEKDAY_LABELS[i],
+      label: weekdayLabels[i] ?? DEFAULT_WEEKDAY_LABELS[i],
       dateNumber: dayDate.getDate(),
       isPlayed: playedDays.has(i),
       isToday: dayDate.toDateString() === new Date().toDateString(),
@@ -89,6 +90,7 @@ const db = StyleSheet.create({
 
 export default function GameIndexScreen() {
   const router = useRouter();
+  const { t, i18n } = useTranslation();
   const { user, clearAuth } = useAuthStore();
   const { setSession, reset } = useGameStore();
   const [launching, setLaunching] = useState(false);
@@ -100,7 +102,23 @@ export default function GameIndexScreen() {
   const [dailyStatus, setDailyStatus] = useState<DailyStatusData | null>(null);
   const [loadingData, setLoadingData] = useState(true);
 
-  const currentWeekDays = useMemo(() => buildCurrentWeekDays(allSessions), [allSessions]);
+  const weekdayLabels = useMemo(
+    () => [
+      t("common.weekdays.mon"),
+      t("common.weekdays.tue"),
+      t("common.weekdays.wed"),
+      t("common.weekdays.thu"),
+      t("common.weekdays.fri"),
+      t("common.weekdays.sat"),
+      t("common.weekdays.sun"),
+    ],
+    [i18n.resolvedLanguage]
+  );
+
+  const currentWeekDays = useMemo(
+    () => buildCurrentWeekDays(allSessions, weekdayLabels),
+    [allSessions, weekdayLabels]
+  );
 
   useEffect(() => {
     Promise.all([getSessions(), listPersonas(), getDailyStatus()])
@@ -122,7 +140,7 @@ export default function GameIndexScreen() {
       setSession(session);
       router.push("/(game)/play");
     } catch {
-      Alert.alert("Error", "Could not create session. Is the backend running?");
+      Alert.alert(t("profile.error"), t("auth.errors.unableConnect"));
     } finally {
       setLaunching(false);
     }
@@ -142,7 +160,7 @@ export default function GameIndexScreen() {
       setSession(session);
       router.push("/(game)/play");
     } catch {
-      Alert.alert("Error", "Could not create daily session.");
+      Alert.alert(t("profile.error"), t("auth.errors.unableConnect"));
     } finally {
       setLaunchingDaily(false);
     }
@@ -162,20 +180,21 @@ export default function GameIndexScreen() {
         <View style={styles.topLeft}>
           <Text style={styles.logo}>CARDECON</Text>
           <View style={styles.barSep} />
-          <Text style={styles.topBarLabel}>INDEX</Text>
+          <Text style={styles.topBarLabel}>{t("gameIndex.index")}</Text>
         </View>
         <View style={styles.topRight}>
+          <LanguageSwitcher compact />
           <TouchableOpacity style={styles.topBtn} onPress={() => router.push("/(profile)/")}>
-            <Text style={styles.topBtnText}>PROFILE</Text>
+            <Text style={styles.topBtnText}>{t("gameIndex.profile")}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.topBtn} onPress={() => router.push("/(profile)/personas")}>
-            <Text style={styles.topBtnText}>PERSONAS</Text>
+            <Text style={styles.topBtnText}>{t("gameIndex.personas")}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.topBtn} onPress={() => router.push("/(profile)/decks")}>
-            <Text style={styles.topBtnText}>DECKS</Text>
+            <Text style={styles.topBtnText}>{t("gameIndex.decks")}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-            <Text style={styles.logoutText}>LOGOUT</Text>
+            <Text style={styles.logoutText}>{t("gameIndex.logout")}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -187,22 +206,22 @@ export default function GameIndexScreen() {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <View style={styles.blueDot} />
-            <Text style={styles.cardHeaderText}>INVESTOR PROFILE</Text>
+            <Text style={styles.cardHeaderText}>{t("gameIndex.investorProfile")}</Text>
           </View>
           <Text style={styles.username}>{user?.username?.toUpperCase() ?? "INVESTOR"}</Text>
           <Text style={styles.email}>{user?.email ?? "—"}</Text>
 
           <View style={styles.dataRow}>
-            <DataBlock label="TIER" value={user?.subscription_tier?.toUpperCase() ?? "NORMAL"} accent={Colors.blue} />
+            <DataBlock label={t("gameIndex.tier")} value={user?.subscription_tier?.toUpperCase() ?? "NORMAL"} accent={Colors.blue} />
             <View style={styles.dataSep} />
             <DataBlock
-              label="ACTIVE PERSONA"
+              label={t("gameIndex.activePersona")}
               value={activePersona?.name ?? (loadingData ? "..." : "—")}
-              sub={activePersona ? `${activePersona.cards_played} cards` : undefined}
+              sub={activePersona ? t("gameIndex.cardsPlayed", { count: activePersona.cards_played }) : undefined}
               accent={Colors.teal}
             />
             <View style={styles.dataSep} />
-            <DataBlock label="STATUS" value="ACTIVE" sub="VERIFIED" accent={Colors.green} />
+            <DataBlock label={t("gameIndex.status")} value={t("gameIndex.active")} sub={t("gameIndex.verified")} accent={Colors.green} />
           </View>
         </View>
 
@@ -210,11 +229,11 @@ export default function GameIndexScreen() {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <View style={styles.blueDot} />
-            <Text style={styles.cardHeaderText}>SESSION CONTROL</Text>
+            <Text style={styles.cardHeaderText}>{t("gameIndex.sessionControl")}</Text>
           </View>
 
           <Text style={styles.sessionDesc}>
-            Each session is a run through the decision engine. Every swipe updates your active persona
+            {t("gameIndex.sessionDescPrefix")}
             {activePersona ? <Text style={{ color: Colors.teal }}> "{activePersona.name}"</Text> : null}.
           </Text>
 
@@ -232,13 +251,13 @@ export default function GameIndexScreen() {
                 <ActivityIndicator color={Colors.blue} size="small" />
               ) : lastSession ? (
                 <View style={[styles.continueBtnInner, { flexDirection: "row", gap: 8 }]}>
-                  <Text style={styles.continueBtnText}>CONTINUE LAST SESSION</Text>
+                  <Text style={styles.continueBtnText}>{t("gameIndex.continueLast")}</Text>
                   <Text style={styles.continueBtnSub}>
-                    · ${Math.round(lastSession.capital).toLocaleString()} · STAGE {lastSession.stage}
+                    · ${Math.round(lastSession.capital).toLocaleString()} · {t("gameSessions.stage")} {lastSession.stage}
                   </Text>
                 </View>
               ) : (
-                <Text style={styles.continueBtnText}>NO PRIOR SESSION FOUND</Text>
+                <Text style={styles.continueBtnText}>{t("gameIndex.noPriorSession")}</Text>
               )}
             </TouchableOpacity>
 
@@ -250,7 +269,7 @@ export default function GameIndexScreen() {
             >
               {launching
                 ? <ActivityIndicator color={Colors.bg} size="small" />
-                : <Text style={styles.ctaBtnText}>▶  LAUNCH NEW SESSION</Text>
+                : <Text style={styles.ctaBtnText}>{`▶  ${t("gameIndex.launchSession")}`}</Text>
               }
             </TouchableOpacity>
 
@@ -267,16 +286,16 @@ export default function GameIndexScreen() {
               <View style={styles.dailyLeft}>
                 <Text style={styles.dailyFire}>🔥</Text>
                 <View>
-                  <Text style={styles.dailyTitle}>DAILY SESSION</Text>
+                  <Text style={styles.dailyTitle}>{t("gameIndex.launchDaily")}</Text>
                   <Text style={styles.dailySub}>
                     {dailyStatus?.completed_today
-                      ? "Completed today"
-                      : `${dailyStatus?.remaining_cards ?? 10} cards left today`}
+                      ? t("gameIndex.completedToday")
+                      : t("gameIndex.cardsLeftToday", { count: dailyStatus?.remaining_cards ?? 10 })}
                   </Text>
                 </View>
               </View>
               <View style={styles.streakBadge}>
-                <Text style={styles.streakLabel}>STREAK</Text>
+                <Text style={styles.streakLabel}>{t("gameIndex.streak")}</Text>
                 <Text style={styles.streakValue}>{dailyStatus?.streak_count ?? 0}</Text>
               </View>
             </TouchableOpacity>
@@ -303,7 +322,7 @@ export default function GameIndexScreen() {
             style={styles.historyLink}
             onPress={() => router.push("/(game)/sessions")}
           >
-            <Text style={styles.historyLinkText}>VIEW SESSION HISTORY →</Text>
+            <Text style={styles.historyLinkText}>{t("gameIndex.viewHistory")}</Text>
           </TouchableOpacity>
         </View>
 
@@ -311,22 +330,22 @@ export default function GameIndexScreen() {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <View style={[styles.blueDot, { backgroundColor: Colors.green }]} />
-            <Text style={styles.cardHeaderText}>SYSTEM STATUS</Text>
+            <Text style={styles.cardHeaderText}>{t("gameIndex.systemStatus")}</Text>
           </View>
           <View style={styles.dataRow}>
-            <DataBlock label="PERSONA ENGINE" value="ONLINE" accent={Colors.green} />
+            <DataBlock label={t("gameIndex.personaEngine")} value={t("gameIndex.online")} accent={Colors.green} />
             <View style={styles.dataSep} />
-            <DataBlock label="CARD PIPELINE" value="READY" accent={Colors.green} />
+            <DataBlock label={t("gameIndex.cardPipeline")} value={t("gameIndex.ready")} accent={Colors.green} />
             <View style={styles.dataSep} />
-            <DataBlock label="VERSION" value="1.0.0" />
+            <DataBlock label={t("gameIndex.version")} value="1.0.0" />
           </View>
         </View>
       </View>
 
       {/* Bottom bar */}
       <View style={styles.bottomBar}>
-        <Text style={styles.bottomText}>CARDECON FINANCIAL SIMULATION ENGINE</Text>
-        <Text style={styles.bottomText}>© {new Date().getFullYear()} · ALL RIGHTS RESERVED</Text>
+        <Text style={styles.bottomText}>{t("gameIndex.footerLeft")}</Text>
+        <Text style={styles.bottomText}>© {new Date().getFullYear()} · {t("gameIndex.footerRight")}</Text>
       </View>
     </View>
   );

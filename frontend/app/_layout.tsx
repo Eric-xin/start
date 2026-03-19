@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StatusBar } from "expo-status-bar";
+import "../i18n";
 import { useAppFonts } from "../hooks/useFont";
 import { useAuthStore } from "../store/authStore";
 import { StyleSheet, View, ActivityIndicator } from "react-native";

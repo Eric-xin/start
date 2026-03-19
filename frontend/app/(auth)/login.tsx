@@ -4,7 +4,9 @@ import {
   KeyboardAvoidingView, Platform, useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { login, getMe } from "../../services/auth";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
 import { useAuthStore } from "../../store/authStore";
 import { Colors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
@@ -23,28 +25,29 @@ function GridBg() {
   );
 }
 
-function parseError(e: any): string {
-  const detail = e?.response?.data?.detail;
-  if (!detail) return "Unable to connect. Check your network.";
-  if (Array.isArray(detail)) return detail[0]?.msg ?? "Invalid input.";
-  const status = e?.response?.status;
-  if (status === 401) return "Incorrect credentials. Check your email/username and password.";
-  if (status === 403) return "Account not verified. Check your email for the verification link.";
-  return String(detail);
-}
-
 export default function LoginScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const setAuth = useAuthStore((s) => s.setAuth);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const parseError = (e: any): string => {
+    const detail = e?.response?.data?.detail;
+    if (!detail) return t("auth.errors.unableConnect");
+    if (Array.isArray(detail)) return detail[0]?.msg ?? t("auth.errors.invalidInput");
+    const status = e?.response?.status;
+    if (status === 401) return t("auth.errors.incorrectCredentials");
+    if (status === 403) return t("auth.errors.accountNotVerified");
+    return String(detail);
+  };
+
   const handleLogin = async () => {
     setError(null);
     if (!identifier.trim() || !password) {
-      setError("Enter your email/username and password.");
+      setError(t("auth.emailOrUsernameAndPassword"));
       return;
     }
     setLoading(true);
@@ -69,15 +72,17 @@ export default function LoginScreen() {
 
       <View style={styles.topBar}>
         <Text style={styles.logo}>CARDECON</Text>
-        <Text style={styles.topBarSub}>FINANCIAL INTELLIGENCE PLATFORM</Text>
+        <Text style={styles.topBarSub}>{t("auth.topSubLogin")}</Text>
       </View>
 
       <View style={styles.center}>
         <View style={styles.panel}>
           <View style={styles.panelHeader}>
             <View style={styles.blueDot} />
-            <Text style={styles.panelTitle}>AUTHENTICATION REQUIRED</Text>
+            <Text style={styles.panelTitle}>{t("auth.panelLogin")}</Text>
           </View>
+
+          <LanguageSwitcher />
 
           {error && (
             <View style={styles.errorBanner}>
@@ -86,7 +91,7 @@ export default function LoginScreen() {
             </View>
           )}
 
-          <Text style={styles.fieldLabel}>IDENTIFIER</Text>
+          <Text style={styles.fieldLabel}>{t("auth.identifier")}</Text>
           <TextInput
             style={[styles.input, error && styles.inputError]}
             value={identifier}
@@ -95,12 +100,12 @@ export default function LoginScreen() {
             autoCorrect={false}
             keyboardType="email-address"
             placeholderTextColor={Colors.textMuted}
-            placeholder="email or username"
+            placeholder={t("auth.identifier").toLowerCase()}
             selectionColor={Colors.blue}
             returnKeyType="next"
           />
 
-          <Text style={styles.fieldLabel}>PASSWORD</Text>
+          <Text style={styles.fieldLabel}>{t("auth.password")}</Text>
           <TextInput
             style={[styles.input, error && styles.inputError]}
             value={password}
@@ -117,7 +122,7 @@ export default function LoginScreen() {
             style={styles.forgotBtn}
             onPress={() => router.push("/(auth)/forgot-password")}
           >
-            <Text style={styles.forgotText}>FORGOT PASSWORD →</Text>
+            <Text style={styles.forgotText}>{t("auth.forgotPassword")}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -126,20 +131,20 @@ export default function LoginScreen() {
             disabled={loading}
           >
             <Text style={styles.submitText}>
-              {loading ? "AUTHENTICATING..." : "▶  ACCESS SYSTEM"}
+              {loading ? t("auth.authenticating") : `▶  ${t("auth.accessSystem")}`}
             </Text>
           </TouchableOpacity>
 
           <View style={styles.divider} />
 
           <TouchableOpacity style={styles.linkBtn} onPress={() => router.push("/(auth)/register")}>
-            <Text style={styles.linkText}>NO ACCOUNT — REGISTER INVESTOR PROFILE →</Text>
+            <Text style={styles.linkText}>{t("auth.noAccount")}</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <View style={styles.bottomBar}>
-        <Text style={styles.bottomText}>SECURE SESSION · TLS 1.3 · JWT AUTHENTICATION</Text>
+        <Text style={styles.bottomText}>{t("auth.secureSession")}</Text>
       </View>
     </KeyboardAvoidingView>
   );

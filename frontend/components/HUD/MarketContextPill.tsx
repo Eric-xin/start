@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
 import { Colors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 
@@ -17,8 +18,9 @@ const MARKET_CONTEXTS = [
 ];
 
 export function MarketContextPill({ stage, capital }: Props) {
+  const { t } = useTranslation();
   const contextIdx = Math.min(stage - 1, MARKET_CONTEXTS.length - 1);
-  const context = MARKET_CONTEXTS[contextIdx];
+  const context = t(`marketContext.${contextIdx}`, { defaultValue: MARKET_CONTEXTS[contextIdx] });
 
   return (
     <View style={styles.pill}>

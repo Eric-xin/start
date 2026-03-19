@@ -4,8 +4,10 @@ import {
   ActivityIndicator, ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { getSessions, SessionData } from "../../services/game";
 import { useGameStore } from "../../store/gameStore";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
 import { Colors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 
@@ -13,6 +15,7 @@ const RANK_LABELS = ["—", "ANALYST I", "ASSOCIATE II", "DIRECTOR III", "MD IV"
 
 export default function SessionsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { setSession } = useGameStore();
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,10 +37,11 @@ export default function SessionsScreen() {
       <View style={styles.topBar}>
         <Text style={styles.logo}>CARDECON</Text>
         <View style={styles.barSep} />
-        <Text style={styles.topLabel}>SESSION HISTORY</Text>
-        <Text style={styles.sessionCount}>{sessions.length} SESSIONS</Text>
+        <Text style={styles.topLabel}>{t("gameSessions.title")}</Text>
+        <Text style={styles.sessionCount}>{sessions.length} {t("gameSessions.sessions")}</Text>
+        <LanguageSwitcher compact />
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backText}>BACK →</Text>
+          <Text style={styles.backText}>{t("gameSessions.back")}</Text>
         </TouchableOpacity>
       </View>
 
@@ -48,7 +52,7 @@ export default function SessionsScreen() {
       ) : (
         <ScrollView contentContainerStyle={styles.scroll}>
           {sessions.length === 0 ? (
-            <Text style={styles.emptyText}>No sessions yet. Launch your first session to get started.</Text>
+            <Text style={styles.emptyText}>{t("gameSessions.noSessions")}</Text>
           ) : (
             sessions.map((session, idx) => {
               const delta = session.capital - 10000;
@@ -68,7 +72,7 @@ export default function SessionsScreen() {
                         })}
                       </Text>
                       <Text style={styles.sessionUpdated}>
-                        Last played {new Date(session.updated_at).toLocaleDateString()}
+                        {t("gameSessions.lastPlayed")} {new Date(session.updated_at).toLocaleDateString()}
                       </Text>
                     </View>
                     <View style={styles.sessionActions}>
@@ -76,13 +80,13 @@ export default function SessionsScreen() {
                         style={styles.reviewBtn}
                         onPress={() => router.push(`/(game)/session/${session.id}`)}
                       >
-                        <Text style={styles.reviewBtnText}>REVIEW</Text>
+                        <Text style={styles.reviewBtnText}>{t("gameSessions.review")}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={styles.continueBtn}
                         onPress={() => handleContinue(session)}
                       >
-                        <Text style={styles.continueBtnText}>CONTINUE →</Text>
+                        <Text style={styles.continueBtnText}>{t("gameSessions.continue")}</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -90,31 +94,31 @@ export default function SessionsScreen() {
                   {/* Stats row */}
                   <View style={styles.statsRow}>
                     <View style={styles.statItem}>
-                      <Text style={styles.statLabel}>CAPITAL</Text>
+                      <Text style={styles.statLabel}>{t("gameSessions.capital")}</Text>
                       <Text style={styles.statValue}>${Math.round(session.capital).toLocaleString()}</Text>
                     </View>
                     <View style={styles.statSep} />
                     <View style={styles.statItem}>
-                      <Text style={styles.statLabel}>RETURN</Text>
+                      <Text style={styles.statLabel}>{t("gameSessions.return")}</Text>
                       <Text style={[styles.statValue, { color: isUp ? Colors.green : Colors.red }]}>
                         {isUp ? "+" : ""}{deltaPct}%
                       </Text>
                     </View>
                     <View style={styles.statSep} />
                     <View style={styles.statItem}>
-                      <Text style={styles.statLabel}>STAGE</Text>
+                      <Text style={styles.statLabel}>{t("gameSessions.stage")}</Text>
                       <Text style={styles.statValue}>{session.stage}/5</Text>
                     </View>
                     <View style={styles.statSep} />
                     <View style={styles.statItem}>
-                      <Text style={styles.statLabel}>RANK</Text>
+                      <Text style={styles.statLabel}>{t("gameSessions.rank")}</Text>
                       <Text style={[styles.statValue, { color: Colors.teal, fontSize: 11 }]}>
                         {RANK_LABELS[session.investor_rank] ?? "—"}
                       </Text>
                     </View>
                     <View style={styles.statSep} />
                     <View style={styles.statItem}>
-                      <Text style={styles.statLabel}>PEAK</Text>
+                      <Text style={styles.statLabel}>{t("gameSessions.peak")}</Text>
                       <Text style={[styles.statValue, { color: Colors.amber }]}>
                         ${Math.round(session.peak_capital).toLocaleString()}
                       </Text>
