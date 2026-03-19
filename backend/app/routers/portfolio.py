@@ -199,19 +199,19 @@ async def get_net_worth_history(
 ):
     portfolio = await svc.get_or_create_portfolio(db, current_user.id)
     result = await db.execute(
-        select(NetWorthSnapshot)
-        .where(NetWorthSnapshot.portfolio_id == portfolio.id)
-        .order_by(NetWorthSnapshot.snapshot_date.asc())
+        select(CardPlay)
+        .where(CardPlay.portfolio_id == portfolio.id)
+        .order_by(CardPlay.created_at.asc())
     )
     return [
         NetWorthSnapshotOut(
-            id=str(s.id),
-            net_worth=s.net_worth,
-            capital=s.capital,
-            snapshot_date=s.snapshot_date,
-            created_at=s.created_at.isoformat() if s.created_at else "",
+            id=str(p.id),
+            net_worth=p.capital_after,
+            capital=p.capital_after,
+            snapshot_date=p.created_at.date() if p.created_at else date.today(),
+            created_at=p.created_at.isoformat() if p.created_at else "",
         )
-        for s in result.scalars().all()
+        for p in result.scalars().all()
     ]
 
 

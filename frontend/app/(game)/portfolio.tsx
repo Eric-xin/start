@@ -302,9 +302,9 @@ export default function PortfolioScreen() {
           <Sparkline data={history} width={chartW - 32} height={100} />
           {history.length >= 2 && (
             <View style={styles.chartFooter}>
-              <Text style={styles.chartFooterText}>{history[0]?.snapshot_date}</Text>
-              <Text style={styles.chartFooterText}>{history.length} data points</Text>
-              <Text style={styles.chartFooterText}>{history[history.length - 1]?.snapshot_date}</Text>
+              <Text style={styles.chartFooterText}>CARD 1</Text>
+              <Text style={styles.chartFooterText}>{history.length} PLAYS</Text>
+              <Text style={styles.chartFooterText}>CARD {history.length}</Text>
             </View>
           )}
         </View>
