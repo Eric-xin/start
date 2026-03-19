@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -7,10 +7,7 @@ import Animated, {
   withSpring,
   runOnJS,
 } from "react-native-reanimated";
-import {
-  Gesture,
-  GestureDetector,
-} from "react-native-gesture-handler";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { CardFace } from "./CardFace";
 import { CardGlow } from "./CardGlow";
 import { Layout } from "../../constants/layout";
@@ -20,45 +17,53 @@ interface Props {
   card: CardData;
   isLocked: boolean;
   onSwipe: (direction: "left" | "right") => void;
-  initialRotation?: number;
+  // Gesture area fills this container — defaults to card dimensions
+  areaWidth?: number;
+  areaHeight?: number;
 }
 
-export function CardContainer({ card, isLocked, onSwipe, initialRotation = 0 }: Props) {
+export function CardContainer({
+  card,
+  isLocked,
+  onSwipe,
+  areaWidth = Layout.cardWidth,
+  areaHeight = Layout.cardHeight,
+}: Props) {
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const dragX = useSharedValue(0);
 
-  const flyOff = (direction: "left" | "right") => {
-    const targetX = direction === "right" ? 600 : -600;
-    translateX.value = withTiming(targetX, { duration: Layout.flyOffDuration }, (finished) => {
-      if (finished) {
-        runOnJS(onSwipe)(direction);
-      }
+  const triggerFlyOff = (direction: "left" | "right") => {
+    const targetX = direction === "right" ? areaWidth + 200 : -(areaWidth + 200);
+    translateX.value = withTiming(targetX, { duration: Layout.flyOffDuration }, (done) => {
+      if (done) runOnJS(onSwipe)(direction);
     });
-    translateY.value = withTiming(translateY.value - 30, { duration: Layout.flyOffDuration });
+    translateY.value = withTiming(translateY.value - 40, { duration: Layout.flyOffDuration });
   };
 
   const pan = Gesture.Pan()
     .enabled(!isLocked)
+    .minDistance(5)          // start detecting quickly
     .onChange((e) => {
       translateX.value = e.translationX;
       translateY.value = e.translationY;
       dragX.value = e.translationX;
     })
     .onEnd((e) => {
-      if (Math.abs(e.translationX) >= Layout.swipeThreshold) {
-        const direction = e.translationX > 0 ? "right" : "left";
-        runOnJS(flyOff)(direction);
+      const absX = Math.abs(e.translationX);
+      const velocityBoost = Math.abs(e.velocityX) > 600; // fast fling counts too
+      if (absX >= Layout.swipeThreshold || velocityBoost) {
+        const dir = e.translationX > 0 || e.velocityX > 0 ? "right" : "left";
+        runOnJS(triggerFlyOff)(dir);
       } else {
-        // Snap back
-        translateX.value = withSpring(0, { damping: 15, stiffness: 150 });
-        translateY.value = withSpring(0, { damping: 15, stiffness: 150 });
+        translateX.value = withSpring(0, { damping: 18, stiffness: 160 });
+        translateY.value = withSpring(0, { damping: 18, stiffness: 160 });
         dragX.value = withSpring(0);
       }
     });
 
-  const animatedStyle = useAnimatedStyle(() => {
-    const rotation = initialRotation + translateX.value * 0.06;
+  const cardStyle = useAnimatedStyle(() => {
+    const rotation = translateX.value * 0.05;
     return {
       transform: [
         { translateX: translateX.value },
@@ -69,19 +74,21 @@ export function CardContainer({ card, isLocked, onSwipe, initialRotation = 0 }: 
   });
 
   return (
+    // GestureDetector fills the full area so swipes register anywhere in the zone
     <GestureDetector gesture={pan}>
-      <Animated.View style={[styles.container, animatedStyle]}>
-        <CardFace card={card} />
-        <CardGlow dragX={dragX} />
-      </Animated.View>
+      <View style={{ width: areaWidth, height: areaHeight, alignItems: "center", justifyContent: "center" }}>
+        <Animated.View style={[styles.card, cardStyle]}>
+          <CardFace card={card} />
+          <CardGlow dragX={dragX} />
+        </Animated.View>
+      </View>
     </GestureDetector>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  card: {
     width: Layout.cardWidth,
     height: Layout.cardHeight,
-    position: "absolute",
   },
 });

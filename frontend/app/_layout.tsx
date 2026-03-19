@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StatusBar } from "expo-status-bar";
@@ -12,13 +12,20 @@ export default function RootLayout() {
   const router = useRouter();
   const segments = useSegments();
   const { token, isHydrated, hydrate } = useAuthStore();
+  const navigationReady = useRef(false);
 
   useEffect(() => {
     hydrate();
   }, []);
 
   useEffect(() => {
-    if (!isHydrated) return;
+    if (!isHydrated || !fontsLoaded) return;
+    // Mark navigation as ready after first render with Slot mounted
+    navigationReady.current = true;
+  }, [isHydrated, fontsLoaded]);
+
+  useEffect(() => {
+    if (!isHydrated || !fontsLoaded || !navigationReady.current) return;
 
     const inAuth = segments[0] === "(auth)";
     if (!token && !inAuth) {
@@ -26,12 +33,12 @@ export default function RootLayout() {
     } else if (token && inAuth) {
       router.replace("/(game)/index");
     }
-  }, [token, isHydrated, segments]);
+  }, [token, isHydrated, fontsLoaded, segments]);
 
   if (!fontsLoaded || !isHydrated) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator color={Colors.bloombergBlue} size="large" />
+        <ActivityIndicator color={Colors.blue} size="large" />
       </View>
     );
   }
@@ -47,11 +54,11 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: Colors.bg,
   },
   loading: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: Colors.bg,
     alignItems: "center",
     justifyContent: "center",
   },

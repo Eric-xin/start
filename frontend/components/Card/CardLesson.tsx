@@ -42,7 +42,7 @@ export function CardLesson({ text, color = "#00ff88", onDismiss }: Props) {
 const styles = StyleSheet.create({
   lesson: {
     fontSize: 15,
-    fontFamily: Fonts.serifItalic,
+    fontFamily: Fonts.monoItalic,
     textAlign: "center",
     maxWidth: Layout.cardWidth,
     lineHeight: 22,
