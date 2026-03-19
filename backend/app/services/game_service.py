@@ -174,6 +174,16 @@ async def create_or_get_daily_session(db: AsyncSession, user_id: uuid.UUID) -> G
     persona = await get_or_create_default_persona(db, user_id)
     await get_or_create_progress(db, user_id)
 
+    # Acquire a per-user lock via UserProgress to make the
+    # read-then-insert for the daily session safe under concurrency.
+    progress_lock_result = await db.execute(
+        select(UserProgress)
+        .where(UserProgress.user_id == user_id)
+        .with_for_update()
+    )
+    # We don't need the value; executing the SELECT acquires the row lock.
+    progress_lock_result.scalar_one_or_none()
+
     today = datetime.now(timezone.utc).date()
 
     existing_result = await db.execute(
