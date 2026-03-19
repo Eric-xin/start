@@ -17,6 +17,8 @@ weights: multi-dimensional impact on the simulated market state.
   fundamentals — underlying economic health (-1 weak … +1 strong)
 """
 
+from app.seeds.cards_great_depression import GREAT_DEPRESSION_CARDS
+
 SEED_CARDS = [
     # ══════════════════════════════════════════════════════════════════════════
     # STAGE 1 — Foundations: Understanding Money
@@ -984,3 +986,5 @@ SEED_CARDS = [
         "weights": {"sentiment": 0.1, "inflation": 0.0, "greed": -0.2, "volatility": -0.25, "fundamentals": 0.3},
     },
 ]
+
+SEED_CARDS.extend(GREAT_DEPRESSION_CARDS)
