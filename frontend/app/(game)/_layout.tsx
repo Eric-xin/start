@@ -11,6 +11,7 @@ export default function GameLayout() {
         gestureEnabled: false,
       }}
     >
+      <Stack.Screen name="investing-intro" />
       <Stack.Screen name="index" />
       <Stack.Screen name="play" />
       <Stack.Screen name="portfolio" />

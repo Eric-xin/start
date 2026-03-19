@@ -5,6 +5,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { login, getMe } from "../../services/auth";
+import { API_BASE } from "../../services/api";
 import { useAuthStore } from "../../store/authStore";
 import { Colors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
@@ -25,7 +26,9 @@ function GridBg() {
 
 function parseError(e: any): string {
   const detail = e?.response?.data?.detail;
-  if (!detail) return "Unable to connect. Check your network.";
+  if (!detail) {
+    return `Unable to connect to the backend. Check that backend is running and API URL is reachable: ${API_BASE}`;
+  }
   if (Array.isArray(detail)) return detail[0]?.msg ?? "Invalid input.";
   const status = e?.response?.status;
   if (status === 401) return "Incorrect credentials. Check your email/username and password.";

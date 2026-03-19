@@ -4,7 +4,7 @@ import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { Colors } from "../constants/colors";
 
 export default function Index() {
-  const { token, isHydrated } = useAuthStore();
+  const { token, isHydrated, skipInvestingIntro } = useAuthStore();
 
   if (!isHydrated) {
     return (
@@ -15,7 +15,7 @@ export default function Index() {
   }
 
   if (token) {
-    return <Redirect href="/(game)" />;
+    return <Redirect href={skipInvestingIntro ? "/(game)" : "/(game)/investing-intro"} />;
   }
   return <Redirect href="/(auth)/login" />;
 }
