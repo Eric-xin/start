@@ -83,7 +83,7 @@ export async function playArenaCard(
 
 // ─── WebSocket ───────────────────────────────────────────────────────────────
 
-const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? "https://markethand.ericxin.dev";
 const WS_BASE = API_BASE.replace(/^http/, "ws");
 
 export type WsMessage =

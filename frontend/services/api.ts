@@ -1,35 +1,7 @@
 import axios from "axios";
-import { NativeModules, Platform } from "react-native";
 import { getItem, deleteItem } from "./storage";
 
-function resolveApiBase(): string {
-  // Highest priority: explicit env override.
-  const envBase = process.env.EXPO_PUBLIC_API_URL;
-  if (envBase) return envBase;
-
-  if (Platform.OS === "web") {
-    return "http://localhost:8000";
-  }
-
-  // In Expo/native dev, parse Metro bundle URL to discover host machine LAN IP.
-  const scriptURL = NativeModules?.SourceCode?.scriptURL as string | undefined;
-  if (scriptURL?.startsWith("http")) {
-    try {
-      const host = new URL(scriptURL).hostname;
-      if (host) return `http://${host}:8000`;
-    } catch {
-      // Ignore parse failures and fall back below.
-    }
-  }
-
-  // Emulator/device fallback defaults.
-  if (Platform.OS === "android") {
-    return "http://10.0.2.2:8000";
-  }
-  return "http://127.0.0.1:8000";
-}
-
-export const API_BASE = resolveApiBase();
+const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? "https://markethand.ericxin.dev";
 
 export const api = axios.create({
   baseURL: API_BASE,

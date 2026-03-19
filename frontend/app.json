@@ -1,29 +1,29 @@
 {
   "expo": {
-    "name": "CardEcon",
-    "slug": "cardecon",
+    "name": "MarketHand",
+    "slug": "markethand",
     "version": "1.0.0",
     "orientation": "landscape",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icon.jpg",
     "userInterfaceStyle": "dark",
     "splash": {
       "backgroundColor": "#0f0f0f"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.cardecon.app"
+      "bundleIdentifier": "dev.ericxin.markethand"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#0f0f0f"
       },
-      "package": "com.cardecon.app"
+      "package": "dev.ericxin.markethand"
     },
     "plugins": [
       "expo-router",
       "expo-font"
     ],
-    "scheme": "cardecon",
+    "scheme": "markethand",
     "experiments": {
       "typedRoutes": true
     }
