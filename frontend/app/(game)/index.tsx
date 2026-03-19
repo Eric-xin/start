@@ -16,10 +16,12 @@ import { Fonts } from "../../constants/fonts";
 const DEFAULT_WEEKDAY_LABELS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
 function getWeekStartLocal(date: Date) {
-  const start = new Date(date);
-  const mondayBasedDay = (start.getDay() + 6) % 7;
-  start.setHours(0, 0, 0, 0);
-  start.setDate(start.getDate() - mondayBasedDay);
+  // NOTE: This function now computes the start of the week in UTC, not local time.
+  // It aligns the week strip with UTC-based dates such as `session.daily_date`.
+  const start = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  const mondayBasedDay = (start.getUTCDay() + 6) % 7;
+  start.setUTCHours(0, 0, 0, 0);
+  start.setUTCDate(start.getUTCDate() - mondayBasedDay);
   return start;
 }
 
@@ -44,26 +46,44 @@ function hasSessionBeenPlayed(session: SessionData) {
 function buildCurrentWeekDays(sessions: SessionData[], weekdayLabels: string[]) {
   const weekStart = getWeekStartLocal(new Date());
   const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekEnd.getDate() + 7);
+  weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
   const playedDays = new Set<number>();
 
   sessions.forEach((session) => {
     if (!hasSessionBeenPlayed(session)) return;
-    const playedAt = new Date(session.updated_at || session.created_at);
+
+    let playedAt: Date | null = null;
+
+    // For daily sessions, prefer the UTC-based `daily_date` over timestamps to
+    // avoid timezone boundary issues when determining the played day.
+    if (session.is_daily && (session as any).daily_date) {
+      playedAt = new Date((session as any).daily_date as string);
+    } else {
+      playedAt = new Date(session.updated_at || session.created_at);
+    }
+
     if (Number.isNaN(playedAt.getTime())) return;
     if (playedAt < weekStart || playedAt >= weekEnd) return;
-    playedDays.add((playedAt.getDay() + 6) % 7);
+
+    // Use UTC day so the week strip is explicitly UTC-based.
+    const dayIndex = (playedAt.getUTCDay() + 6) % 7;
+    playedDays.add(dayIndex);
   });
+
+  const todayUtc = new Date();
+  todayUtc.setUTCHours(0, 0, 0, 0);
 
   return Array.from({ length: 7 }).map((_, i) => {
     const dayDate = new Date(weekStart);
-    dayDate.setDate(weekStart.getDate() + i);
+    dayDate.setUTCDate(weekStart.getUTCDate() + i);
+    dayDate.setUTCHours(0, 0, 0, 0);
+
     return {
       key: DEFAULT_WEEKDAY_LABELS[i],
       label: weekdayLabels[i] ?? DEFAULT_WEEKDAY_LABELS[i],
-      dateNumber: dayDate.getDate(),
+      dateNumber: dayDate.getUTCDate(),
       isPlayed: playedDays.has(i),
-      isToday: dayDate.toDateString() === new Date().toDateString(),
+      isToday: dayDate.getTime() === todayUtc.getTime(),
     };
   });
 }
