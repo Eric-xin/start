@@ -18,6 +18,7 @@ weights: multi-dimensional impact on the simulated market state.
 """
 
 from app.seeds.cards_great_depression import GREAT_DEPRESSION_CARDS
+from app.seeds.cards_covid import COVID_ERA_CARDS
 
 SEED_CARDS = [
     # ══════════════════════════════════════════════════════════════════════════
@@ -988,3 +989,4 @@ SEED_CARDS = [
 ]
 
 SEED_CARDS.extend(GREAT_DEPRESSION_CARDS)
+SEED_CARDS.extend(COVID_ERA_CARDS)

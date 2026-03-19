@@ -42,6 +42,16 @@ DECK_META = {
         "is_purchasable": True,
         "card_style": "old",
     },
+    "covid_era_deck": {
+        "label": "COVID Era & Recovery",
+        "strategy": "savings",
+        "topics": ["covid"],
+        "description": "Pandemic shocks, policy responses, and the post-COVID reopening boom.",
+        "unlock_at": 9_999,
+        "shop_price": 5000,
+        "is_purchasable": True,
+        "card_style": "metal",
+    },
 }
 
 DECKS = list(DECK_META.keys())

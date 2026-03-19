@@ -33,9 +33,15 @@ function pickMaterial(card: CardData): CardMaterial {
   if ((card.topics || []).includes("great_depression")) {
     return "old";
   }
+  if ((card.topics || []).includes("covid") || (card.topics || []).includes("post_covid_boom")) {
+    return "metal";
+  }
   const keywords = `${card.title} ${card.body} ${(card.topics || []).join(" ")}`.toLowerCase();
   if (/(great depression|depression|1929|bank run|dust bowl|deflation|crash)/.test(keywords)) {
     return "old";
+  }
+  if (/(covid|pandemic|lockdown|reopening|vaccine)/.test(keywords)) {
+    return "metal";
   }
 
   const h = hashSeed(`${card.id}:${card.type}:${(card.topics || []).join("|")}`) % 100;

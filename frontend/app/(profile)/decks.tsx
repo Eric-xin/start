@@ -37,6 +37,7 @@ const DECK_ICONS: Record<string, string> = {
   real_estate_deck: "🏠",
   derivatives_deck: "⚗️",
   great_depression_deck: "📰",
+  covid_era_deck: "🧬",
 };
 
 export default function DecksScreen() {
