@@ -11,7 +11,7 @@ import { Fonts } from "../../constants/fonts";
 function GridBg() {
   const { width, height } = useWindowDimensions();
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+    <View style={[StyleSheet.absoluteFill, { pointerEvents: "none" }]}>
       {Array.from({ length: Math.ceil(height / 32) }).map((_, i) => (
         <View key={i} style={{ position: "absolute", top: i * 32, left: 0, right: 0, height: 1, backgroundColor: Colors.borderFaint }} />
       ))}

@@ -21,7 +21,7 @@ import { Layout } from "../../constants/layout";
 // ─── Bloomberg Terminal Grid Background ────────────────────────────────────
 function TerminalGrid() {
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+    <View style={[StyleSheet.absoluteFill, { pointerEvents: "none" }]}>
       {/* Horizontal scan lines */}
       {Array.from({ length: 30 }).map((_, i) => (
         <View
@@ -152,7 +152,6 @@ const tbStyles = StyleSheet.create({
 function GhostCard() {
   return (
     <View
-      pointerEvents="none"
       style={{
         position: "absolute",
         width: Layout.cardWidth,
@@ -162,6 +161,7 @@ function GhostCard() {
         opacity: 0.45,
         transform: [{ scale: 0.96 }, { translateY: 14 }],
         borderWidth: 1,
+        pointerEvents: "none",
         borderColor: Colors.cardBorder,
       }}
     />
@@ -324,7 +324,7 @@ export default function PlayScreen() {
 
           {/* Swipe hints */}
           {currentCard && !isSwipeLocked && !lesson && (
-            <View style={styles.swipeHints} pointerEvents="none">
+            <View style={styles.swipeHints}>
               <Text style={[styles.swipeHintText, { color: Colors.red }]}>← DECLINE</Text>
               <Text style={[styles.swipeHintText, { color: Colors.green }]}>ACCEPT →</Text>
             </View>
@@ -406,6 +406,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: 24,
+    pointerEvents: "none",
   },
   swipeHintText: {
     fontSize: 9,
