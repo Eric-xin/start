@@ -13,14 +13,14 @@ from app.routers import game_hud as game_hud_router
 from app.routers import companion_chat as companion_chat_router
 
 # Import models so Base.metadata knows about all tables
-import app.models.user       # noqa: F401
-import app.models.card       # noqa: F401
-import app.models.game       # noqa: F401
-import app.models.persona    # noqa: F401
-import app.models.progress   # noqa: F401
+import app.models.user  # noqa: F401
+import app.models.card  # noqa: F401
+import app.models.game  # noqa: F401
+import app.models.persona  # noqa: F401
+import app.models.progress  # noqa: F401
 import app.models.portfolio  # noqa: F401
 import app.models.achievement  # noqa: F401
-import app.models.market     # noqa: F401
+import app.models.market  # noqa: F401
 
 settings = get_settings()
 
@@ -40,11 +40,19 @@ async def _ensure_sqlite_card_columns() -> None:
             if "value_max" not in existing:
                 await conn.execute(text("ALTER TABLE cards ADD COLUMN value_max FLOAT"))
             if "value_step" not in existing:
-                await conn.execute(text("ALTER TABLE cards ADD COLUMN value_step FLOAT"))
+                await conn.execute(
+                    text("ALTER TABLE cards ADD COLUMN value_step FLOAT")
+                )
             if "alpha" not in existing:
-                await conn.execute(text("ALTER TABLE cards ADD COLUMN alpha FLOAT DEFAULT 1.0 NOT NULL"))
+                await conn.execute(
+                    text(
+                        "ALTER TABLE cards ADD COLUMN alpha FLOAT DEFAULT 1.0 NOT NULL"
+                    )
+                )
             if "weights" not in existing:
-                await conn.execute(text("ALTER TABLE cards ADD COLUMN weights JSON DEFAULT '{}'"))
+                await conn.execute(
+                    text("ALTER TABLE cards ADD COLUMN weights JSON DEFAULT '{}'")
+                )
         except Exception:
             # Non-fatal in dev: startup should continue even if schema patch fails.
             pass
@@ -60,7 +68,9 @@ async def lifespan(app: FastAPI):
     if settings.environment == "development":
         async with engine.begin() as conn:
             try:
-                await conn.execute(text("""
+                await conn.execute(
+                    text(
+                        """
                     DO $$
                     BEGIN
                         -- Migrate cards.id from INTEGER to UUID
@@ -120,7 +130,9 @@ async def lifespan(app: FastAPI):
                                 UNIQUE (user_id, achievement_id);
                         END IF;
                     END $$;
-                """))
+                """
+                    )
+                )
             except Exception:
                 pass  # ignore if not postgres or already applied
 
@@ -138,10 +150,12 @@ async def lifespan(app: FastAPI):
     # Seed data in development
     if settings.environment == "development":
         from app.seeds.run_seeds import run_seeds
+
         try:
             await run_seeds()
         except Exception as e:
             import logging
+
             logging.getLogger(__name__).warning(f"Seed failed (may be normal): {e}")
 
     yield
@@ -157,7 +171,11 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.frontend_url, "http://localhost:8081", "http://localhost:19006"],
+    allow_origins=[
+        settings.frontend_url,
+        "http://localhost:8081",
+        "http://localhost:19006",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

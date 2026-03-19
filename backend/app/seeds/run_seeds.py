@@ -9,11 +9,15 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.database import AsyncSessionLocal, engine, Base
+
+# Import all models to ensure relationships are properly initialized
+import app.models
 from app.models.card import Card
 from app.models.game import GameConfig
 from app.models.achievement import Achievement
 from app.seeds.cards import SEED_CARDS
 from app.seeds.achievements import SEED_ACHIEVEMENTS
+from app.seeds.seed_leaderboard import seed_leaderboard_users
 
 SMTP_CONFIGS = [
     {
@@ -75,6 +79,20 @@ DEFAULT_CONFIGS = [
 ]
 
 
+def _normalize_surrogate_strings(value):
+    """Convert surrogate-escaped strings to valid Unicode for DB writes."""
+    if isinstance(value, str):
+        try:
+            return value.encode("utf-16", "surrogatepass").decode("utf-16")
+        except UnicodeError:
+            return value
+    if isinstance(value, list):
+        return [_normalize_surrogate_strings(item) for item in value]
+    if isinstance(value, dict):
+        return {k: _normalize_surrogate_strings(v) for k, v in value.items()}
+    return value
+
+
 async def seed_cards(db: AsyncSession) -> tuple[int, int]:
     """Insert missing cards and refresh existing seed cards by card_id."""
     result = await db.execute(select(Card))
@@ -84,13 +102,14 @@ async def seed_cards(db: AsyncSession) -> tuple[int, int]:
     updated = 0
 
     for card_data in SEED_CARDS:
-        existing = existing_cards.get(card_data["card_id"])
+        normalized_card_data = _normalize_surrogate_strings(card_data)
+        existing = existing_cards.get(normalized_card_data["card_id"])
         if existing is None:
-            db.add(Card(**card_data))
+            db.add(Card(**normalized_card_data))
             inserted += 1
             continue
 
-        for field, value in card_data.items():
+        for field, value in normalized_card_data.items():
             setattr(existing, field, value)
         updated += 1
 
@@ -131,6 +150,9 @@ async def run_seeds():
             f"Cards inserted: {cards_inserted}, cards updated: {cards_updated}, "
             f"configs seeded: {configs_seeded}, achievements seeded: {achievements_seeded}."
         )
+
+    # Seed leaderboard users
+    await seed_leaderboard_users()
 
 
 if __name__ == "__main__":

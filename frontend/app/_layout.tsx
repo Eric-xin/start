@@ -28,30 +28,22 @@ export default function RootLayout() {
     }
   }, [token, isHydrated, fontsLoaded, segments]);
 
-  // Not ready yet — show spinner
-  if (!fontsLoaded || !isHydrated) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={Colors.blue} size="large" />
-      </View>
-    );
-  }
-
-  // Auth decision pending — keep showing spinner so there's no flash of the wrong screen
+  const isReady = fontsLoaded && isHydrated;
   const inAuth = segments[0] === "(auth)";
-  const redirectPending = (!token && !inAuth) || (token && inAuth);
-  if (redirectPending) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={Colors.blue} size="large" />
-      </View>
-    );
-  }
+  const redirectPending = isReady && ((!token && !inAuth) || (token && inAuth));
+  const showSpinner = !isReady || redirectPending;
 
   return (
     <GestureHandlerRootView style={styles.root}>
       <StatusBar style="light" />
+      {/* Slot must always render so the navigator mounts */}
       <Slot />
+      {/* Overlay the spinner on top until we're ready */}
+      {showSpinner && (
+        <View style={[StyleSheet.absoluteFill, styles.loading]}>
+          <ActivityIndicator color={Colors.blue} size="large" />
+        </View>
+      )}
     </GestureHandlerRootView>
   );
 }
@@ -59,7 +51,6 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.bg },
   loading: {
-    flex: 1,
     backgroundColor: Colors.bg,
     alignItems: "center",
     justifyContent: "center",
