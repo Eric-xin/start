@@ -7,7 +7,7 @@ import { useRouter } from "expo-router";
 import { useGameStore } from "../../store/gameStore";
 import { swipe, getNextCard } from "../../services/game";
 import { CardContainer } from "../../components/Card/CardContainer";
-import { CardLesson } from "../../components/Card/CardLesson";
+import { LessonOverlay } from "../../components/Card/LessonOverlay";
 import { StatsPanel } from "../../components/HUD/StatsPanel";
 import { MarketContextPill } from "../../components/HUD/MarketContextPill";
 import { SidebarPanel } from "../../components/HUD/SidebarPanel";
@@ -158,8 +158,8 @@ export default function PlayScreen() {
   const isMedium = width >= Layout.tabletBreakpoint;
 
   const {
-    session, currentCard, nextCard, lessonText, lessonColor, isSwipeLocked,
-    setSession, setCurrentCard, setNextCard, setLessonText, setSwipeLocked,
+    session, currentCard, nextCard, lesson, isSwipeLocked,
+    setSession, setCurrentCard, setNextCard, setLesson, setSwipeLocked,
   } = useGameStore();
 
   const [initializing, setInitializing] = React.useState(true);
@@ -168,7 +168,6 @@ export default function PlayScreen() {
   useEffect(() => {
     mounted.current = true;
     if (!session) {
-      // Defer navigation so Root Layout is fully mounted first
       const t = setTimeout(() => router.replace("/(game)/index"), 0);
       return () => clearTimeout(t);
     }
@@ -182,19 +181,23 @@ export default function PlayScreen() {
   const handleSwipe = useCallback(async (direction: "left" | "right") => {
     if (!session || !currentCard || isSwipeLocked) return;
     setSwipeLocked(true);
+    // Immediately hide the card (it flew off) — show loading state
+    setCurrentCard(null);
     try {
       const result = await swipe(session.id, currentCard.id, direction);
       setSession(result.session);
-      setLessonText(result.lesson, direction === "right" ? Colors.green : Colors.red);
-      if (result.next_card) setNextCard(result.next_card);
+      // Show lesson overlay; store next card ready for after dismiss
+      setNextCard(result.next_card ?? null);
+      setLesson({ text: result.lesson, direction, reward: result.reward });
     } catch {
       setSwipeLocked(false);
+      setCurrentCard(currentCard); // restore on error
       Alert.alert("Error", "Swipe failed. Check connection.");
     }
   }, [session, currentCard, isSwipeLocked]);
 
   const handleLessonDismiss = useCallback(() => {
-    setLessonText(null);
+    setLesson(null);
     setCurrentCard(nextCard);
     setNextCard(null);
     setSwipeLocked(false);
@@ -242,39 +245,46 @@ export default function PlayScreen() {
             <Text style={styles.panelLabelText}>DECISION ENGINE</Text>
           </View>
 
-          {/* Ghost card */}
-          {nextCard && <GhostCard />}
+          {/* Ghost card — visible when a card is active OR lesson is showing */}
+          {(nextCard || (lesson && nextCard)) && <GhostCard />}
 
-          {/* Swipe container fills the full arena */}
-          {currentCard && (
+          {/* Lesson overlay — replaces card after swipe */}
+          {lesson ? (
+            <LessonOverlay
+              text={lesson.text}
+              direction={lesson.direction}
+              reward={lesson.reward}
+              onDismiss={handleLessonDismiss}
+            />
+          ) : currentCard ? (
+            /* key forces full remount so animation values reset for each new card */
             <CardContainer
+              key={currentCard.id}
               card={currentCard}
               isLocked={isSwipeLocked}
               onSwipe={handleSwipe}
               areaWidth={cardAreaW}
-              areaHeight={cardAreaH - 60} // leave room for pill + lesson
+              areaHeight={cardAreaH - 48}
             />
-          )}
+          ) : !initializing ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>LOADING NEXT DECISION...</Text>
+              <ActivityIndicator color={Colors.blue} size="small" style={{ marginTop: 10 }} />
+            </View>
+          ) : null}
 
           {/* Market context pill — Rank 2+ */}
-          {showMarketPill && (
+          {showMarketPill && !lesson && (
             <View style={styles.pillRow}>
               <MarketContextPill stage={session.stage} capital={session.capital} />
             </View>
           )}
 
-          {/* Swipe hint labels */}
-          {currentCard && !isSwipeLocked && (
+          {/* Swipe hints */}
+          {currentCard && !isSwipeLocked && !lesson && (
             <View style={styles.swipeHints} pointerEvents="none">
               <Text style={[styles.swipeHintText, { color: Colors.red }]}>← DECLINE</Text>
               <Text style={[styles.swipeHintText, { color: Colors.green }]}>ACCEPT →</Text>
-            </View>
-          )}
-
-          {/* Lesson */}
-          {lessonText && (
-            <View style={styles.lessonWrap}>
-              <CardLesson text={lessonText} color={lessonColor} onDismiss={handleLessonDismiss} />
             </View>
           )}
         </View>
@@ -361,11 +371,16 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     opacity: 0.5,
   },
-  lessonWrap: {
-    position: "absolute",
-    bottom: 40,
-    left: 0,
-    right: 0,
+  emptyState: {
     alignItems: "center",
+    justifyContent: "center",
+    width: Layout.cardWidth,
+    height: Layout.cardHeight,
+  },
+  emptyText: {
+    fontSize: 9,
+    fontFamily: Fonts.sansBold,
+    color: Colors.textDim,
+    letterSpacing: 2,
   },
 });
