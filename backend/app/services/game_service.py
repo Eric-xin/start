@@ -1,4 +1,5 @@
 """Game session management and swipe processing."""
+import random
 import uuid
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,7 +11,22 @@ from app.models.persona import Persona, PersonaSnapshot
 from app.models.progress import UserProgress, STRATEGY_META, STRATEGIES, DECK_META, DECKS
 from app.services import persona_engine as pe
 from app.services.card_recommender import recommend_next_card
+from app.schemas.card import CardOut
 import numpy as np
+
+
+def resolve_card(card: Card) -> CardOut:
+    """Build a CardOut with {value} in the body replaced by a random value from the card's range."""
+    out = CardOut.model_validate(card)
+    if card.value_min is not None and card.value_max is not None and card.value_step is not None:
+        step = card.value_step
+        steps = round((card.value_max - card.value_min) / step)
+        value = card.value_min + random.randint(0, steps) * step
+        display = str(int(value)) if value == int(value) else str(value)
+        out.rendered_body = card.body.replace("{value}", display)
+    else:
+        out.rendered_body = card.body
+    return out
 
 
 COOLDOWN_TTL_SECS = 30
@@ -274,16 +290,17 @@ async def process_swipe(
 
     enabled_strat = progress.enabled_strategies if progress else STRATEGIES
     enabled_deck = progress.enabled_decks if progress else None
-    next_card = await recommend_next_card(
+    next_card_orm = await recommend_next_card(
         db, session, redis,
         enabled_strategies=enabled_strat,
         enabled_decks=enabled_deck,
     )
+    next_card_out = resolve_card(next_card_orm) if next_card_orm else None
 
     lesson = _get_lesson(card, action)
     return {
         "lesson": lesson,
         "reward": reward,
         "session": session,
-        "next_card": next_card,
+        "next_card": next_card_out,
     }

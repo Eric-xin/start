@@ -122,7 +122,7 @@ async def next_card(
     db: AsyncSession = Depends(get_db),
     redis: Redis = Depends(get_redis),
 ):
-    from app.services.game_service import get_or_create_progress
+    from app.services.game_service import get_or_create_progress, resolve_card
     session = await _get_session_for_user(session_id, current_user, db)
     progress = await get_or_create_progress(db, current_user.id)
     card = await recommend_next_card(
@@ -130,4 +130,4 @@ async def next_card(
         enabled_strategies=progress.enabled_strategies,
         enabled_decks=progress.enabled_decks,
     )
-    return card
+    return resolve_card(card) if card else None

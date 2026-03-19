@@ -25,6 +25,7 @@ class CardOut(BaseModel):
     value_min: float | None = None
     value_max: float | None = None
     value_step: float | None = None
+    rendered_body: str = ""
 
 
 class CardCreate(BaseModel):
