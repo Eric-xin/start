@@ -27,7 +27,18 @@ function hasSessionBeenPlayed(session: SessionData) {
   if (session.is_daily) {
     return session.daily_cards_played > 0 || session.daily_completed;
   }
-  return session.progress > 0;
+
+  const createdAt = session.created_at ? new Date(session.created_at) : null;
+  const updatedAt = session.updated_at ? new Date(session.updated_at) : null;
+  const hasValidDates =
+    createdAt instanceof Date &&
+    updatedAt instanceof Date &&
+    !Number.isNaN(createdAt.getTime()) &&
+    !Number.isNaN(updatedAt.getTime());
+
+  const hasBeenUpdated = hasValidDates && updatedAt.getTime() > createdAt.getTime();
+
+  return hasBeenUpdated || session.progress > 0;
 }
 
 function buildCurrentWeekDays(sessions: SessionData[], weekdayLabels: string[]) {
