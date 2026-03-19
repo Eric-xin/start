@@ -23,6 +23,7 @@ WEIGHTS = {
 
 SOFTMAX_TEMP = 1.0
 COOLDOWN_TTL_SECS = 30  # per cooldown turn
+REDIS_UNAVAILABLE = False
 
 
 def compute_stage_fit(card: Card, stage: int) -> float:
@@ -76,9 +77,18 @@ def compute_difficulty_mismatch(card: Card, session: GameSession) -> float:
 
 
 async def get_cooldown_penalty(card: Card, session_id: str, redis: Redis) -> float:
+    global REDIS_UNAVAILABLE
+    if REDIS_UNAVAILABLE:
+        return 0.0
+
     key = f"cooldown:{session_id}:{card.id}"
-    exists = await redis.exists(key)
-    return 1.0 if exists else 0.0
+    try:
+        exists = await redis.exists(key)
+        return 1.0 if exists else 0.0
+    except Exception:
+        # Local/dev environments may run without Redis; treat as no cooldown.
+        REDIS_UNAVAILABLE = True
+        return 0.0
 
 
 def _softmax(scores: np.ndarray, temp: float = 1.0) -> np.ndarray:

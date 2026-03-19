@@ -1,4 +1,5 @@
 """Game session management and swipe processing."""
+import random
 import uuid
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,7 +11,20 @@ from app.models.persona import Persona, PersonaSnapshot
 from app.models.progress import UserProgress, STRATEGY_META, STRATEGIES, DECK_META, DECKS
 from app.services import persona_engine as pe
 from app.services.card_recommender import recommend_next_card
+from app.schemas.card import CardOut
 import numpy as np
+
+
+def resolve_card(card: Card) -> CardOut:
+    """Build a CardOut with {value} in the body replaced by a random value from the card's range."""
+    out = CardOut.model_validate(card)
+    if card.value_min is not None and card.value_max is not None and card.value_step is not None:
+        step = card.value_step
+        steps = round((card.value_max - card.value_min) / step)
+        value = card.value_min + random.randint(0, steps) * step
+        display = str(int(value)) if value == int(value) else str(value)
+        out.body = card.body.replace("{value}", display)
+    return out
 
 
 COOLDOWN_TTL_SECS = 30
@@ -243,8 +257,9 @@ async def process_swipe(
     _check_strategy_unlocks(progress)
     progress.updated_at = datetime.now(timezone.utc)
 
-    # Update capital
-    capital_delta = reward * 200
+    # Update capital (alpha scales the impact — e.g. rate cuts hit harder than trivia)
+    alpha = getattr(card, "alpha", 1.0)
+    capital_delta = reward * 200 * alpha
     session.capital += capital_delta
     if session.capital > session.peak_capital:
         session.peak_capital = session.capital
@@ -270,20 +285,25 @@ async def process_swipe(
 
     # Cooldown in Redis
     cooldown_key = f"cooldown:{session.id}:{card.id}"
-    await redis.setex(cooldown_key, card.cooldown * COOLDOWN_TTL_SECS, "1")
+    try:
+        await redis.setex(cooldown_key, card.cooldown * COOLDOWN_TTL_SECS, "1")
+    except Exception:
+        # Allow gameplay to continue when Redis is not available locally.
+        pass
 
     enabled_strat = progress.enabled_strategies if progress else STRATEGIES
     enabled_deck = progress.enabled_decks if progress else None
-    next_card = await recommend_next_card(
+    next_card_orm = await recommend_next_card(
         db, session, redis,
         enabled_strategies=enabled_strat,
         enabled_decks=enabled_deck,
     )
+    next_card_out = resolve_card(next_card_orm) if next_card_orm else None
 
     lesson = _get_lesson(card, action)
     return {
         "lesson": lesson,
         "reward": reward,
         "session": session,
-        "next_card": next_card,
+        "next_card": next_card_out,
     }

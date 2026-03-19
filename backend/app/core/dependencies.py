@@ -1,3 +1,4 @@
+import uuid
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
@@ -22,9 +23,12 @@ async def get_current_user(
     )
     try:
         payload = decode_token(token)
-        user_id: str = payload.get("sub")
-        if user_id is None:
+        user_id_raw: str | None = payload.get("sub")
+        if user_id_raw is None:
             raise credentials_exc
+        user_id = uuid.UUID(user_id_raw)
+    except (ValueError, TypeError):
+        raise credentials_exc
     except JWTError:
         raise credentials_exc
 

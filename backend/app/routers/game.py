@@ -11,6 +11,7 @@ from app.models.game import GameEvent
 from app.schemas.game import GameSessionOut, SwipeRequest, SwipeResponse, GameEventOut
 from app.schemas.card import CardOut
 from app.services import game_service
+from app.services.game_service import resolve_card
 from app.services.card_recommender import recommend_next_card
 from app.core.dependencies import get_current_active_user
 from app.core.redis_client import get_redis
@@ -109,7 +110,7 @@ async def get_session_history(
             card_id=event.card_id,
             action=event.action.value if hasattr(event.action, "value") else event.action,
             reward=event.reward,
-            card=CardOut.model_validate(card) if card else None,
+            card=resolve_card(card) if card else None,
             created_at=event.created_at,
         ))
     return out
@@ -122,7 +123,7 @@ async def next_card(
     db: AsyncSession = Depends(get_db),
     redis: Redis = Depends(get_redis),
 ):
-    from app.services.game_service import get_or_create_progress
+    from app.services.game_service import get_or_create_progress, resolve_card
     session = await _get_session_for_user(session_id, current_user, db)
     progress = await get_or_create_progress(db, current_user.id)
     card = await recommend_next_card(
@@ -130,4 +131,4 @@ async def next_card(
         enabled_strategies=progress.enabled_strategies,
         enabled_decks=progress.enabled_decks,
     )
-    return card
+    return resolve_card(card) if card else None

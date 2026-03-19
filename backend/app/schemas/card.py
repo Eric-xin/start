@@ -6,6 +6,7 @@ class CardOut(BaseModel):
     model_config = {"from_attributes": True}
 
     id: int
+    card_id: str
     type: CardType
     title: str
     body: str
@@ -21,9 +22,14 @@ class CardOut(BaseModel):
     left_lesson: str
     right_lesson: str
     card_band_color: CardBandColor
+    value_min: float | None = None
+    value_max: float | None = None
+    value_step: float | None = None
+    alpha: float = 1.0
 
 
 class CardCreate(BaseModel):
+    card_id: str
     type: CardType
     title: str
     body: str
@@ -41,9 +47,14 @@ class CardCreate(BaseModel):
     left_lesson: str
     right_lesson: str
     card_band_color: CardBandColor = CardBandColor.steel_blue
+    value_min: float | None = None
+    value_max: float | None = None
+    value_step: float | None = None
+    alpha: float = 1.0
 
 
 class CardUpdate(BaseModel):
+    card_id: str | None = None
     type: CardType | None = None
     title: str | None = None
     body: str | None = None
@@ -62,3 +73,7 @@ class CardUpdate(BaseModel):
     right_lesson: str | None = None
     card_band_color: CardBandColor | None = None
     is_active: bool | None = None
+    value_min: float | None = None
+    value_max: float | None = None
+    value_step: float | None = None
+    alpha: float | None = None
