@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   View, Text, ScrollView, StyleSheet,
-  ActivityIndicator, Alert, TouchableOpacity, Switch,
+  ActivityIndicator, Alert, TouchableOpacity, Switch, useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 import {
@@ -9,8 +9,11 @@ import {
   ProgressData, StrategyInfo, DeckInfo,
 } from "../../services/progress";
 import { getPortfolio } from "../../services/portfolio";
-import { Colors } from "../../constants/colors";
+import { Colors, useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
+import { useThemeStore } from "../../store/themeStore";
+import { ThemeModeToggle } from "../../components/theme/ThemeModeToggle";
+import { AppTopBar } from "../../components/navigation/AppTopBar";
 
 const STRATEGY_ICONS: Record<string, string> = {
   savings: "💵",
@@ -42,6 +45,10 @@ const DECK_ICONS: Record<string, string> = {
 
 export default function DecksScreen() {
   const router = useRouter();
+  const colors = useColors();
+  const isNormal = useThemeStore((state) => state.mode === "normal");
+  const { width } = useWindowDimensions();
+  const isWide = width >= 1100;
   const [progress, setProgress] = useState<ProgressData | null>(null);
   const [capital, setCapital] = useState<number>(0);
   const [loading, setLoading] = useState(true);
@@ -133,8 +140,8 @@ export default function DecksScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={Colors.blue} size="large" />
+      <View style={[styles.loading, { backgroundColor: colors.bg }]}>
+        <ActivityIndicator color={colors.blue} size="large" />
       </View>
     );
   }
@@ -153,71 +160,99 @@ export default function DecksScreen() {
   const totalDecks = progress?.decks.length ?? 0;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.topBar}>
-        <Text style={styles.logo}>CARDECON</Text>
-        <View style={styles.barSep} />
-        <Text style={styles.topLabel}>INVESTMENT DECKS</Text>
-        {saving && <ActivityIndicator color={Colors.blue} size="small" style={{ marginLeft: "auto" }} />}
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backText}>BACK →</Text>
-        </TouchableOpacity>
-      </View>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
+      <AppTopBar
+        label={isNormal ? "Learning Decks" : "INVESTMENT DECKS"}
+        onBack={() => router.back()}
+        rightContent={
+          <>
+            <ThemeModeToggle navSized />
+            {saving ? <ActivityIndicator color={colors.blue} size="small" /> : null}
+          </>
+        }
+      />
 
       <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Stats strip */}
-        <View style={styles.statsRow}>
-          <View style={styles.statBlock}>
-            <Text style={styles.statLabel}>TOTAL CARDS</Text>
-            <Text style={styles.statValue}>{totalCards}</Text>
-          </View>
-          <View style={[styles.statBlock, styles.statBorder]}>
-            <Text style={styles.statLabel}>STRATEGIES</Text>
-            <Text style={[styles.statValue, { color: Colors.teal }]}>{unlockedStrategies}/5</Text>
-          </View>
-          <View style={[styles.statBlock, styles.statBorder]}>
-            <Text style={styles.statLabel}>DECKS</Text>
-            <Text style={[styles.statValue, { color: Colors.blue }]}>{unlockedDecks}/{totalDecks}</Text>
-          </View>
-          <View style={[styles.statBlock, styles.statBorder]}>
-            <Text style={styles.statLabel}>ACTIVE</Text>
-            <Text style={[styles.statValue, { color: Colors.green }]}>{enabledDecks}</Text>
-          </View>
-          <View style={[styles.statBlock, styles.statBorder]}>
-            <Text style={styles.statLabel}>CAPITAL</Text>
-            <Text style={[styles.statValue, { color: Colors.amber }]}>${Math.round(capital).toLocaleString()}</Text>
-          </View>
-        </View>
+        <View style={[styles.hero, isWide && styles.heroWide]}>
+          <View style={[styles.heroMain, { backgroundColor: colors.bgPanel, borderColor: colors.borderDim, borderRadius: isNormal ? 24 : 2 }]}>
+            <Text style={[styles.heroEyebrow, { color: isNormal ? colors.blueBright : colors.blue }]}>
+              {isNormal ? "BUILD YOUR LESSON MENU" : "DECK CONTROL"}
+            </Text>
+            <Text style={[styles.heroTitle, { color: colors.textBright }]}>
+              {isNormal ? "Choose what you want to practice next." : "Configure active strategies and deck exposure."}
+            </Text>
+            <Text style={[styles.heroBody, { color: colors.textPrimary }]}>
+              {isNormal
+                ? "Turn themes on to see more of them while you play. Start simple, then unlock more advanced packs when you feel ready."
+                : "Strategies are the top-level investment categories. Each strategy contains one or more specialized decks that shape which cards appear in sessions."}
+            </Text>
 
-        {/* Info banner */}
-        <View style={styles.infoCard}>
-          <Text style={styles.infoText}>
-            Strategies are the top-level investment categories. Each strategy contains one or more
-            specialized decks that filter which cards appear in your sessions. Enable or disable
-            individual decks to focus your learning. Unlock new strategies and decks by playing more cards.
-          </Text>
+            <View style={styles.statsRow}>
+              <View style={[styles.statBlock, { backgroundColor: colors.bg, borderColor: colors.borderDim, borderRadius: isNormal ? 16 : 2 }]}>
+                <Text style={[styles.statLabel, { color: colors.textDim }]}>{isNormal ? "Cards seen" : "TOTAL CARDS"}</Text>
+                <Text style={[styles.statValue, { color: colors.textBright }]}>{totalCards}</Text>
+              </View>
+              <View style={[styles.statBlock, { backgroundColor: colors.bg, borderColor: colors.borderDim, borderRadius: isNormal ? 16 : 2 }]}>
+                <Text style={[styles.statLabel, { color: colors.textDim }]}>{isNormal ? "Themes" : "STRATEGIES"}</Text>
+                <Text style={[styles.statValue, { color: colors.teal }]}>{unlockedStrategies}/5</Text>
+              </View>
+              <View style={[styles.statBlock, { backgroundColor: colors.bg, borderColor: colors.borderDim, borderRadius: isNormal ? 16 : 2 }]}>
+                <Text style={[styles.statLabel, { color: colors.textDim }]}>{isNormal ? "Decks" : "DECKS"}</Text>
+                <Text style={[styles.statValue, { color: colors.blue }]}>{unlockedDecks}/{totalDecks}</Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.heroSide}>
+            <View style={[styles.summaryCard, { backgroundColor: colors.bgPanel, borderColor: colors.borderDim, borderRadius: isNormal ? 24 : 2 }]}>
+              <Text style={[styles.summaryTitle, { color: isNormal ? colors.blueBright : colors.blue }]}>
+                {isNormal ? "Quick status" : "STATUS"}
+              </Text>
+              <Text style={[styles.summaryLine, { color: colors.textPrimary }]}>
+                {enabledDecks} active deck{enabledDecks === 1 ? "" : "s"}
+              </Text>
+              <Text style={[styles.summaryLine, { color: colors.textPrimary }]}>
+                ${Math.round(capital).toLocaleString()} ready to spend
+              </Text>
+              <Text style={[styles.summaryNote, { color: colors.textDim }]}>
+                {isNormal ? "Locked packs open as you keep learning." : "Unlock additional content through play progression."}
+              </Text>
+            </View>
+          </View>
         </View>
 
         {/* Strategies with nested decks */}
-        {progress?.strategies.map((strat) => {
-          const decks = decksByStrategy[strat.key] ?? [];
-          const icon = STRATEGY_ICONS[strat.key] ?? "•";
-          const desc = STRATEGY_DESCRIPTIONS[strat.key] ?? "";
+        <View style={[styles.strategyGrid, isWide && styles.strategyGridWide]}>
+          {progress?.strategies.map((strat) => {
+            const decks = decksByStrategy[strat.key] ?? [];
+            const icon = STRATEGY_ICONS[strat.key] ?? "•";
+            const desc = STRATEGY_DESCRIPTIONS[strat.key] ?? "";
 
-          return (
-            <View
-              key={strat.key}
-              style={[styles.strategyBlock, !strat.is_unlocked && styles.lockedBlock]}
-            >
+            return (
+              <View
+                key={strat.key}
+                style={[
+                  styles.strategyBlock,
+                  isWide && styles.strategyBlockWide,
+                  {
+                    backgroundColor: colors.bgPanel,
+                    borderColor: colors.borderDim,
+                    borderRadius: isNormal ? 18 : 2,
+                  },
+                  !strat.is_unlocked && styles.lockedBlock,
+                ]}
+              >
               {/* Strategy header */}
               <View style={styles.strategyHeader}>
                 <View style={styles.strategyLeft}>
                   <Text style={styles.strategyIcon}>{icon}</Text>
                   <View style={styles.strategyMeta}>
-                    <Text style={[styles.strategyLabel, !strat.is_unlocked && { color: Colors.textMuted }]}>
-                      {strat.label.toUpperCase()}
+                    <Text style={[styles.strategyLabel, { color: !strat.is_unlocked ? colors.textMuted : colors.textBright, fontFamily: isNormal ? Fonts.sansBold : Fonts.mono }]}>
+                      {isNormal ? strat.label : strat.label.toUpperCase()}
                     </Text>
-                    <Text style={styles.strategyStage}>STAGE {strat.stage}</Text>
+                    <Text style={[styles.strategyStage, { color: colors.textMuted }]}>
+                      {isNormal ? (strat.is_unlocked ? "Ready to use" : `Opens after ${strat.unlock_at} cards`) : `STAGE ${strat.stage}`}
+                    </Text>
                   </View>
                 </View>
                 <View style={styles.strategyRight}>
@@ -225,37 +260,42 @@ export default function DecksScreen() {
                     <Switch
                       value={strat.is_enabled}
                       onValueChange={() => handleToggleStrategy(strat.key, strat.is_enabled)}
-                      trackColor={{ false: Colors.borderDim, true: Colors.blue + "88" }}
-                      thumbColor={strat.is_enabled ? Colors.blue : Colors.textMuted}
-                      ios_backgroundColor={Colors.borderDim}
+                      trackColor={{ false: colors.borderDim, true: colors.blue + "88" }}
+                      thumbColor={strat.is_enabled ? colors.blue : colors.textMuted}
+                      ios_backgroundColor={colors.borderDim}
                     />
                   ) : (
                     <View style={styles.lockBadge}>
-                      <Text style={styles.lockText}>🔒 LOCKED</Text>
-                      <Text style={styles.unlockAt}>{strat.unlock_at} cards</Text>
+                      <Text style={[styles.lockText, { color: colors.textMuted }]}>🔒 LOCKED</Text>
+                      <Text style={[styles.unlockAt, { color: colors.textMuted }]}>{strat.unlock_at} cards</Text>
                     </View>
                   )}
                 </View>
               </View>
 
               {/* Strategy description */}
-              <Text style={[styles.strategyDesc, !strat.is_unlocked && { opacity: 0.4 }]}>
-                {desc}
+              <Text style={[styles.strategyDesc, { color: colors.textPrimary }, !strat.is_unlocked && { opacity: 0.4 }]}>
+                {isNormal
+                  ? desc
+                      .replace("Low risk, low return.", "Usually safer, but slower-growing.")
+                      .replace("Higher volatility, higher expected return.", "Can grow faster, but feels bumpier.")
+                      .replace("Advanced instruments.", "More advanced and trickier to master.")
+                  : desc}
               </Text>
 
               {/* Status indicator */}
               {strat.is_unlocked && (
-                <View style={[styles.stratStatus, strat.is_enabled && styles.stratStatusOn]}>
-                  <Text style={[styles.stratStatusText, strat.is_enabled && { color: Colors.green }]}>
-                    {strat.is_enabled ? "● STRATEGY ACTIVE" : "○ STRATEGY DISABLED"}
+                <View style={[styles.stratStatus, { borderTopColor: colors.borderFaint }, strat.is_enabled && { borderTopColor: colors.green + "33" }]}>
+                  <Text style={[styles.stratStatusText, { color: strat.is_enabled ? colors.green : colors.textMuted }]}>
+                    {strat.is_enabled ? (isNormal ? "● Theme turned on" : "● STRATEGY ACTIVE") : (isNormal ? "○ Theme turned off" : "○ STRATEGY DISABLED")}
                   </Text>
                 </View>
               )}
 
               {/* Decks within this strategy */}
               {decks.length > 0 && (
-                <View style={styles.decksContainer}>
-                  <Text style={styles.decksLabel}>CARD DECKS</Text>
+                <View style={[styles.decksContainer, { backgroundColor: isNormal ? colors.bgSurface : Colors.bg + "80", borderTopColor: colors.borderDim }]}>
+                  <Text style={[styles.decksLabel, { color: colors.textMuted }]}>{isNormal ? "CARD PACKS" : "CARD DECKS"}</Text>
                   {decks.map((deck, idx) => {
                     const deckIcon = DECK_ICONS[deck.key] ?? "📁";
                     return (
@@ -263,6 +303,7 @@ export default function DecksScreen() {
                         key={deck.key}
                         style={[
                           styles.deckRow,
+                          { backgroundColor: isNormal ? colors.bgPanel : "transparent" },
                           idx < decks.length - 1 && styles.deckRowBorder,
                           !deck.is_unlocked && styles.deckLocked,
                         ]}
@@ -270,17 +311,17 @@ export default function DecksScreen() {
                         <View style={styles.deckLeft}>
                           <Text style={styles.deckIcon}>{deckIcon}</Text>
                           <View style={styles.deckMeta}>
-                            <Text style={[styles.deckLabel, !deck.is_unlocked && { color: Colors.textMuted }]}>
+                            <Text style={[styles.deckLabel, { color: !deck.is_unlocked ? colors.textMuted : colors.textBright, fontFamily: isNormal ? Fonts.sansBold : Fonts.mono }]}>
                               {deck.label}
                             </Text>
                             {deck.description ? (
-                              <Text style={styles.deckDesc}>{deck.description}</Text>
+                              <Text style={[styles.deckDesc, { color: colors.textPrimary }]}>{deck.description}</Text>
                             ) : null}
                             {!deck.is_unlocked && (
-                              <Text style={styles.deckUnlockAt}>
+                              <Text style={[styles.deckUnlockAt, { color: colors.textMuted }]}>
                                 {deck.is_purchasable && deck.shop_price
-                                  ? `Buy for $${deck.shop_price.toLocaleString()}`
-                                  : `Unlocks at ${deck.unlock_at} cards`}
+                                  ? (isNormal ? `Unlock now for $${deck.shop_price.toLocaleString()}` : `Buy for $${deck.shop_price.toLocaleString()}`)
+                                  : (isNormal ? `Opens after ${deck.unlock_at} cards` : `Unlocks at ${deck.unlock_at} cards`)}
                               </Text>
                             )}
                           </View>
@@ -290,22 +331,23 @@ export default function DecksScreen() {
                             <Switch
                               value={deck.is_enabled}
                               onValueChange={() => handleToggleDeck(deck.key, deck.is_enabled)}
-                              trackColor={{ false: Colors.borderDim, true: Colors.teal + "88" }}
-                              thumbColor={deck.is_enabled ? Colors.teal : Colors.textMuted}
-                              ios_backgroundColor={Colors.borderDim}
+                              trackColor={{ false: colors.borderDim, true: colors.teal + "88" }}
+                              thumbColor={deck.is_enabled ? colors.teal : colors.textMuted}
+                              ios_backgroundColor={colors.borderDim}
                               disabled={!strat.is_enabled}
                               style={!strat.is_enabled ? { opacity: 0.4 } : undefined}
                             />
                           ) : (
                             deck.is_purchasable && deck.shop_price ? (
                               <TouchableOpacity
-                                style={styles.buyBtn}
+                                style={[styles.buyBtn, { borderColor: colors.amber, backgroundColor: colors.amber + "22", borderRadius: isNormal ? 999 : 2 }]}
                                 onPress={() => handlePurchaseDeck(deck)}
                                 disabled={purchasingDeck === deck.key || capital < deck.shop_price}
                               >
                                 <Text
                                   style={[
                                     styles.buyBtnText,
+                                    { color: colors.amber },
                                     (purchasingDeck === deck.key || capital < deck.shop_price) && { opacity: 0.5 },
                                   ]}
                                 >
@@ -322,9 +364,10 @@ export default function DecksScreen() {
                   })}
                 </View>
               )}
-            </View>
-          );
-        })}
+              </View>
+            );
+          })}
+        </View>
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -347,13 +390,69 @@ const styles = StyleSheet.create({
   topLabel: { fontSize: 9, fontFamily: Fonts.sansBold, color: Colors.textDim, letterSpacing: 2, flex: 1 },
 
   scroll: { padding: 20, gap: 14, alignItems: "center" },
+  hero: {
+    width: "100%",
+    maxWidth: 1100,
+    gap: 14,
+  },
+  heroWide: {
+    flexDirection: "row",
+    alignItems: "stretch",
+  },
+  heroMain: {
+    flex: 1.2,
+    borderWidth: 1,
+    padding: 20,
+  },
+  heroSide: {
+    flex: 0.7,
+    minWidth: 280,
+  },
+  heroEyebrow: {
+    fontSize: 10,
+    fontFamily: Fonts.sansBold,
+    letterSpacing: 1.2,
+    marginBottom: 8,
+  },
+  heroTitle: {
+    fontSize: 26,
+    lineHeight: 32,
+    fontFamily: Fonts.sansBold,
+    marginBottom: 10,
+  },
+  heroBody: {
+    fontSize: 13,
+    lineHeight: 20,
+    fontFamily: Fonts.sans,
+    marginBottom: 14,
+  },
+  summaryCard: {
+    borderWidth: 1,
+    padding: 20,
+    gap: 10,
+  },
+  summaryTitle: {
+    fontSize: 12,
+    fontFamily: Fonts.sansBold,
+    letterSpacing: 1.2,
+  },
+  summaryLine: {
+    fontSize: 16,
+    fontFamily: Fonts.sansBold,
+  },
+  summaryNote: {
+    fontSize: 11,
+    lineHeight: 18,
+    fontFamily: Fonts.sans,
+  },
 
   statsRow: {
     width: "100%", maxWidth: 620,
     flexDirection: "row",
-    backgroundColor: Colors.bgPanel, borderWidth: 1, borderColor: Colors.borderDim, borderRadius: 2,
+    gap: 10,
+    flexWrap: "wrap",
   },
-  statBlock: { flex: 1, padding: 14, alignItems: "center" },
+  statBlock: { flex: 1, minWidth: 140, padding: 14, alignItems: "center", borderWidth: 1 },
   statBorder: { borderLeftWidth: 1, borderLeftColor: Colors.borderDim },
   statLabel: { fontSize: 7, fontFamily: Fonts.sansBold, color: Colors.textMuted, letterSpacing: 1.5, marginBottom: 4 },
   statValue: { fontSize: 18, fontFamily: Fonts.mono, color: Colors.textBright, letterSpacing: 1 },
@@ -370,6 +469,21 @@ const styles = StyleSheet.create({
     width: "100%", maxWidth: 620,
     backgroundColor: Colors.bgPanel, borderWidth: 1, borderColor: Colors.borderDim,
     borderRadius: 2, overflow: "hidden",
+  },
+  strategyGrid: {
+    width: "100%",
+    maxWidth: 1100,
+    gap: 14,
+  },
+  strategyGridWide: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  strategyBlockWide: {
+    width: "48.5%",
+    maxWidth: undefined,
   },
   lockedBlock: { opacity: 0.65 },
 

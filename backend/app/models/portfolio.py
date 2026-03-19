@@ -61,6 +61,7 @@ class UserPortfolio(Base):
         nullable=True,
     )
     persona_vector: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    companion_id: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()

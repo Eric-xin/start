@@ -3,7 +3,7 @@ import {
   Modal, View, Text, TouchableOpacity, StyleSheet,
   ScrollView, TouchableWithoutFeedback, Animated,
 } from "react-native";
-import { Colors } from "../../constants/colors";
+import { useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 
 interface Props {
@@ -20,6 +20,8 @@ export function FloatingPanel({
   visible, title, subtitle, onClose, children,
   width = 640, height = 520,
 }: Props) {
+  const colors = useColors();
+  const styles = createStyles(colors);
   const scaleAnim = useRef(new Animated.Value(0.92)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
@@ -84,7 +86,7 @@ export function FloatingPanel({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0, 0, 0, 0.72)",
@@ -95,18 +97,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   panel: {
-    backgroundColor: Colors.bgPanel,
+    backgroundColor: colors.bgPanel,
     borderWidth: 1,
-    borderColor: Colors.borderPrimary,
-    borderRadius: 2,
+    borderColor: colors.borderPrimary,
+    borderRadius: 16,
     overflow: "hidden",
     boxShadow: "0 24px 64px rgba(0, 0, 0, 0.9)",
   },
   titleBar: {
     height: 40,
-    backgroundColor: Colors.bg,
+    backgroundColor: colors.bg,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.borderPrimary,
+    borderBottomColor: colors.borderPrimary,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -121,18 +123,18 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: Colors.blue,
+    backgroundColor: colors.blue,
   },
   title: {
     fontSize: 11,
     fontFamily: Fonts.mono,
-    color: Colors.blue,
+    color: colors.blue,
     letterSpacing: 2.5,
   },
   subtitle: {
     fontSize: 9,
     fontFamily: Fonts.sansBold,
-    color: Colors.textDim,
+    color: colors.textDim,
     letterSpacing: 1,
     marginLeft: 4,
   },
@@ -142,7 +144,7 @@ const styles = StyleSheet.create({
   closeBtnText: {
     fontSize: 12,
     fontFamily: Fonts.sans,
-    color: Colors.textDim,
+    color: colors.textDim,
   },
   body: {
     flex: 1,

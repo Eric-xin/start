@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   useWindowDimensions,
   Platform,
+  Modal,
 } from "react-native";
 import Svg, {
   Path,
@@ -26,7 +27,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from "react-native-reanimated";
-import { Colors } from "../../constants/colors";
+import { Colors, useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { Layout } from "../../constants/layout";
 import { usePortfolioStore } from "../../store/portfolioStore";
@@ -38,6 +39,8 @@ import {
   type TradeRecord,
 } from "../../services/simulation";
 import { api } from "../../services/api";
+import { useThemeStore } from "../../store/themeStore";
+import { ThemeModeToggle } from "../../components/theme/ThemeModeToggle";
 
 // ─── Asset config ────────────────────────────────────────────────────────────
 
@@ -136,6 +139,7 @@ function buildAreaPath(
 }
 
 function LineChart({ data, benchmarkData, events, width, height }: LineChartProps) {
+  const colors = useColors();
   const PAD_LEFT = 56;
   const PAD_RIGHT = 16;
   const PAD_TOP = 12;
@@ -213,10 +217,10 @@ function LineChart({ data, benchmarkData, events, width, height }: LineChartProp
       x: scaleX(ev.date),
       color:
         ev.impact === "positive"
-          ? Colors.green
+          ? colors.green
           : ev.impact === "negative"
-          ? Colors.red
-          : Colors.amber,
+          ? colors.red
+          : colors.amber,
     }));
 
   // Last point tip
@@ -229,8 +233,8 @@ function LineChart({ data, benchmarkData, events, width, height }: LineChartProp
     <Svg width={width} height={height}>
       <Defs>
         <LinearGradient id="portfolioGrad" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#0a6cf5" stopOpacity="0.25" />
-          <Stop offset="1" stopColor="#0a6cf5" stopOpacity="0.02" />
+          <Stop offset="0" stopColor={colors.blue} stopOpacity="0.25" />
+          <Stop offset="1" stopColor={colors.blue} stopOpacity="0.02" />
         </LinearGradient>
       </Defs>
 
@@ -240,7 +244,7 @@ function LineChart({ data, benchmarkData, events, width, height }: LineChartProp
         y={PAD_TOP}
         width={chartW}
         height={chartH}
-        fill={Colors.bgPanel}
+        fill={colors.bgPanel}
         rx={2}
       />
 
@@ -252,7 +256,7 @@ function LineChart({ data, benchmarkData, events, width, height }: LineChartProp
             y1={gl.y}
             x2={PAD_LEFT + chartW}
             y2={gl.y}
-            stroke={Colors.borderFaint}
+            stroke={colors.borderFaint}
             strokeWidth={1}
             strokeDasharray={i === 0 ? undefined : "3,4"}
           />
@@ -261,7 +265,7 @@ function LineChart({ data, benchmarkData, events, width, height }: LineChartProp
             y={gl.y + 4}
             fontSize={8}
             fontFamily={Fonts.mono}
-            fill={Colors.textDim}
+            fill={colors.textDim}
             textAnchor="end"
           >
             {fmtCurrency(gl.val)}
@@ -294,7 +298,7 @@ function LineChart({ data, benchmarkData, events, width, height }: LineChartProp
           y={PAD_TOP + chartH + 16}
           fontSize={9}
           fontFamily={Fonts.mono}
-          fill={Colors.textDim}
+          fill={colors.textDim}
           textAnchor="middle"
         >
           {yr.year}
@@ -305,7 +309,7 @@ function LineChart({ data, benchmarkData, events, width, height }: LineChartProp
       {benchmarkPoints.length > 1 && (
         <Path
           d={buildAreaPath(benchmarkPoints, chartBottom)}
-          fill={Colors.textMuted}
+          fill={colors.textMuted}
           fillOpacity={0.05}
         />
       )}
@@ -322,7 +326,7 @@ function LineChart({ data, benchmarkData, events, width, height }: LineChartProp
       {benchmarkPoints.length > 1 && (
         <Path
           d={buildPath(benchmarkPoints)}
-          stroke={Colors.textDim}
+          stroke={colors.textDim}
           strokeWidth={1.5}
           fill="none"
           strokeDasharray="4,3"
@@ -334,7 +338,7 @@ function LineChart({ data, benchmarkData, events, width, height }: LineChartProp
       {portfolioPoints.length > 0 && (
         <Path
           d={buildPath(portfolioPoints)}
-          stroke="#0a6cf5"
+          stroke={colors.blue}
           strokeWidth={2}
           fill="none"
           strokeLinecap="round"
@@ -345,13 +349,13 @@ function LineChart({ data, benchmarkData, events, width, height }: LineChartProp
       {/* Rightmost value tip */}
       {lastPt && lastVal !== undefined && (
         <G>
-          <Circle cx={lastPt.x} cy={lastPt.y} r={3.5} fill="#0a6cf5" />
+          <Circle cx={lastPt.x} cy={lastPt.y} r={3.5} fill={colors.blue} />
           <Rect
             x={lastPt.x - 2}
             y={lastPt.y - 18}
             width={60}
             height={14}
-            fill={Colors.bgCard ?? Colors.bgPanel}
+            fill={colors.bgCard ?? colors.bgPanel}
             rx={2}
             opacity={0.9}
           />
@@ -360,7 +364,7 @@ function LineChart({ data, benchmarkData, events, width, height }: LineChartProp
             y={lastPt.y - 7}
             fontSize={9}
             fontFamily={Fonts.mono}
-            fill={Colors.textBright}
+            fill={colors.textBright}
             textAnchor="middle"
           >
             {fmtCurrency(lastVal)}
@@ -370,13 +374,13 @@ function LineChart({ data, benchmarkData, events, width, height }: LineChartProp
 
       {/* Legend */}
       <G>
-        <Rect x={PAD_LEFT + 8} y={PAD_TOP + 6} width={20} height={2} fill="#0a6cf5" rx={1} />
+        <Rect x={PAD_LEFT + 8} y={PAD_TOP + 6} width={20} height={2} fill={colors.blue} rx={1} />
         <SvgText
           x={PAD_LEFT + 32}
           y={PAD_TOP + 9}
           fontSize={8}
           fontFamily={Fonts.mono}
-          fill={Colors.textBright}
+          fill={colors.textBright}
         >
           PORTFOLIO
         </SvgText>
@@ -385,7 +389,7 @@ function LineChart({ data, benchmarkData, events, width, height }: LineChartProp
           y={PAD_TOP + 6}
           width={20}
           height={1.5}
-          fill={Colors.textDim}
+          fill={colors.textDim}
           rx={1}
           opacity={0.6}
         />
@@ -408,9 +412,12 @@ function LineChart({ data, benchmarkData, events, width, height }: LineChartProp
 interface TraitBarProps {
   label: string;
   value: number; // 0–1
+  barColor?: string;
 }
 
-function TraitBar({ label, value }: TraitBarProps) {
+function TraitBar({ label, value, barColor: customBarColor }: TraitBarProps) {
+  const colors = useColors();
+  const isNormal = useThemeStore((state) => state.mode === "normal");
   const fill = useSharedValue(0);
 
   useEffect(() => {
@@ -424,19 +431,22 @@ function TraitBar({ label, value }: TraitBarProps) {
     width: `${fill.value * 100}%` as any,
   }));
 
-  // Color: interpolate from dim blue to bright blue based on value
+  // Use custom color if provided, otherwise interpolate from dim blue to bright blue based on value
   const barColor =
-    value >= 0.7 ? Colors.blue : value >= 0.4 ? Colors.blueLight : Colors.blueDim;
+    customBarColor ||
+    (value >= 0.7 ? colors.blue : value >= 0.4 ? colors.blueLight : colors.blueDim);
 
   return (
-    <View style={traitStyles.row}>
-      <Text style={traitStyles.label}>{label.toUpperCase()}</Text>
-      <View style={traitStyles.track}>
+    <View style={[traitStyles.row, isNormal && traitStyles.rowNormal]}>
+      <Text style={[traitStyles.label, { color: colors.textDim }, isNormal && traitStyles.labelNormal]}>
+        {isNormal ? label : label.toUpperCase()}
+      </Text>
+      <View style={[traitStyles.track, { backgroundColor: colors.bgCard ?? colors.bgPanel, borderColor: colors.borderFaint }, isNormal && traitStyles.trackNormal]}>
         <Animated.View
           style={[traitStyles.fill, fillStyle, { backgroundColor: barColor }]}
         />
       </View>
-      <Text style={traitStyles.value}>{Math.round(value * 100)}</Text>
+      <Text style={[traitStyles.value, { color: colors.textBright }]}>{Math.round(value * 100)}</Text>
     </View>
   );
 }
@@ -448,12 +458,24 @@ const traitStyles = StyleSheet.create({
     gap: 6,
     marginBottom: 6,
   },
+  rowNormal: {
+    gap: 10,
+    marginBottom: 0,
+    alignItems: "center",
+  },
   label: {
     width: 88,
     fontSize: 8,
     fontFamily: Fonts.mono,
     color: Colors.textDim,
     letterSpacing: 0.8,
+  },
+  labelNormal: {
+    width: "auto",
+    fontSize: 12,
+    fontFamily: Fonts.sans,
+    letterSpacing: 0,
+    fontWeight: "500",
   },
   track: {
     flex: 1,
@@ -463,6 +485,11 @@ const traitStyles = StyleSheet.create({
     overflow: "hidden",
     borderWidth: 1,
     borderColor: Colors.borderFaint,
+  },
+  trackNormal: {
+    height: 8,
+    borderRadius: 4,
+    borderWidth: 0,
   },
   fill: {
     height: "100%",
@@ -477,6 +504,165 @@ const traitStyles = StyleSheet.create({
   },
 });
 
+// ─── Simple Allocation Bar ────────────────────────────────────────────────────
+
+interface SimpleAllocationBarProps {
+  allocation: Record<string, number>;
+}
+
+function SimpleAllocationBar({ allocation }: SimpleAllocationBarProps) {
+  const colors = useColors();
+
+  const entries = Object.entries(allocation)
+    .filter(([, v]) => v > 0.01)
+    .sort(([, a], [, b]) => b - a);
+
+  const total = entries.reduce((s, [, v]) => s + v, 0) || 1;
+
+  // Calculate diversification score (how many asset classes)
+  const diversificationScore = entries.length;
+
+  return (
+    <View style={simpleAllocStyles.container}>
+      {/* Title */}
+      <Text style={[simpleAllocStyles.title, { color: colors.textBright }]}>
+        How the money is spread
+      </Text>
+
+      {/* Bar visualization */}
+      <View style={[simpleAllocStyles.bar, { backgroundColor: colors.bgCard, borderColor: colors.borderDim }]}>
+        {entries.map(([key, val]) => {
+          const percentage = (val / total) * 100;
+          const color = ASSET_COLORS[key as AssetClass] ?? colors.blue;
+          return (
+            <View
+              key={key}
+              style={[
+                simpleAllocStyles.segment,
+                {
+                  width: `${percentage}%`,
+                  backgroundColor: color,
+                },
+              ]}
+            />
+          );
+        })}
+      </View>
+
+      {/* Legend */}
+      <View style={simpleAllocStyles.legend}>
+        {entries.map(([key, val]) => {
+          const percentage = (val / total) * 100;
+          const color = ASSET_COLORS[key as AssetClass] ?? colors.blue;
+          return (
+            <View key={key} style={simpleAllocStyles.legendItem}>
+              <View style={[simpleAllocStyles.legendDot, { backgroundColor: color }]} />
+              <Text style={[simpleAllocStyles.legendLabel, { color: colors.textBright }]}>
+                {ASSET_LABELS[key as AssetClass] ?? key.toUpperCase()}
+              </Text>
+              <Text style={[simpleAllocStyles.legendPct, { color: colors.textDim }]}>
+                {percentage.toFixed(0)}%
+              </Text>
+            </View>
+          );
+        })}
+      </View>
+
+      {/* Explanation */}
+      <View style={[simpleAllocStyles.explanation, { backgroundColor: colors.bgCard, borderColor: colors.borderDim }]}>
+        <View style={simpleAllocStyles.explanationHeader}>
+          <Text style={[simpleAllocStyles.explanationIcon]}>✓</Text>
+          <Text style={[simpleAllocStyles.explanationTitle, { color: colors.textBright }]}>
+            Good diversification
+          </Text>
+        </View>
+        <Text style={[simpleAllocStyles.explanationText, { color: colors.textPrimary }]}>
+          Spreading money across {diversificationScore} different {diversificationScore === 1 ? "asset" : "assets"} helps reduce risk. If one goes down, others may help balance it out.
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+const simpleAllocStyles = StyleSheet.create({
+  container: {
+    gap: 10,
+    marginBottom: 6,
+  },
+  title: {
+    fontSize: 13,
+    fontFamily: Fonts.sans,
+    color: Colors.textBright,
+    fontWeight: "500",
+  },
+  bar: {
+    height: 28,
+    borderRadius: 8,
+    overflow: "hidden",
+    flexDirection: "row",
+    borderWidth: 1,
+    borderColor: Colors.borderDim,
+  },
+  segment: {
+    height: "100%",
+  },
+  legend: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  legendLabel: {
+    fontSize: 12,
+    fontFamily: Fonts.sans,
+    color: Colors.textBright,
+  },
+  legendPct: {
+    fontSize: 11,
+    fontFamily: Fonts.mono,
+    color: Colors.textDim,
+  },
+  explanation: {
+    backgroundColor: Colors.bgCard,
+    borderWidth: 1,
+    borderColor: Colors.borderDim,
+    borderRadius: 10,
+    padding: 12,
+    gap: 8,
+  },
+  explanationHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  explanationIcon: {
+    fontSize: 14,
+    color: Colors.green,
+    fontWeight: "600",
+  },
+  explanationTitle: {
+    fontSize: 13,
+    fontFamily: Fonts.sansBold,
+    color: Colors.textBright,
+    fontWeight: "600",
+  },
+  explanationText: {
+    fontSize: 12,
+    fontFamily: Fonts.sans,
+    color: Colors.textPrimary,
+    lineHeight: 17,
+  },
+});
+
 // ─── Allocation Donut ─────────────────────────────────────────────────────────
 
 interface AllocationDonutProps {
@@ -485,6 +671,7 @@ interface AllocationDonutProps {
 }
 
 function AllocationDonut({ allocation, size = 120 }: AllocationDonutProps) {
+  const colors = useColors();
   const cx = size / 2;
   const cy = size / 2;
   const r = size * 0.36;
@@ -501,7 +688,7 @@ function AllocationDonut({ allocation, size = 120 }: AllocationDonutProps) {
     const offset = -cumulativeAngle * circumference;
     cumulativeAngle += fraction;
     const color =
-      ASSET_COLORS[key as AssetClass] ?? Colors.blue;
+      ASSET_COLORS[key as AssetClass] ?? colors.blue;
     return { key, fraction, dashArray, offset, color, pct: Math.round(fraction * 100) };
   });
 
@@ -513,7 +700,7 @@ function AllocationDonut({ allocation, size = 120 }: AllocationDonutProps) {
           cx={cx}
           cy={cy}
           r={r}
-          stroke={Colors.borderFaint}
+          stroke={colors.borderFaint}
           strokeWidth={strokeWidth}
           fill="none"
         />
@@ -533,13 +720,13 @@ function AllocationDonut({ allocation, size = 120 }: AllocationDonutProps) {
           />
         ))}
         {/* Donut hole */}
-        <Circle cx={cx} cy={cy} r={r * 0.52} fill={Colors.bgPanel} />
+        <Circle cx={cx} cy={cy} r={r * 0.52} fill={colors.bgPanel} />
         <SvgText
           x={cx}
           y={cy - 4}
           fontSize={9}
           fontFamily={Fonts.mono}
-          fill={Colors.textDim}
+          fill={colors.textDim}
           textAnchor="middle"
         >
           ALLOC
@@ -549,7 +736,7 @@ function AllocationDonut({ allocation, size = 120 }: AllocationDonutProps) {
           y={cy + 10}
           fontSize={8}
           fontFamily={Fonts.mono}
-          fill={Colors.textDim}
+          fill={colors.textDim}
           textAnchor="middle"
         >
           {entries.length} assets
@@ -559,7 +746,7 @@ function AllocationDonut({ allocation, size = 120 }: AllocationDonutProps) {
         {segments.map((seg) => (
           <View key={seg.key} style={donutStyles.legendItem}>
             <View style={[donutStyles.dot, { backgroundColor: seg.color }]} />
-            <Text style={donutStyles.legendText}>
+            <Text style={[donutStyles.legendText, { color: colors.textDim }]}>
               {ASSET_LABELS[seg.key as AssetClass] ?? seg.key.toUpperCase()} {seg.pct}%
             </Text>
           </View>
@@ -607,37 +794,38 @@ interface TradeLogItemProps {
 }
 
 function TradeLogItem({ trade, capital }: TradeLogItemProps) {
+  const colors = useColors();
   const isBuy = trade.action.toLowerCase().includes("buy");
-  const actionColor = isBuy ? Colors.green : Colors.red;
+  const actionColor = isBuy ? colors.green : colors.red;
   const actionLabel = isBuy ? "▲ BUY" : "▼ SELL";
   const weightDelta = trade.new_weight - trade.old_weight;
 
   return (
-    <View style={tradeStyles.container}>
+    <View style={[tradeStyles.container, { backgroundColor: colors.bgPanel, borderColor: colors.borderFaint }]}>
       <View style={tradeStyles.header}>
-        <Text style={tradeStyles.date}>{trade.date}</Text>
+        <Text style={[tradeStyles.date, { color: colors.textDim }]}>{trade.date}</Text>
         <View style={[tradeStyles.actionBadge, { borderColor: actionColor }]}>
           <Text style={[tradeStyles.actionText, { color: actionColor }]}>
             {actionLabel}
           </Text>
         </View>
-        <Text style={tradeStyles.asset}>
+        <Text style={[tradeStyles.asset, { color: colors.textBright }]}>
           {ASSET_LABELS[trade.asset as AssetClass] ?? trade.asset.toUpperCase()}
         </Text>
       </View>
-      <Text style={tradeStyles.reason}>{trade.reason}</Text>
+      <Text style={[tradeStyles.reason, { color: colors.textBright }]}>{trade.reason}</Text>
       <View style={tradeStyles.footer}>
-        <View style={tradeStyles.traitPill}>
-          <Text style={tradeStyles.traitText}>
+        <View style={[tradeStyles.traitPill, { backgroundColor: colors.bgCard ?? colors.bgPanel, borderColor: colors.borderDim ?? colors.borderFaint }]}>
+          <Text style={[tradeStyles.traitText, { color: colors.blue }]}>
             {trade.trigger_trait} · {(trade.trait_value * 100).toFixed(0)}
           </Text>
         </View>
         {capital !== undefined && (
-          <Text style={tradeStyles.capital}>
+          <Text style={[tradeStyles.capital, { color: colors.textDim }]}>
             {fmtCurrency(capital)}{" "}
             <Text
               style={{
-                color: weightDelta >= 0 ? Colors.green : Colors.red,
+                color: weightDelta >= 0 ? colors.green : colors.red,
               }}
             >
               ({weightDelta >= 0 ? "+" : ""}
@@ -730,12 +918,34 @@ interface MetricCardProps {
 }
 
 function MetricCard({ label, value, color }: MetricCardProps) {
+  const colors = useColors();
   return (
-    <View style={metricStyles.card}>
-      <Text style={metricStyles.label}>{label}</Text>
-      <Text style={[metricStyles.value, { color: color ?? Colors.textBright }]}>
+    <View style={[metricStyles.card, { backgroundColor: colors.bgPanel, borderColor: colors.borderFaint }]}>
+      <Text style={[metricStyles.label, { color: colors.textDim }]}>{label}</Text>
+      <Text style={[metricStyles.value, { color: color ?? colors.textBright }]}>
         {value}
       </Text>
+    </View>
+  );
+}
+
+interface SimpleMetricCardProps extends MetricCardProps {
+  hint?: string;
+}
+
+function SimpleMetricCard({ label, value, color, hint }: SimpleMetricCardProps) {
+  const colors = useColors();
+  return (
+    <View style={[metricStyles.card, { backgroundColor: colors.bgPanel, borderColor: colors.borderDim, borderRadius: 12 }]}>
+      <Text style={[metricStyles.label, { color: colors.textDim, fontSize: 12 }]}>{label}</Text>
+      <Text style={[metricStyles.value, { color: color ?? colors.textBright }]}>
+        {value}
+      </Text>
+      {hint && (
+        <Text style={{ fontSize: 11, fontFamily: Fonts.sans, color: colors.textMuted, lineHeight: 15, marginTop: 4 }}>
+          {hint}
+        </Text>
+      )}
     </View>
   );
 }
@@ -768,6 +978,7 @@ const metricStyles = StyleSheet.create({
 // ─── Live Clock ────────────────────────────────────────────────────────────────
 
 function LiveClock() {
+  const colors = useColors();
   const [time, setTime] = useState(() => {
     const now = new Date();
     return now.toTimeString().slice(0, 8);
@@ -782,7 +993,7 @@ function LiveClock() {
   }, []);
 
   return (
-    <Text style={clockStyles.text}>{time} UTC</Text>
+    <Text style={[clockStyles.text, { color: colors.textDim }]}>{time} UTC</Text>
   );
 }
 
@@ -804,6 +1015,8 @@ interface AssetToggleProps {
 }
 
 function AssetToggle({ asset, selected, onToggle }: AssetToggleProps) {
+  const colors = useColors();
+  const isNormal = useThemeStore((state) => state.mode === "normal");
   const color = ASSET_COLORS[asset];
   return (
     <TouchableOpacity
@@ -811,8 +1024,9 @@ function AssetToggle({ asset, selected, onToggle }: AssetToggleProps) {
       style={[
         assetToggleStyles.chip,
         {
-          borderColor: selected ? color : Colors.borderFaint,
-          backgroundColor: selected ? color + "22" : "transparent",
+          borderColor: selected ? color : colors.borderFaint,
+          backgroundColor: selected ? color + "22" : isNormal ? colors.bg : "transparent",
+          borderRadius: isNormal ? 999 : 3,
         },
       ]}
       activeOpacity={0.7}
@@ -820,13 +1034,13 @@ function AssetToggle({ asset, selected, onToggle }: AssetToggleProps) {
       <View
         style={[
           assetToggleStyles.dot,
-          { backgroundColor: selected ? color : Colors.textMuted },
+          { backgroundColor: selected ? color : colors.textMuted },
         ]}
       />
       <Text
         style={[
           assetToggleStyles.label,
-          { color: selected ? color : Colors.textDim },
+          { color: selected ? color : colors.textDim, fontFamily: isNormal ? Fonts.sansBold : Fonts.mono },
         ]}
       >
         {ASSET_LABELS[asset]}
@@ -860,11 +1074,12 @@ const assetToggleStyles = StyleSheet.create({
 // ─── Divider ──────────────────────────────────────────────────────────────────
 
 function Divider() {
+  const colors = useColors();
   return (
     <View
       style={{
         height: 1,
-        backgroundColor: Colors.borderFaint,
+        backgroundColor: colors.borderFaint,
         marginVertical: 12,
       }}
     />
@@ -874,16 +1089,18 @@ function Divider() {
 // ─── Section Label ────────────────────────────────────────────────────────────
 
 function SectionLabel({ text }: { text: string }) {
+  const colors = useColors();
+  const isNormal = useThemeStore((state) => state.mode === "normal");
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
-      <View style={{ width: 3, height: 12, backgroundColor: Colors.blue, borderRadius: 1 }} />
+      <View style={{ width: isNormal ? 8 : 3, height: 12, backgroundColor: colors.blue, borderRadius: 999 }} />
       <Text
         style={{
-          fontSize: 9,
-          fontFamily: Fonts.mono,
-          color: Colors.blue,
-          letterSpacing: 2,
-          textTransform: "uppercase",
+          fontSize: isNormal ? 14 : 9,
+          fontFamily: isNormal ? Fonts.sansBold : Fonts.mono,
+          color: colors.blue,
+          letterSpacing: isNormal ? 0.4 : 2,
+          textTransform: isNormal ? "none" : "uppercase",
         }}
       >
         {text}
@@ -891,6 +1108,148 @@ function SectionLabel({ text }: { text: string }) {
     </View>
   );
 }
+
+// ─── Year Picker Component ────────────────────────────────────────────────────
+
+interface YearPickerProps {
+  value: string;
+  onSelect: (year: string) => void;
+  minYear?: number;
+  maxYear?: number;
+  label: string;
+}
+
+function YearPicker({ value, onSelect, minYear = 2000, maxYear = 2030, label }: YearPickerProps) {
+  const colors = useColors();
+  const isNormal = useThemeStore((state) => state.mode === "normal");
+  const [showPicker, setShowPicker] = useState(false);
+
+  const years = Array.from({ length: maxYear - minYear + 1 }, (_, i) => (minYear + i).toString());
+
+  return (
+    <>
+      <TouchableOpacity
+        style={[
+          yearPickerStyles.trigger,
+          {
+            backgroundColor: isNormal ? colors.bgCard : Colors.bg,
+            borderColor: isNormal ? colors.borderDim : Colors.borderDim,
+          },
+        ]}
+        onPress={() => setShowPicker(true)}
+        activeOpacity={0.7}
+      >
+        <Text style={[yearPickerStyles.triggerText, { color: colors.textBright }]}>
+          {value}
+        </Text>
+        <Text style={[yearPickerStyles.triggerArrow, { color: colors.textDim }]}>▼</Text>
+      </TouchableOpacity>
+
+      <Modal visible={showPicker} transparent animationType="fade">
+        <TouchableOpacity
+          style={yearPickerStyles.modalOverlay}
+          onPress={() => setShowPicker(false)}
+          activeOpacity={1}
+        >
+          <View
+            style={[
+              yearPickerStyles.modalContent,
+              {
+                backgroundColor: colors.bgPanel,
+                borderColor: colors.borderFaint,
+              },
+            ]}
+          >
+            <Text style={[yearPickerStyles.modalTitle, { color: colors.textBright }]}>
+              Select {label}
+            </Text>
+            <ScrollView style={yearPickerStyles.yearList}>
+              {years.map((year) => (
+                <TouchableOpacity
+                  key={year}
+                  style={[
+                    yearPickerStyles.yearItem,
+                    value === year && { backgroundColor: colors.blue },
+                  ]}
+                  onPress={() => {
+                    onSelect(year);
+                    setShowPicker(false);
+                  }}
+                  activeOpacity={0.6}
+                >
+                  <Text
+                    style={[
+                      yearPickerStyles.yearItemText,
+                      { color: value === year ? colors.bgPanel : colors.textBright },
+                    ]}
+                  >
+                    {year}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </>
+  );
+}
+
+const yearPickerStyles = StyleSheet.create({
+  trigger: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 8,
+  },
+  triggerText: {
+    fontSize: 14,
+    fontFamily: Fonts.sans,
+    fontWeight: "500",
+  },
+  triggerArrow: {
+    fontSize: 10,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    borderRadius: 12,
+    maxHeight: 400,
+    width: "80%",
+    borderWidth: 1,
+    overflow: "hidden",
+  },
+  modalTitle: {
+    fontSize: 14,
+    fontFamily: Fonts.sansBold,
+    fontWeight: "600",
+    padding: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderFaint,
+  },
+  yearList: {
+    maxHeight: 320,
+  },
+  yearItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderFaint,
+  },
+  yearItemText: {
+    fontSize: 14,
+    fontFamily: Fonts.sans,
+    textAlign: "center",
+  },
+});
 
 // ─── Default trait vector (neutral investor) ──────────────────────────────────
 
@@ -909,6 +1268,8 @@ const TRAIT_KEYS = [
 // ─── Main Simulation Screen ───────────────────────────────────────────────────
 
 export default function SimulationScreen() {
+  const colors = useColors();
+  const isNormal = useThemeStore((state) => state.mode === "normal");
   const { width } = useWindowDimensions();
   const isWide = width >= 1024;
 
@@ -917,12 +1278,10 @@ export default function SimulationScreen() {
     (portfolio as any)?.persona_vector ?? DEFAULT_TRAITS;
 
   const [traitMap, setTraitMap] = useState<Record<string, number> | null>(null);
-  const [traitInterpretation, setTraitInterpretation] = useState<string>("");
 
   useEffect(() => {
     api.get("/api/hud/traits").then((r) => {
       setTraitMap(r.data.traits);
-      setTraitInterpretation(r.data.interpretation ?? "");
     }).catch(() => {});
   }, []);
 
@@ -990,6 +1349,7 @@ export default function SimulationScreen() {
       style={[
         styles.personaPanel,
         isWide ? { width: PERSONA_PANEL_WIDTH } : { width: "100%" },
+        isNormal && { backgroundColor: colors.bgPanel },
       ]}
     >
       {/* Persona type */}
@@ -1012,42 +1372,38 @@ export default function SimulationScreen() {
         </View>
       </View>
 
-      <View style={{ marginTop: 12 }}>
+      <View style={{ marginTop: 14, gap: 10 }}>
         {TRAIT_NAMES.map((name, i) => (
-          <TraitBar key={name} label={name} value={traitValues[i]} />
+          <TraitBar
+            key={name}
+            label={name}
+            value={traitValues[i]}
+            barColor={personaColor(inferredPersona)}
+          />
         ))}
       </View>
 
-      {traitInterpretation ? (
-        <Text style={styles.traitInterpretation}>{traitInterpretation}</Text>
-      ) : null}
-
       <Divider />
-
-      {/* Simulation config */}
-      <SectionLabel text="SIMULATION CONFIG" />
 
       <View style={styles.configRow}>
         <View style={styles.configField}>
           <Text style={styles.configLabel}>START</Text>
-          <TextInput
-            style={styles.configInput}
+          <YearPicker
             value={startYear}
-            onChangeText={setStartYear}
-            keyboardType="numeric"
-            maxLength={4}
-            selectTextOnFocus
+            onSelect={setStartYear}
+            minYear={2000}
+            maxYear={2030}
+            label="Start Year"
           />
         </View>
         <View style={styles.configField}>
           <Text style={styles.configLabel}>END</Text>
-          <TextInput
-            style={styles.configInput}
+          <YearPicker
             value={endYear}
-            onChangeText={setEndYear}
-            keyboardType="numeric"
-            maxLength={4}
-            selectTextOnFocus
+            onSelect={setEndYear}
+            minYear={2000}
+            maxYear={2030}
+            label="End Year"
           />
         </View>
       </View>
@@ -1055,7 +1411,7 @@ export default function SimulationScreen() {
       <View style={[styles.configField, { marginTop: 8 }]}>
         <Text style={styles.configLabel}>INITIAL CAPITAL ($)</Text>
         <TextInput
-          style={styles.configInput}
+          style={[styles.configInput, isNormal && { backgroundColor: colors.bgCard, color: colors.textBright, borderColor: colors.borderDim }]}
           value={capital}
           onChangeText={setCapital}
           keyboardType="numeric"
@@ -1090,7 +1446,7 @@ export default function SimulationScreen() {
         {running ? (
           <ActivityIndicator size="small" color={Colors.textBright} />
         ) : (
-          <Text style={styles.runButtonText}>▶ RUN SIMULATION</Text>
+          <Text style={styles.runButtonText}>{isNormal ? "▶ Run My Scenario" : "▶ RUN SIMULATION"}</Text>
         )}
       </TouchableOpacity>
     </View>
@@ -1106,10 +1462,11 @@ export default function SimulationScreen() {
       {!result && !running && !error && (
         <View style={styles.emptyState}>
           <Text style={styles.emptyIcon}>◉</Text>
-          <Text style={styles.emptyTitle}>SIMULATION ENGINE READY</Text>
+          <Text style={styles.emptyTitle}>{isNormal ? "Simulation ready" : "SIMULATION ENGINE READY"}</Text>
           <Text style={styles.emptySubtitle}>
-            Configure parameters and press RUN SIMULATION to generate your
-            persona-driven backtest.
+            {isNormal
+              ? "Pick a simple scenario and run it to see how this investor style might have behaved."
+              : "Configure parameters and press RUN SIMULATION to generate your persona-driven backtest."}
           </Text>
         </View>
       )}
@@ -1118,10 +1475,12 @@ export default function SimulationScreen() {
         <View style={styles.emptyState}>
           <ActivityIndicator size="large" color={Colors.blue} />
           <Text style={[styles.emptyTitle, { marginTop: 16 }]}>
-            RUNNING SIMULATION...
+            {isNormal ? "Running your scenario..." : "RUNNING SIMULATION..."}
           </Text>
           <Text style={styles.emptySubtitle}>
-            Backtesting your investor persona across historical market data.
+            {isNormal
+              ? "We're comparing your investor style against past market moves."
+              : "Backtesting your investor persona across historical market data."}
           </Text>
         </View>
       )}
@@ -1129,7 +1488,7 @@ export default function SimulationScreen() {
       {!!error && !running && (
         <View style={styles.errorState}>
           <Text style={styles.errorIcon}>⚠</Text>
-          <Text style={styles.errorTitle}>SIMULATION FAILED</Text>
+          <Text style={styles.errorTitle}>{isNormal ? "Simulation could not run" : "SIMULATION FAILED"}</Text>
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={handleRun}>
             <Text style={styles.retryText}>RETRY</Text>
@@ -1139,71 +1498,143 @@ export default function SimulationScreen() {
 
       {result && !running && (
         <>
+          {isNormal ? (
+            <View style={[styles.normalHelperCard, { backgroundColor: colors.bgPanel, borderColor: colors.borderDim }]}>
+              <Text style={[styles.normalHelperTitle, { color: colors.textBright }]}>How to read this</Text>
+              <Text style={[styles.normalHelperBody, { color: colors.textPrimary }]}>
+                We keep the numbers, but the key story is simple: did the money grow, how rough was the ride, and where did the investor end up putting cash?
+              </Text>
+            </View>
+          ) : null}
+          {isNormal ? (
+            <View style={[styles.metricsStrip, { marginBottom: 6 }]}>
+              <MetricCard
+                label="What happened"
+                value={result.metrics.total_return >= 0 ? "📈 Money grew" : "📉 Money fell"}
+                color={result.metrics.total_return >= 0 ? colors.green : colors.red}
+              />
+              <MetricCard
+                label="Risk feel"
+                value={result.metrics.max_drawdown > -0.2 ? "🙂 Manageable" : result.metrics.max_drawdown > -0.35 ? "😬 Bumpy" : "😵 Wild"}
+                color={result.metrics.max_drawdown > -0.2 ? colors.green : result.metrics.max_drawdown > -0.35 ? colors.amber : colors.red}
+              />
+              <MetricCard
+                label="Quick read"
+                value={result.metrics.sharpe_ratio >= 1 ? "Balanced" : "Needs work"}
+                color={result.metrics.sharpe_ratio >= 1 ? colors.blue : colors.textBright}
+              />
+            </View>
+          ) : null}
           {/* Metrics strip */}
-          <SectionLabel text="PERFORMANCE METRICS" />
-          <View style={styles.metricsStrip}>
-            <MetricCard
-              label="TOTAL RETURN"
-              value={fmtPct(result.metrics.total_return)}
-              color={result.metrics.total_return >= 0 ? Colors.green : Colors.red}
-            />
-            <MetricCard
-              label="ANN. RETURN"
-              value={fmtPctPerYear(result.metrics.annualized_return)}
-              color={
-                result.metrics.annualized_return >= 0 ? Colors.green : Colors.red
-              }
-            />
-            <MetricCard
-              label="MAX DRAWDOWN"
-              value={fmtPct(result.metrics.max_drawdown, false)}
-              color={Colors.red}
-            />
-            <MetricCard
-              label="SHARPE"
-              value={result.metrics.sharpe_ratio.toFixed(2)}
-              color={
-                result.metrics.sharpe_ratio >= 1
-                  ? Colors.green
-                  : result.metrics.sharpe_ratio >= 0
-                  ? Colors.amber
-                  : Colors.red
-              }
-            />
-            <MetricCard
-              label="VOLATILITY"
-              value={fmtPctPerYear(result.metrics.volatility)}
-              color={Colors.amber}
-            />
-          </View>
+          <SectionLabel text={isNormal ? "📊 The Numbers" : "PERFORMANCE METRICS"} />
+          {isNormal ? (
+            <View style={styles.metricsStrip}>
+              <SimpleMetricCard
+                label="Total gain/loss"
+                value={fmtPct(result.metrics.total_return)}
+                color={result.metrics.total_return >= 0 ? colors.green : colors.red}
+                hint="How much your money grew or shrank overall"
+              />
+              <SimpleMetricCard
+                label="Yearly average"
+                value={fmtPctPerYear(result.metrics.annualized_return)}
+                color={result.metrics.annualized_return >= 0 ? colors.green : colors.red}
+                hint="What this looks like as a per-year rate"
+              />
+              <SimpleMetricCard
+                label="Biggest dip"
+                value={fmtPct(result.metrics.max_drawdown, false)}
+                color={colors.red}
+                hint="Worst drop from peak — how scary it got"
+              />
+              <SimpleMetricCard
+                label="Quality score"
+                value={result.metrics.sharpe_ratio.toFixed(2)}
+                color={
+                  result.metrics.sharpe_ratio >= 1
+                    ? colors.green
+                    : result.metrics.sharpe_ratio >= 0
+                    ? colors.amber
+                    : colors.red
+                }
+                hint="Above 1.0 = good return for the risk taken"
+              />
+            </View>
+          ) : (
+            <View style={styles.metricsStrip}>
+              <MetricCard
+                label="TOTAL RETURN"
+                value={fmtPct(result.metrics.total_return)}
+                color={result.metrics.total_return >= 0 ? Colors.green : Colors.red}
+              />
+              <MetricCard
+                label="ANN. RETURN"
+                value={fmtPctPerYear(result.metrics.annualized_return)}
+                color={
+                  result.metrics.annualized_return >= 0 ? Colors.green : Colors.red
+                }
+              />
+              <MetricCard
+                label="MAX DRAWDOWN"
+                value={fmtPct(result.metrics.max_drawdown, false)}
+                color={Colors.red}
+              />
+              <MetricCard
+                label="SHARPE"
+                value={result.metrics.sharpe_ratio.toFixed(2)}
+                color={
+                  result.metrics.sharpe_ratio >= 1
+                    ? Colors.green
+                    : result.metrics.sharpe_ratio >= 0
+                    ? Colors.amber
+                    : Colors.red
+                }
+              />
+              <MetricCard
+                label="VOLATILITY"
+                value={fmtPctPerYear(result.metrics.volatility)}
+                color={Colors.amber}
+              />
+            </View>
+          )}
 
-          {/* Secondary metrics */}
-          <View style={[styles.metricsStrip, { marginTop: 6 }]}>
-            <MetricCard
-              label="BEST MONTH"
-              value={fmtPct(result.metrics.best_month)}
-              color={Colors.green}
-            />
-            <MetricCard
-              label="WORST MONTH"
-              value={fmtPct(result.metrics.worst_month)}
-              color={Colors.red}
-            />
-            <MetricCard
-              label="TOTAL TRADES"
-              value={String(result.metrics.total_trades)}
-              color={Colors.textBright}
-            />
-          </View>
+          {!isNormal && (
+            <View style={[styles.metricsStrip, { marginTop: 6 }]}>
+              <MetricCard
+                label="BEST MONTH"
+                value={fmtPct(result.metrics.best_month)}
+                color={Colors.green}
+              />
+              <MetricCard
+                label="WORST MONTH"
+                value={fmtPct(result.metrics.worst_month)}
+                color={Colors.red}
+              />
+              <MetricCard
+                label="TOTAL TRADES"
+                value={String(result.metrics.total_trades)}
+                color={Colors.textBright}
+              />
+            </View>
+          )}
+
+          {isNormal && (
+            <>
+              <Divider />
+              <SectionLabel text="🧺 What's Inside" />
+              <SimpleAllocationBar allocation={result.final_allocation} />
+            </>
+          )}
 
           <Divider />
 
           {/* Line Chart */}
-          <SectionLabel text="PORTFOLIO PERFORMANCE" />
+          <SectionLabel text={isNormal ? "📈 Money Over Time" : "PORTFOLIO PERFORMANCE"} />
           <View
             style={[
               styles.chartContainer,
               { width: chartWidth, height: 280 },
+              isNormal && { borderColor: colors.borderDim, backgroundColor: colors.bgPanel },
             ]}
           >
             <LineChart
@@ -1223,40 +1654,44 @@ export default function SimulationScreen() {
 
           <Divider />
 
-          {/* Final Allocation Donut */}
-          <SectionLabel text="FINAL ALLOCATION" />
-          <View style={styles.donutRow}>
-            <AllocationDonut allocation={result.final_allocation} size={130} />
-            <View style={styles.allocationList}>
-              {Object.entries(result.final_allocation)
-                .filter(([, v]) => v > 0.005)
-                .sort(([, a], [, b]) => b - a)
-                .map(([key, val]) => (
-                  <View key={key} style={styles.allocationItem}>
-                    <View
-                      style={[
-                        styles.allocationDot,
-                        {
-                          backgroundColor:
-                            ASSET_COLORS[key as AssetClass] ?? Colors.blue,
-                        },
-                      ]}
-                    />
-                    <Text style={styles.allocationAsset}>
-                      {ASSET_LABELS[key as AssetClass] ?? key.toUpperCase()}
-                    </Text>
-                    <Text style={styles.allocationPct}>
-                      {(val * 100).toFixed(1)}%
-                    </Text>
-                  </View>
-                ))}
-            </View>
-          </View>
+          {/* Final Allocation Donut - Pro mode only */}
+          {!isNormal && (
+            <>
+              <SectionLabel text="FINAL ALLOCATION" />
+              <View style={styles.donutRow}>
+                <AllocationDonut allocation={result.final_allocation} size={130} />
+                <View style={styles.allocationList}>
+                  {Object.entries(result.final_allocation)
+                    .filter(([, v]) => v > 0.005)
+                    .sort(([, a], [, b]) => b - a)
+                    .map(([key, val]) => (
+                      <View key={key} style={styles.allocationItem}>
+                        <View
+                          style={[
+                            styles.allocationDot,
+                            {
+                              backgroundColor:
+                                ASSET_COLORS[key as AssetClass] ?? Colors.blue,
+                            },
+                          ]}
+                        />
+                        <Text style={styles.allocationAsset}>
+                          {ASSET_LABELS[key as AssetClass] ?? key.toUpperCase()}
+                        </Text>
+                        <Text style={styles.allocationPct}>
+                          {(val * 100).toFixed(1)}%
+                        </Text>
+                      </View>
+                    ))}
+                </View>
+              </View>
 
-          <Divider />
+              <Divider />
+            </>
+          )}
 
           {/* Trade Log */}
-          <SectionLabel text={`TRADE LOG · ${result.trades.length} DECISIONS`} />
+          <SectionLabel text={isNormal ? `📝 Decisions Made (${result.trades.length})` : `TRADE LOG · ${result.trades.length} DECISIONS`} />
           {result.trades.length === 0 ? (
             <Text style={styles.noTradesText}>
               No trades executed in this simulation period.
@@ -1275,15 +1710,16 @@ export default function SimulationScreen() {
   );
 
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, isNormal && { backgroundColor: colors.bg }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, isNormal && { backgroundColor: colors.bgPanel, borderBottomColor: colors.borderDim }]}>
         <View style={styles.headerLeft}>
           <Text style={styles.headerBrand}>CARDECON</Text>
           <View style={styles.headerSeparator} />
-          <Text style={styles.headerTitle}>SIMULATION ENGINE</Text>
+          <Text style={styles.headerTitle}>{isNormal ? "🧪 Try a Simulation" : "SIMULATION ENGINE"}</Text>
         </View>
         <View style={styles.headerRight}>
+          <ThemeModeToggle compact />
           <View style={[styles.statusDot, { backgroundColor: Colors.green }]} />
           <LiveClock />
         </View>
@@ -1299,7 +1735,7 @@ export default function SimulationScreen() {
       ) : (
         <ScrollView style={styles.narrowBody} showsVerticalScrollIndicator={false}>
           {personaPanel}
-          <View style={{ height: 1, backgroundColor: Colors.borderFaint, marginVertical: 12 }} />
+          <View style={{ height: 1, backgroundColor: colors.borderFaint, marginVertical: 12 }} />
           {resultsPanel}
         </ScrollView>
       )}
@@ -1554,6 +1990,22 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 6,
     flexWrap: "wrap",
+  },
+  normalHelperCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 12,
+  },
+  normalHelperTitle: {
+    fontSize: 14,
+    fontFamily: Fonts.sansBold,
+    marginBottom: 6,
+  },
+  normalHelperBody: {
+    fontSize: 12,
+    fontFamily: Fonts.sans,
+    lineHeight: 18,
   },
 
   // Chart

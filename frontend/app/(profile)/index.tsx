@@ -9,8 +9,10 @@ import { updateUser, changePassword } from "../../services/user";
 import { listPersonas, PersonaData } from "../../services/persona";
 import { getProgress, updateProgress, ProgressData } from "../../services/progress";
 import { getPortfolio, getRecentPlays, PortfolioData, CardPlayData } from "../../services/portfolio";
-import { Colors } from "../../constants/colors";
+import { Colors, useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
+import { useThemeStore } from "../../store/themeStore";
+import { ThemeModeToggle } from "../../components/theme/ThemeModeToggle";
 
 const TRAIT_LABELS: Record<string, string> = {
   risk_appetite: "Risk Appetite",
@@ -212,9 +214,16 @@ const pw = StyleSheet.create({
 // ─── Main screen ─────────────────────────────────────────────────────────────
 export default function ProfileScreen() {
   const router = useRouter();
+  const colors = useColors();
+  const isNormal = useThemeStore((state) => state.mode === "normal");
   const { user, setUser, clearAuth } = useAuthStore();
   const { width } = useWindowDimensions();
   const isWide = width >= 760;
+  const cardSurfaceStyle = {
+    backgroundColor: colors.bgPanel,
+    borderColor: colors.borderDim,
+    borderRadius: isNormal ? 18 : 2,
+  } as const;
 
   const [activePersona, setActivePersona] = useState<PersonaData | null>(null);
   const [progress, setProgress] = useState<ProgressData | null>(null);
@@ -281,9 +290,13 @@ export default function ProfileScreen() {
     return <View style={s.loading}><ActivityIndicator color={Colors.blue} size="large" /></View>;
   }
 
+  if (!progress) {
+    return <View style={s.loading}><ActivityIndicator color={Colors.blue} size="large" /></View>;
+  }
+
   // Group decks by strategy
   const decksByStrategy: Record<string, typeof progress.decks> = {};
-  progress?.decks.forEach((d) => {
+  progress.decks.forEach((d) => {
     if (!decksByStrategy[d.strategy]) decksByStrategy[d.strategy] = [];
     decksByStrategy[d.strategy].push(d);
   });
@@ -292,7 +305,7 @@ export default function ProfileScreen() {
   const leftCol = (
     <>
       {/* Account settings */}
-      <View style={s.card}>
+      <View style={[s.card, cardSurfaceStyle]}>
         <SectionHeader title="ACCOUNT SETTINGS" />
         <EditField label="USERNAME" value={user?.username ?? ""} onSave={handleSaveUsername} placeholder="username" />
         <EditField label="EMAIL ADDRESS" value={user?.email ?? ""} onSave={handleSaveEmail} placeholder="email" keyboardType="email-address" />
@@ -314,7 +327,7 @@ export default function ProfileScreen() {
       </View>
 
       {/* Active Persona */}
-      <View style={s.card}>
+      <View style={[s.card, cardSurfaceStyle]}>
         <SectionHeader
           title="ACTIVE PERSONA"
           action="MANAGE →"
@@ -351,7 +364,7 @@ export default function ProfileScreen() {
       </View>
 
       {/* Recent Decisions */}
-      <View style={s.card}>
+      <View style={[s.card, cardSurfaceStyle]}>
         <SectionHeader
           title="RECENT DECISIONS"
           action="VIEW PORTFOLIO →"
@@ -386,7 +399,7 @@ export default function ProfileScreen() {
   const rightCol = (
     <>
       {/* Progress overview */}
-      <View style={s.card}>
+      <View style={[s.card, cardSurfaceStyle]}>
         <SectionHeader title="PROGRESS" />
         <View style={s.statsRow}>
           <View style={s.statBlock}>
@@ -405,7 +418,7 @@ export default function ProfileScreen() {
       </View>
 
       {/* Strategies & Decks */}
-      <View style={s.card}>
+      <View style={[s.card, cardSurfaceStyle]}>
         <SectionHeader
           title="STRATEGIES & DECKS"
           action="FULL SETTINGS →"
@@ -488,15 +501,16 @@ export default function ProfileScreen() {
   );
 
   return (
-    <View style={s.container}>
+    <View style={[s.container, { backgroundColor: colors.bg }]}>
       {/* Top bar */}
-      <View style={s.topBar}>
-        <Text style={s.logo}>CARDECON</Text>
-        <View style={s.barSep} />
-        <Text style={s.topLabel}>PROFILE</Text>
+      <View style={[s.topBar, { backgroundColor: colors.bgPanel, borderBottomColor: colors.borderPrimary }]}>
+        <Text style={[s.logo, { color: colors.blue }]}>CARDECON</Text>
+        <View style={[s.barSep, { backgroundColor: colors.borderDim }]} />
+        <Text style={[s.topLabel, { color: colors.textDim }]}>{isNormal ? "👤 Profile" : "PROFILE"}</Text>
         <View style={{ flex: 1 }} />
+        <ThemeModeToggle compact />
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <Text style={s.backText}>BACK →</Text>
+          <Text style={[s.backText, { color: colors.textDim }]}>BACK →</Text>
         </TouchableOpacity>
       </View>
 
@@ -504,7 +518,7 @@ export default function ProfileScreen() {
         {isWide ? (
           <View style={s.columns}>
             <View style={s.col}>{leftCol}</View>
-            <View style={s.colDivider} />
+            <View style={[s.colDivider, { backgroundColor: colors.borderFaint }]} />
             <View style={s.col}>{rightCol}</View>
           </View>
         ) : (

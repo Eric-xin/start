@@ -16,10 +16,15 @@ export interface PortfolioData {
   last_income_date: string | null;
   income_streak: number;
   persona_id: string | null;
+  companion_id: string | null;
   can_claim_income: boolean;
   pending_income: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface UpdateCompanionResult {
+  companion_id: string | null;
 }
 
 export interface CardData {
@@ -106,5 +111,10 @@ export async function getNetWorthHistory(): Promise<NetWorthPoint[]> {
 
 export async function getRecentPlays(limit = 20): Promise<CardPlayData[]> {
   const resp = await api.get<CardPlayData[]>("/api/portfolio/recent-plays", { params: { limit } });
+  return resp.data;
+}
+
+export async function updateCompanion(companionId: string): Promise<PortfolioData> {
+  const resp = await api.patch<PortfolioData>("/api/portfolio/companion", { companion_id: companionId });
   return resp.data;
 }

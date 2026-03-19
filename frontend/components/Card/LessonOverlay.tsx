@@ -2,12 +2,13 @@ import React, { useEffect } from "react";
 import { View, Text, StyleSheet, TouchableWithoutFeedback } from "react-native";
 import Animated, {
   useSharedValue, useAnimatedStyle,
-  withTiming, withSequence, withDelay,
+  withTiming,
 } from "react-native-reanimated";
-import { Colors } from "../../constants/colors";
+import { useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { Layout } from "../../constants/layout";
 import { MarkdownText } from "../MarkdownText";
+import { useThemeStore } from "../../store/themeStore";
 
 interface Props {
   text: string;
@@ -20,12 +21,17 @@ interface Props {
 const AUTO_DISMISS_MS = 2600;
 
 export function LessonOverlay({ text, direction, reward, isCorrect, onDismiss }: Props) {
+  const colors = useColors();
+  const isNormal = useThemeStore((state) => state.mode === "normal");
+  const styles = createStyles(colors, isNormal);
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(20);
 
   const accepted = direction === "right";
-  const accentColor = isCorrect ? Colors.green : Colors.red;
-  const label = isCorrect ? "CORRECT" : "INCORRECT";
+  const accentColor = isCorrect ? colors.green : colors.red;
+  const label = isCorrect
+    ? (isNormal ? "✅ Good call!" : "CORRECT")
+    : (isNormal ? "❌ Not quite" : "INCORRECT");
   const arrow = accepted ? "→" : "←";
   const rewardSign = reward >= 0 ? "+" : "";
 
@@ -46,35 +52,30 @@ export function LessonOverlay({ text, direction, reward, isCorrect, onDismiss }:
   return (
     <TouchableWithoutFeedback onPress={onDismiss}>
       <Animated.View style={[styles.overlay, wrapStyle]}>
-        {/* Colored top band */}
         <View style={[styles.topBand, { backgroundColor: accentColor }]} />
 
         <View style={styles.inner}>
-          {/* Direction badge */}
           <View style={[styles.badge, { borderColor: accentColor }]}>
             <Text style={[styles.badgeArrow, { color: accentColor }]}>{arrow}</Text>
             <Text style={[styles.badgeText, { color: accentColor }]}>{label}</Text>
           </View>
 
-          {/* Divider */}
           <View style={[styles.divider, { backgroundColor: accentColor + "33" }]} />
 
-          {/* Lesson text */}
           <MarkdownText
             text={text}
             style={styles.lessonText}
             boldStyle={styles.lessonTextBold}
           />
 
-          {/* Reward + dismiss hint */}
           <View style={styles.footer}>
             <View style={[styles.rewardPill, { borderColor: accentColor + "66" }]}>
-              <Text style={[styles.rewardLabel, { color: Colors.textDim }]}>RETURN</Text>
+              <Text style={[styles.rewardLabel, { color: colors.textDim }]}>{isNormal ? "📊 Impact" : "RETURN"}</Text>
               <Text style={[styles.rewardValue, { color: accentColor }]}>
                 {rewardSign}{reward.toFixed(2)}
               </Text>
             </View>
-            <Text style={styles.tapHint}>TAP TO CONTINUE</Text>
+            <Text style={styles.tapHint}>{isNormal ? "Tap to continue →" : "TAP TO CONTINUE"}</Text>
           </View>
         </View>
       </Animated.View>
@@ -82,14 +83,14 @@ export function LessonOverlay({ text, direction, reward, isCorrect, onDismiss }:
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useColors>, isNormal: boolean) => StyleSheet.create({
   overlay: {
     width: Layout.cardWidth,
     height: Layout.cardHeight,
-    backgroundColor: Colors.bgPanel,
+    backgroundColor: colors.bgPanel,
     borderRadius: Layout.cardBorderRadius,
     borderWidth: 1,
-    borderColor: Colors.borderDim,
+    borderColor: colors.borderDim,
     overflow: "hidden",
     boxShadow: "0 12px 20px rgba(0, 0, 0, 0.5)",
     elevation: 14,
@@ -119,7 +120,7 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 12,
     fontFamily: Fonts.sansBold,
-    letterSpacing: 3,
+    letterSpacing: isNormal ? 0.5 : 3,
   },
   divider: {
     height: 1,
@@ -129,7 +130,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontFamily: Fonts.serifItalic,
-    color: Colors.textBright,
+    color: colors.textBright,
     lineHeight: 24,
   },
   lessonTextBold: {
@@ -142,7 +143,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingTop: 14,
     borderTopWidth: 1,
-    borderTopColor: Colors.borderFaint,
+    borderTopColor: colors.borderFaint,
   },
   rewardPill: {
     borderWidth: 1,
@@ -165,7 +166,7 @@ const styles = StyleSheet.create({
   tapHint: {
     fontSize: 8,
     fontFamily: Fonts.sansBold,
-    color: Colors.textMuted,
-    letterSpacing: 2,
+    color: colors.textMuted,
+    letterSpacing: isNormal ? 0.4 : 2,
   },
 });

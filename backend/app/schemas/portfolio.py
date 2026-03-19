@@ -24,10 +24,15 @@ class PortfolioOut(BaseModel):
     last_income_date: Optional[date]
     income_streak: int
     persona_id: Optional[str]
+    companion_id: Optional[str]
     can_claim_income: bool
     pending_income: float
     created_at: str
     updated_at: str
+
+
+class UpdateCompanionRequest(BaseModel):
+    companion_id: Optional[str]
 
 
 class ClaimIncomeResponse(BaseModel):

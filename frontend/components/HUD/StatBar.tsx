@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
-import { Colors } from "../../constants/colors";
+import { useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 
 interface Props {
@@ -11,6 +11,8 @@ interface Props {
 }
 
 export function StatBar({ label, value, color }: Props) {
+  const colors = useColors();
+  const styles = createStyles(colors);
   const fill = useSharedValue(0);
 
   useEffect(() => {
@@ -32,7 +34,7 @@ export function StatBar({ label, value, color }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
@@ -42,17 +44,17 @@ const styles = StyleSheet.create({
     width: 64,
     fontSize: 8,
     fontFamily: Fonts.sansBold,
-    color: Colors.textDim,
+    color: colors.textDim,
     letterSpacing: 1.2,
   },
   track: {
     flex: 1,
     height: 4,
-    backgroundColor: Colors.bgCard,
+    backgroundColor: colors.bgCard,
     borderRadius: 2,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: Colors.borderFaint,
+    borderColor: colors.borderFaint,
   },
   fill: {
     height: "100%",
