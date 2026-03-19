@@ -93,7 +93,7 @@ export default function GameIndexScreen() {
           <Text style={styles.topBarLabel}>INDEX</Text>
         </View>
         <View style={styles.topRight}>
-          <TouchableOpacity style={styles.topBtn} onPress={() => router.push("/(profile)/")}>
+          <TouchableOpacity style={styles.topBtn} onPress={() => router.push("/(profile)")}>
             <Text style={styles.topBtnText}>PROFILE</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.topBtn} onPress={() => router.push("/(profile)/personas")}>

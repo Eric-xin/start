@@ -8,6 +8,7 @@ export default function GameLayout() {
         headerShown: false,
         contentStyle: { backgroundColor: Colors.bg },
         animation: "fade",
+        gestureEnabled: false,
       }}
     >
       <Stack.Screen name="index" />

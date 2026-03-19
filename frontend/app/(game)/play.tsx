@@ -193,7 +193,7 @@ export default function PlayScreen() {
       return;
     }
     if (!portfolio) {
-      const t = setTimeout(() => router.replace("/(game)/index"), 0);
+      const t = setTimeout(() => router.replace("/(game)"), 0);
       return () => clearTimeout(t);
     }
     getNextCard()
@@ -269,7 +269,7 @@ export default function PlayScreen() {
       )}
 
       {/* Top status bar */}
-      <TopStatusBar session={sessionProxy} onExit={() => router.replace("/(game)/index")} />
+      <TopStatusBar session={sessionProxy} onExit={() => router.replace("/(game)")} />
 
       {/* Body */}
       <View style={styles.body}>
