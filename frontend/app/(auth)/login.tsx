@@ -4,11 +4,13 @@ import {
   KeyboardAvoidingView, Platform, useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { login, getMe } from "../../services/auth";
 import { API_BASE } from "../../services/api";
 import { useAuthStore } from "../../store/authStore";
 import { Colors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
+import { LanguageSwitcher } from "../../components/navigation/LanguageSwitcher";
 
 function GridBg() {
   const { width, height } = useWindowDimensions();
@@ -24,20 +26,21 @@ function GridBg() {
   );
 }
 
-function parseError(e: any): string {
+function parseError(e: any, t: (key: string, options?: any) => string): string {
   const detail = e?.response?.data?.detail;
   if (!detail) {
-    return `Unable to connect to the backend. Check that backend is running and API URL is reachable: ${API_BASE}`;
+    return t("auth.login.errors.backendUnreachable", { apiBase: API_BASE });
   }
-  if (Array.isArray(detail)) return detail[0]?.msg ?? "Invalid input.";
+  if (Array.isArray(detail)) return detail[0]?.msg ?? t("auth.login.errors.invalidInput");
   const status = e?.response?.status;
-  if (status === 401) return "Incorrect credentials. Check your email/username and password.";
-  if (status === 403) return "Account not verified. Check your email for the verification link.";
+  if (status === 401) return t("auth.login.errors.badCredentials");
+  if (status === 403) return t("auth.login.errors.notVerified");
   return String(detail);
 }
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const setAuth = useAuthStore((s) => s.setAuth);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -47,7 +50,7 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     setError(null);
     if (!identifier.trim() || !password) {
-      setError("Enter your email/username and password.");
+      setError(t("auth.login.errors.required"));
       return;
     }
     setLoading(true);
@@ -57,7 +60,7 @@ export default function LoginScreen() {
       // setAuth updates the store; the root layout guard handles navigation
       await setAuth(tokens.access_token, tokens.refresh_token, user);
     } catch (e: any) {
-      setError(parseError(e));
+      setError(parseError(e, t));
     } finally {
       setLoading(false);
     }
@@ -71,15 +74,17 @@ export default function LoginScreen() {
       <GridBg />
 
       <View style={styles.topBar}>
-        <Text style={styles.logo}>CARDECON</Text>
-        <Text style={styles.topBarSub}>FINANCIAL INTELLIGENCE PLATFORM</Text>
+        <Text style={styles.logo}>{t("common.appName")}</Text>
+        <Text style={styles.topBarSub}>{t("auth.login.topBar")}</Text>
+        <View style={{ flex: 1 }} />
+        <LanguageSwitcher />
       </View>
 
       <View style={styles.center}>
         <View style={styles.panel}>
           <View style={styles.panelHeader}>
             <View style={styles.blueDot} />
-            <Text style={styles.panelTitle}>AUTHENTICATION REQUIRED</Text>
+            <Text style={styles.panelTitle}>{t("auth.login.title")}</Text>
           </View>
 
           {error && (
@@ -89,7 +94,7 @@ export default function LoginScreen() {
             </View>
           )}
 
-          <Text style={styles.fieldLabel}>IDENTIFIER</Text>
+          <Text style={styles.fieldLabel}>{t("auth.login.identifierLabel")}</Text>
           <TextInput
             style={[styles.input, error && styles.inputError]}
             value={identifier}
@@ -98,19 +103,19 @@ export default function LoginScreen() {
             autoCorrect={false}
             keyboardType="email-address"
             placeholderTextColor={Colors.textMuted}
-            placeholder="email or username"
+            placeholder={t("auth.login.identifierPlaceholder")}
             selectionColor={Colors.blue}
             returnKeyType="next"
           />
 
-          <Text style={styles.fieldLabel}>PASSWORD</Text>
+          <Text style={styles.fieldLabel}>{t("auth.login.passwordLabel")}</Text>
           <TextInput
             style={[styles.input, error && styles.inputError]}
             value={password}
             onChangeText={(v) => { setPassword(v); setError(null); }}
             secureTextEntry
             placeholderTextColor={Colors.textMuted}
-            placeholder="••••••••"
+            placeholder={t("auth.login.passwordPlaceholder")}
             selectionColor={Colors.blue}
             returnKeyType="done"
             onSubmitEditing={handleLogin}
@@ -120,7 +125,7 @@ export default function LoginScreen() {
             style={styles.forgotBtn}
             onPress={() => router.push("/(auth)/forgot-password")}
           >
-            <Text style={styles.forgotText}>FORGOT PASSWORD →</Text>
+            <Text style={styles.forgotText}>{t("auth.login.forgot")}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -129,20 +134,20 @@ export default function LoginScreen() {
             disabled={loading}
           >
             <Text style={styles.submitText}>
-              {loading ? "AUTHENTICATING..." : "▶  ACCESS SYSTEM"}
+              {loading ? t("auth.login.authenticating") : t("auth.login.accessSystem")}
             </Text>
           </TouchableOpacity>
 
           <View style={styles.divider} />
 
           <TouchableOpacity style={styles.linkBtn} onPress={() => router.push("/(auth)/register")}>
-            <Text style={styles.linkText}>NO ACCOUNT — REGISTER INVESTOR PROFILE →</Text>
+            <Text style={styles.linkText}>{t("auth.login.registerCta")}</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <View style={styles.bottomBar}>
-        <Text style={styles.bottomText}>SECURE SESSION · TLS 1.3 · JWT AUTHENTICATION</Text>
+        <Text style={styles.bottomText}>{t("auth.login.footer")}</Text>
       </View>
     </KeyboardAvoidingView>
   );

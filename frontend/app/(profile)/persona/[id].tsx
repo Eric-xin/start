@@ -4,12 +4,14 @@ import {
   ActivityIndicator, Alert, TouchableOpacity, TextInput, useWindowDimensions,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { getPersona, getTrajectory, updatePersona, PersonaData, TrajectoryData } from "../../../services/persona";
 import { PCAMap } from "../../../components/PCAMap";
 import { Colors, useColors } from "../../../constants/colors";
 import { Fonts } from "../../../constants/fonts";
 import { useThemeStore } from "../../../store/themeStore";
 import { ThemeModeToggle } from "../../../components/theme/ThemeModeToggle";
+import { AppTopBar } from "../../../components/navigation/AppTopBar";
 
 const TRAIT_LABELS: Record<string, string> = {
   risk_appetite: "Risk Appetite",
@@ -29,26 +31,27 @@ const TRAIT_DESCRIPTIONS: Record<string, string> = {
   overconfidence: "Tendency to over-weight personal analysis vs. market signals",
 };
 
-function TraitBar({ trait, value }: { trait: string; value: number }) {
+function TraitBar({ trait, value, t }: { trait: string; value: number; t: (k: string) => string }) {
   const colors = useColors();
   const pct = Math.round(value);
   const color = value > 65 ? colors.red : value > 50 ? colors.amber : colors.green;
   return (
     <View style={[styles.traitCard, { borderBottomColor: colors.borderFaint }]}>
       <View style={styles.traitHeader}>
-        <Text style={[styles.traitName, { color: colors.textBright }]}>{TRAIT_LABELS[trait] ?? trait}</Text>
+        <Text style={[styles.traitName, { color: colors.textBright }]}>{t(`personaDetail.traits.labels.${trait}`)}</Text>
         <Text style={[styles.traitScore, { color }]}>{pct}/100</Text>
       </View>
       <View style={[styles.traitTrack, { backgroundColor: colors.borderDim }]}>
         <View style={[styles.traitFill, { width: `${pct}%` as any, backgroundColor: color }]} />
       </View>
-      <Text style={[styles.traitDesc, { color: colors.textMuted }]}>{TRAIT_DESCRIPTIONS[trait] ?? ""}</Text>
+      <Text style={[styles.traitDesc, { color: colors.textMuted }]}>{t(`personaDetail.traits.descriptions.${trait}`)}</Text>
     </View>
   );
 }
 
 export default function PersonaDetailScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const colors = useColors();
   const isNormal = useThemeStore((state) => state.mode === "normal");
   const { width } = useWindowDimensions();
@@ -69,9 +72,9 @@ export default function PersonaDetailScreen() {
         setNameInput(p.name);
         setTrajectory(t);
       })
-      .catch(() => Alert.alert("Error", "Could not load persona."))
+      .catch(() => Alert.alert(t("common.error"), t("personaDetail.errors.load")))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, t]);
 
   const handleRename = async () => {
     if (!persona || !nameInput.trim()) return;
@@ -81,7 +84,7 @@ export default function PersonaDetailScreen() {
       setPersona(updated);
       setEditName(false);
     } catch {
-      Alert.alert("Error", "Could not rename persona.");
+      Alert.alert(t("common.error"), t("personaDetail.errors.rename"));
     } finally {
       setSaving(false);
     }
@@ -94,7 +97,7 @@ export default function PersonaDetailScreen() {
       const updated = await updatePersona(persona.id, { is_active: true });
       setPersona(updated);
     } catch {
-      Alert.alert("Error", "Could not activate persona.");
+      Alert.alert(t("common.error"), t("personaDetail.errors.activate"));
     } finally {
       setSaving(false);
     }
@@ -122,7 +125,9 @@ export default function PersonaDetailScreen() {
       <View style={[styles.cardHeader, { borderBottomColor: colors.borderFaint }]}>
         <View style={[styles.statusDot, { backgroundColor: persona.is_active ? colors.green : colors.textMuted }]} />
         <Text style={[styles.cardHeaderText, { color: colors.blue }]}>
-          {persona.is_active ? (isNormal ? "Your Active Persona" : "ACTIVE PERSONA") : (isNormal ? "Persona Overview" : "PERSONA")}
+            {persona.is_active
+              ? (isNormal ? t("personaDetail.activeTitle") : t("personaDetail.activeTitlePro"))
+              : (isNormal ? t("personaDetail.overviewTitle") : t("personaDetail.overviewTitlePro"))}
         </Text>
       </View>
 
@@ -136,10 +141,10 @@ export default function PersonaDetailScreen() {
             selectionColor={colors.blue}
           />
           <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.blue, borderRadius: isNormal ? 999 : 2 }]} onPress={handleRename} disabled={saving}>
-            <Text style={[styles.saveBtnText, { color: colors.bg }]}>{saving ? "..." : "SAVE"}</Text>
+            <Text style={[styles.saveBtnText, { color: colors.bg }]}>{saving ? "..." : t("personaDetail.save")}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.cancelBtn} onPress={() => setEditName(false)}>
-            <Text style={[styles.cancelBtnText, { color: colors.textDim }]}>CANCEL</Text>
+            <Text style={[styles.cancelBtnText, { color: colors.textDim }]}>{t("common.cancel")}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -148,27 +153,27 @@ export default function PersonaDetailScreen() {
             <Text style={[styles.personaName, { color: colors.textBright, fontFamily: isNormal ? Fonts.sansBold : Fonts.mono }]}>{persona.name}</Text>
             {isNormal ? (
               <Text style={{ fontSize: 12, fontFamily: Fonts.sans, color: colors.textPrimary, marginTop: 6 }}>
-                This persona captures how you tend to react to risk, momentum, patience, and diversification.
+                {t("personaDetail.overviewBody")}
               </Text>
             ) : null}
           </View>
           <TouchableOpacity onPress={() => setEditName(true)}>
-            <Text style={[styles.editLink, { color: colors.textDim }]}>{isNormal ? "Rename" : "RENAME"}</Text>
+            <Text style={[styles.editLink, { color: colors.textDim }]}>{isNormal ? t("personaDetail.rename") : t("personaDetail.renamePro")}</Text>
           </TouchableOpacity>
         </View>
       )}
 
       <View style={styles.metaRow}>
         <View style={styles.metaBadge}>
-          <Text style={[styles.metaLabel, { color: colors.textMuted }]}>{isNormal ? "Choices made" : "CARDS PLAYED"}</Text>
+          <Text style={[styles.metaLabel, { color: colors.textMuted }]}>{isNormal ? t("personaDetail.meta.choices") : t("personaDetail.meta.choicesPro")}</Text>
           <Text style={[styles.metaValue, { color: colors.textBright }]}>{persona.cards_played}</Text>
         </View>
         <View style={styles.metaBadge}>
-          <Text style={[styles.metaLabel, { color: colors.textMuted }]}>{isNormal ? "Checkpoints" : "SNAPSHOTS"}</Text>
+          <Text style={[styles.metaLabel, { color: colors.textMuted }]}>{isNormal ? t("personaDetail.meta.checkpoints") : t("personaDetail.meta.checkpointsPro")}</Text>
           <Text style={[styles.metaValue, { color: colors.textBright }]}>{trajectory?.snapshots.length ?? 0}</Text>
         </View>
         <View style={styles.metaBadge}>
-          <Text style={[styles.metaLabel, { color: colors.textMuted }]}>{isNormal ? "Started" : "CREATED"}</Text>
+          <Text style={[styles.metaLabel, { color: colors.textMuted }]}>{isNormal ? t("personaDetail.meta.started") : t("personaDetail.meta.startedPro")}</Text>
           <Text style={[styles.metaValue, { color: colors.textBright }]}>{new Date(persona.created_at).toLocaleDateString()}</Text>
         </View>
       </View>
@@ -179,7 +184,7 @@ export default function PersonaDetailScreen() {
           onPress={handleActivate}
           disabled={saving}
         >
-          <Text style={[styles.activateBtnText, { color: colors.bg }]}>{isNormal ? "▶ Use This Persona" : "▶ ACTIVATE THIS PERSONA"}</Text>
+          <Text style={[styles.activateBtnText, { color: colors.bg }]}>{isNormal ? t("personaDetail.activate") : t("personaDetail.activatePro")}</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -191,7 +196,7 @@ export default function PersonaDetailScreen() {
         <View style={[styles.card, cardSurfaceStyle]}>
           <View style={[styles.cardHeader, { borderBottomColor: colors.borderFaint }]}>
             <View style={[styles.blueDot, { backgroundColor: colors.blue }]} />
-            <Text style={[styles.cardHeaderText, { color: colors.blue }]}>{isNormal ? "📝 What This Means" : "BEHAVIORAL INTERPRETATION"}</Text>
+            <Text style={[styles.cardHeaderText, { color: colors.blue }]}>{isNormal ? t("personaDetail.meaning") : t("personaDetail.meaningPro")}</Text>
           </View>
           <Text style={[styles.interpretation, { color: colors.textPrimary }]}>{persona.interpretation}</Text>
         </View>
@@ -200,12 +205,12 @@ export default function PersonaDetailScreen() {
       <View style={[styles.card, cardSurfaceStyle]}>
         <View style={[styles.cardHeader, { borderBottomColor: colors.borderFaint }]}>
           <View style={[styles.blueDot, { backgroundColor: colors.blue }]} />
-          <Text style={[styles.cardHeaderText, { color: colors.blue }]}>{isNormal ? "🧭 Growth Map" : "PERSONA TRAJECTORY (PCA)"}</Text>
+          <Text style={[styles.cardHeaderText, { color: colors.blue }]}>{isNormal ? t("personaDetail.growthMap") : t("personaDetail.growthMapPro")}</Text>
         </View>
         <Text style={[styles.pcaDesc, { color: colors.textDim }]}>
           {isNormal
-            ? "Each dot is a checkpoint from your learning journey. The path shows how your investor behavior has shifted over time."
-            : "Each dot represents a snapshot of your persona vector taken every 10 cards, projected to 2D via principal component analysis."}
+            ? t("personaDetail.pcaDesc")
+            : t("personaDetail.pcaDescPro")}
         </Text>
         <View style={styles.pcaContainer}>
           <PCAMap
@@ -222,26 +227,21 @@ export default function PersonaDetailScreen() {
     <View style={[styles.card, cardSurfaceStyle]}>
       <View style={[styles.cardHeader, { borderBottomColor: colors.borderFaint }]}>
         <View style={[styles.blueDot, { backgroundColor: colors.blue }]} />
-        <Text style={[styles.cardHeaderText, { color: colors.blue }]}>{isNormal ? "📊 Trait Breakdown" : "TRAIT BREAKDOWN"}</Text>
+        <Text style={[styles.cardHeaderText, { color: colors.blue }]}>{isNormal ? t("personaDetail.traitBreakdown") : t("personaDetail.traitBreakdownPro")}</Text>
       </View>
       {Object.entries(TRAIT_LABELS).map(([key]) => (
-        <TraitBar key={key} trait={key} value={(persona.traits as any)[key] ?? 50} />
+        <TraitBar key={key} trait={key} value={(persona.traits as any)[key] ?? 50} t={t} />
       ))}
     </View>
   ) : null;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
-      <View style={[styles.topBar, { backgroundColor: colors.bgPanel, borderBottomColor: colors.borderPrimary }]}>
-        <Text style={[styles.logo, { color: colors.blue }]}>CARDECON</Text>
-        <View style={[styles.barSep, { backgroundColor: colors.borderDim }]} />
-        <Text style={[styles.topLabel, { color: colors.textDim }]}>{isNormal ? "🧠 Persona Detail" : "PERSONA ANALYSIS"}</Text>
-        <View style={{ flex: 1 }} />
-        <ThemeModeToggle compact />
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={[styles.backText, { color: colors.textDim }]}>BACK →</Text>
-        </TouchableOpacity>
-      </View>
+      <AppTopBar
+        label={isNormal ? t("personaDetail.topBar") : t("personaDetail.topBarPro")}
+        onBack={() => router.back()}
+        rightContent={<ThemeModeToggle compact />}
+      />
 
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={[styles.layout, isWide && styles.layoutWide]}>
@@ -261,16 +261,6 @@ export default function PersonaDetailScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
   loading: { flex: 1, backgroundColor: Colors.bg, alignItems: "center", justifyContent: "center" },
-
-  topBar: {
-    height: 40, backgroundColor: Colors.bgPanel,
-    borderBottomWidth: 1, borderBottomColor: Colors.borderPrimary,
-    flexDirection: "row", alignItems: "center", paddingHorizontal: 16, gap: 10,
-  },
-  backText: { fontSize: 9, fontFamily: Fonts.sansBold, color: Colors.textDim, letterSpacing: 1.5 },
-  logo: { fontSize: 13, fontFamily: Fonts.mono, color: Colors.blue, letterSpacing: 3 },
-  barSep: { width: 1, height: 14, backgroundColor: Colors.borderDim },
-  topLabel: { fontSize: 9, fontFamily: Fonts.sansBold, color: Colors.textDim, letterSpacing: 2, flex: 1 },
 
   scroll: { padding: 20, gap: 16, alignItems: "center" },
   layout: { width: "100%", maxWidth: 1120, gap: 16 },

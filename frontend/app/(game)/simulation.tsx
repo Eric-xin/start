@@ -27,6 +27,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from "react-native-reanimated";
+import { useTranslation } from "react-i18next";
 import { Colors, useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { Layout } from "../../constants/layout";
@@ -512,6 +513,7 @@ interface SimpleAllocationBarProps {
 }
 
 function SimpleAllocationBar({ allocation }: SimpleAllocationBarProps) {
+  const { t } = useTranslation();
   const colors = useColors();
 
   const entries = Object.entries(allocation)
@@ -527,7 +529,7 @@ function SimpleAllocationBar({ allocation }: SimpleAllocationBarProps) {
     <View style={simpleAllocStyles.container}>
       {/* Title */}
       <Text style={[simpleAllocStyles.title, { color: colors.textBright }]}>
-        How the money is spread
+        {t("simulation.allocation.title")}
       </Text>
 
       {/* Bar visualization */}
@@ -574,11 +576,11 @@ function SimpleAllocationBar({ allocation }: SimpleAllocationBarProps) {
         <View style={simpleAllocStyles.explanationHeader}>
           <Text style={[simpleAllocStyles.explanationIcon]}>✓</Text>
           <Text style={[simpleAllocStyles.explanationTitle, { color: colors.textBright }]}>
-            Good diversification
+            {t("simulation.allocation.goodDiversification")}
           </Text>
         </View>
         <Text style={[simpleAllocStyles.explanationText, { color: colors.textPrimary }]}>
-          Spreading money across {diversificationScore} different {diversificationScore === 1 ? "asset" : "assets"} helps reduce risk. If one goes down, others may help balance it out.
+          {t("simulation.allocation.explanation", { count: diversificationScore })}
         </Text>
       </View>
     </View>
@@ -672,6 +674,7 @@ interface AllocationDonutProps {
 }
 
 function AllocationDonut({ allocation, size = 120 }: AllocationDonutProps) {
+  const { t } = useTranslation();
   const colors = useColors();
   const cx = size / 2;
   const cy = size / 2;
@@ -730,7 +733,7 @@ function AllocationDonut({ allocation, size = 120 }: AllocationDonutProps) {
           fill={colors.textDim}
           textAnchor="middle"
         >
-          ALLOC
+          {t("simulation.allocation.allocShort")}
         </SvgText>
         <SvgText
           x={cx}
@@ -740,7 +743,7 @@ function AllocationDonut({ allocation, size = 120 }: AllocationDonutProps) {
           fill={colors.textDim}
           textAnchor="middle"
         >
-          {entries.length} assets
+          {t("simulation.allocation.assetsCount", { count: entries.length })}
         </SvgText>
       </Svg>
       <View style={donutStyles.legend}>
@@ -795,10 +798,11 @@ interface TradeLogItemProps {
 }
 
 function TradeLogItem({ trade, capital }: TradeLogItemProps) {
+  const { t } = useTranslation();
   const colors = useColors();
   const isBuy = trade.action.toLowerCase().includes("buy");
   const actionColor = isBuy ? colors.green : colors.red;
-  const actionLabel = isBuy ? "▲ BUY" : "▼ SELL";
+  const actionLabel = isBuy ? t("simulation.trade.buy") : t("simulation.trade.sell");
   const weightDelta = trade.new_weight - trade.old_weight;
 
   return (
@@ -1269,7 +1273,7 @@ const TRAIT_KEYS = [
 // ─── Main Simulation Screen ───────────────────────────────────────────────────
 
 export default function SimulationScreen() {
-  const router = useRouter();
+  const { t } = useTranslation();
   const colors = useColors();
   const isNormal = useThemeStore((state) => state.mode === "normal");
   const { width } = useWindowDimensions();
@@ -1326,7 +1330,7 @@ export default function SimulationScreen() {
       const res = await runSimulation(req);
       setResult(res);
     } catch (e: any) {
-      setError(e?.response?.data?.detail ?? e?.message ?? "Simulation failed");
+      setError(e?.response?.data?.detail ?? e?.message ?? t("simulation.errors.failed"));
     } finally {
       setRunning(false);
     }
@@ -1355,7 +1359,7 @@ export default function SimulationScreen() {
       ]}
     >
       {/* Persona type */}
-      <SectionLabel text="YOUR PERSONA" />
+      <SectionLabel text={t("simulation.persona.title")} />
       <View style={styles.personaTypeRow}>
         <View
           style={[
@@ -1389,29 +1393,29 @@ export default function SimulationScreen() {
 
       <View style={styles.configRow}>
         <View style={styles.configField}>
-          <Text style={styles.configLabel}>START</Text>
+          <Text style={styles.configLabel}>{t("simulation.form.start")}</Text>
           <YearPicker
             value={startYear}
             onSelect={setStartYear}
             minYear={2000}
             maxYear={2030}
-            label="Start Year"
+            label={t("simulation.form.startYear")}
           />
         </View>
         <View style={styles.configField}>
-          <Text style={styles.configLabel}>END</Text>
+          <Text style={styles.configLabel}>{t("simulation.form.end")}</Text>
           <YearPicker
             value={endYear}
             onSelect={setEndYear}
             minYear={2000}
             maxYear={2030}
-            label="End Year"
+            label={t("simulation.form.endYear")}
           />
         </View>
       </View>
 
       <View style={[styles.configField, { marginTop: 8 }]}>
-        <Text style={styles.configLabel}>INITIAL CAPITAL ($)</Text>
+        <Text style={styles.configLabel}>{t("simulation.form.initialCapital")}</Text>
         <TextInput
           style={[styles.configInput, isNormal && { backgroundColor: colors.bgCard, color: colors.textBright, borderColor: colors.borderDim }]}
           value={capital}
@@ -1422,7 +1426,7 @@ export default function SimulationScreen() {
       </View>
 
       <View style={{ marginTop: 12 }}>
-        <Text style={styles.configLabel}>ASSET CLASSES</Text>
+        <Text style={styles.configLabel}>{t("simulation.form.assetClasses")}</Text>
         <View style={styles.assetGrid}>
           {ASSET_CLASSES.map((asset) => (
             <AssetToggle
@@ -1448,7 +1452,7 @@ export default function SimulationScreen() {
         {running ? (
           <ActivityIndicator size="small" color={Colors.textBright} />
         ) : (
-          <Text style={styles.runButtonText}>{isNormal ? "▶ Run My Scenario" : "▶ RUN SIMULATION"}</Text>
+          <Text style={styles.runButtonText}>{isNormal ? t("simulation.cta.run") : t("simulation.cta.runPro")}</Text>
         )}
       </TouchableOpacity>
     </View>
@@ -1464,11 +1468,11 @@ export default function SimulationScreen() {
       {!result && !running && !error && (
         <View style={styles.emptyState}>
           <Text style={styles.emptyIcon}>◉</Text>
-          <Text style={styles.emptyTitle}>{isNormal ? "Simulation ready" : "SIMULATION ENGINE READY"}</Text>
+          <Text style={styles.emptyTitle}>{isNormal ? t("simulation.ready.title") : t("simulation.ready.titlePro")}</Text>
           <Text style={styles.emptySubtitle}>
             {isNormal
-              ? "Pick a simple scenario and run it to see how this investor style might have behaved."
-              : "Configure parameters and press RUN SIMULATION to generate your persona-driven backtest."}
+              ? t("simulation.ready.body")
+              : t("simulation.ready.bodyPro")}
           </Text>
         </View>
       )}
@@ -1477,12 +1481,12 @@ export default function SimulationScreen() {
         <View style={styles.emptyState}>
           <ActivityIndicator size="large" color={Colors.blue} />
           <Text style={[styles.emptyTitle, { marginTop: 16 }]}>
-            {isNormal ? "Running your scenario..." : "RUNNING SIMULATION..."}
+            {isNormal ? t("simulation.running.title") : t("simulation.running.titlePro")}
           </Text>
           <Text style={styles.emptySubtitle}>
             {isNormal
-              ? "We're comparing your investor style against past market moves."
-              : "Backtesting your investor persona across historical market data."}
+              ? t("simulation.running.body")
+              : t("simulation.running.bodyPro")}
           </Text>
         </View>
       )}
@@ -1490,10 +1494,10 @@ export default function SimulationScreen() {
       {!!error && !running && (
         <View style={styles.errorState}>
           <Text style={styles.errorIcon}>⚠</Text>
-          <Text style={styles.errorTitle}>{isNormal ? "Simulation could not run" : "SIMULATION FAILED"}</Text>
+          <Text style={styles.errorTitle}>{isNormal ? t("simulation.errorState.title") : t("simulation.errorState.titlePro")}</Text>
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={handleRun}>
-            <Text style={styles.retryText}>RETRY</Text>
+            <Text style={styles.retryText}>{t("simulation.errorState.retry")}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -1502,55 +1506,55 @@ export default function SimulationScreen() {
         <>
           {isNormal ? (
             <View style={[styles.normalHelperCard, { backgroundColor: colors.bgPanel, borderColor: colors.borderDim }]}>
-              <Text style={[styles.normalHelperTitle, { color: colors.textBright }]}>How to read this</Text>
+              <Text style={[styles.normalHelperTitle, { color: colors.textBright }]}>{t("simulation.helper.title")}</Text>
               <Text style={[styles.normalHelperBody, { color: colors.textPrimary }]}>
-                We keep the numbers, but the key story is simple: did the money grow, how rough was the ride, and where did the investor end up putting cash?
+                {t("simulation.helper.body")}
               </Text>
             </View>
           ) : null}
           {isNormal ? (
             <View style={[styles.metricsStrip, { marginBottom: 6 }]}>
               <MetricCard
-                label="What happened"
-                value={result.metrics.total_return >= 0 ? "📈 Money grew" : "📉 Money fell"}
+                label={t("simulation.quick.whatHappened")}
+                value={result.metrics.total_return >= 0 ? t("simulation.quick.moneyGrew") : t("simulation.quick.moneyFell")}
                 color={result.metrics.total_return >= 0 ? colors.green : colors.red}
               />
               <MetricCard
-                label="Risk feel"
-                value={result.metrics.max_drawdown > -0.2 ? "🙂 Manageable" : result.metrics.max_drawdown > -0.35 ? "😬 Bumpy" : "😵 Wild"}
+                label={t("simulation.quick.riskFeel")}
+                value={result.metrics.max_drawdown > -0.2 ? t("simulation.quick.riskManageable") : result.metrics.max_drawdown > -0.35 ? t("simulation.quick.riskBumpy") : t("simulation.quick.riskWild")}
                 color={result.metrics.max_drawdown > -0.2 ? colors.green : result.metrics.max_drawdown > -0.35 ? colors.amber : colors.red}
               />
               <MetricCard
-                label="Quick read"
-                value={result.metrics.sharpe_ratio >= 1 ? "Balanced" : "Needs work"}
+                label={t("simulation.quick.quickRead")}
+                value={result.metrics.sharpe_ratio >= 1 ? t("simulation.quick.balanced") : t("simulation.quick.needsWork")}
                 color={result.metrics.sharpe_ratio >= 1 ? colors.blue : colors.textBright}
               />
             </View>
           ) : null}
           {/* Metrics strip */}
-          <SectionLabel text={isNormal ? "📊 The Numbers" : "PERFORMANCE METRICS"} />
+          <SectionLabel text={isNormal ? t("simulation.metrics.title") : t("simulation.metrics.titlePro")} />
           {isNormal ? (
             <View style={styles.metricsStrip}>
               <SimpleMetricCard
-                label="Total gain/loss"
+                label={t("simulation.metrics.totalGain")}
                 value={fmtPct(result.metrics.total_return)}
                 color={result.metrics.total_return >= 0 ? colors.green : colors.red}
-                hint="How much your money grew or shrank overall"
+                hint={t("simulation.metrics.totalGainHint")}
               />
               <SimpleMetricCard
-                label="Yearly average"
+                label={t("simulation.metrics.yearlyAverage")}
                 value={fmtPctPerYear(result.metrics.annualized_return)}
                 color={result.metrics.annualized_return >= 0 ? colors.green : colors.red}
-                hint="What this looks like as a per-year rate"
+                hint={t("simulation.metrics.yearlyAverageHint")}
               />
               <SimpleMetricCard
-                label="Biggest dip"
+                label={t("simulation.metrics.biggestDip")}
                 value={fmtPct(result.metrics.max_drawdown, false)}
                 color={colors.red}
-                hint="Worst drop from peak — how scary it got"
+                hint={t("simulation.metrics.biggestDipHint")}
               />
               <SimpleMetricCard
-                label="Quality score"
+                label={t("simulation.metrics.qualityScore")}
                 value={result.metrics.sharpe_ratio.toFixed(2)}
                 color={
                   result.metrics.sharpe_ratio >= 1
@@ -1559,7 +1563,7 @@ export default function SimulationScreen() {
                     ? colors.amber
                     : colors.red
                 }
-                hint="Above 1.0 = good return for the risk taken"
+                hint={t("simulation.metrics.qualityScoreHint")}
               />
             </View>
           ) : (
@@ -1623,7 +1627,7 @@ export default function SimulationScreen() {
           {isNormal && (
             <>
               <Divider />
-              <SectionLabel text="🧺 What's Inside" />
+              <SectionLabel text={t("simulation.metrics.whatsInside")} />
               <SimpleAllocationBar allocation={result.final_allocation} />
             </>
           )}
@@ -1631,7 +1635,7 @@ export default function SimulationScreen() {
           <Divider />
 
           {/* Line Chart */}
-          <SectionLabel text={isNormal ? "📈 Money Over Time" : "PORTFOLIO PERFORMANCE"} />
+          <SectionLabel text={isNormal ? t("simulation.chart.title") : t("simulation.chart.titlePro")} />
           <View
             style={[
               styles.chartContainer,
@@ -1659,7 +1663,7 @@ export default function SimulationScreen() {
           {/* Final Allocation Donut - Pro mode only */}
           {!isNormal && (
             <>
-              <SectionLabel text="FINAL ALLOCATION" />
+              <SectionLabel text={t("simulation.finalAllocation")} />
               <View style={styles.donutRow}>
                 <AllocationDonut allocation={result.final_allocation} size={130} />
                 <View style={styles.allocationList}>
@@ -1693,10 +1697,10 @@ export default function SimulationScreen() {
           )}
 
           {/* Trade Log */}
-          <SectionLabel text={isNormal ? `📝 Decisions Made (${result.trades.length})` : `TRADE LOG · ${result.trades.length} DECISIONS`} />
+          <SectionLabel text={isNormal ? t("simulation.trade.title", { count: result.trades.length }) : t("simulation.trade.titlePro", { count: result.trades.length })} />
           {result.trades.length === 0 ? (
             <Text style={styles.noTradesText}>
-              No trades executed in this simulation period.
+              {t("simulation.trade.none")}
             </Text>
           ) : (
             result.trades.map((trade, i) => (
@@ -1718,7 +1722,7 @@ export default function SimulationScreen() {
         <View style={styles.headerLeft}>
           <Text style={styles.headerBrand}>CARDECON</Text>
           <View style={styles.headerSeparator} />
-          <Text style={styles.headerTitle}>{isNormal ? "🧪 Try a Simulation" : "SIMULATION ENGINE"}</Text>
+          <Text style={styles.headerTitle}>{isNormal ? t("simulation.header.title") : t("simulation.header.titlePro")}</Text>
         </View>
         <View style={styles.headerRight}>
           <ThemeModeToggle compact />

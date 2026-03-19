@@ -1,20 +1,26 @@
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { useThemeStore } from "../../store/themeStore";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 export function AppTopBar({
   label,
+  labelKey,
   onBack,
   rightContent,
 }: {
   label: string;
+  labelKey?: string;
   onBack?: () => void;
   rightContent?: React.ReactNode;
 }) {
   const colors = useColors();
   const isNormal = useThemeStore((state) => state.mode === "normal");
+  const { t } = useTranslation();
+  const resolvedLabel = labelKey ? t(labelKey) : label;
 
   return (
     <View
@@ -27,7 +33,7 @@ export function AppTopBar({
       ]}
     >
       <View style={styles.left}>
-        <Text style={[styles.logo, { color: colors.blue }]}>CARDECON</Text>
+        <Text style={[styles.logo, { color: colors.blue }]}>{t("common.appName")}</Text>
         <View style={[styles.sep, { backgroundColor: colors.borderDim }]} />
         <Text
           style={[
@@ -38,11 +44,12 @@ export function AppTopBar({
             },
           ]}
         >
-          {label}
+          {resolvedLabel}
         </Text>
       </View>
 
       <View style={styles.right}>
+        <LanguageSwitcher />
         {rightContent}
         {onBack ? (
           <TouchableOpacity
@@ -56,7 +63,7 @@ export function AppTopBar({
               },
             ]}
           >
-            <Text style={[styles.backText, { color: colors.textDim }]}>BACK</Text>
+            <Text style={[styles.backText, { color: colors.textDim }]}>{t("common.back")}</Text>
           </TouchableOpacity>
         ) : null}
       </View>

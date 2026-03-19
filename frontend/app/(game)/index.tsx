@@ -10,6 +10,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { getNextCard, getPortfolio, type PortfolioData, updateCompanion } from "../../services/portfolio";
 import { listPersonas, type PersonaData } from "../../services/persona";
 import { useAuthStore } from "../../store/authStore";
@@ -106,6 +107,7 @@ function QuickLink({
 
 export default function GameIndexScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const colors = useColors();
   const isNormal = useThemeStore((state) => state.mode === "normal");
   const setMode = useThemeStore((state) => state.setMode);
@@ -141,12 +143,12 @@ export default function GameIndexScreen() {
       .catch((error: unknown) => {
         console.warn("Game index bootstrap failed", error);
         Alert.alert(
-          "Connection issue",
-          "CardEcon couldn't reach the backend. If you're testing on a device, make sure the API URL points to your computer's LAN IP instead of localhost."
+          t("home.alerts.connectionTitle"),
+          t("home.alerts.connectionBody")
         );
       })
       .finally(() => setLoadingData(false));
-  }, [setCompanion, setPortfolio]);
+  }, [setCompanion, setPortfolio, t]);
 
   const handlePlay = async () => {
     if (!portfolio?.companion_id) {
@@ -160,7 +162,7 @@ export default function GameIndexScreen() {
       setCurrentCard(card);
       router.push("/(game)/play");
     } catch {
-      Alert.alert("Error", "Could not load cards. Is the backend running?");
+      Alert.alert(t("common.error"), t("home.alerts.loadCards"));
     } finally {
       setLaunching(false);
     }
@@ -174,18 +176,18 @@ export default function GameIndexScreen() {
       setCompanion(companionId);
       setSelectorVisible(false);
     } catch {
-      Alert.alert("Error", "Could not save your guide just now.");
+      Alert.alert(t("common.error"), t("home.alerts.saveGuide"));
     }
   };
 
   const quickLinks = [
-    { label: isNormal ? "🧪 Simulation" : "SIMULATION", sub: isNormal ? "Try simple what-if scenarios before you risk anything." : "Run persona-driven historical backtests.", to: "/(game)/simulation" },
-    { label: isNormal ? "💼 Portfolio" : "PORTFOLIO", sub: isNormal ? "See where your money is and what changed recently." : "Review capital, net worth, and recent moves.", to: "/(game)/portfolio" },
-    { label: isNormal ? "🧠 Personas" : "PERSONAS", sub: isNormal ? "Compare your investor styles and switch the one you want to train." : "Manage active and archived personas.", to: "/(profile)/personas" },
-    { label: isNormal ? "🃏 Decks" : "DECKS", sub: isNormal ? "Choose the lesson packs you want to see more often." : "Configure strategies and deck availability.", to: "/(profile)/decks" },
-    { label: isNormal ? "🏆 Achievements" : "ACHIEVEMENTS", sub: isNormal ? "Track milestones and see what to unlock next." : "Review progression achievements.", to: "/(game)/achievements" },
-    { label: isNormal ? "📊 Leaderboard" : "LEADERBOARD", sub: isNormal ? "See how your portfolio stacks up against others." : "Rank players by net worth.", to: "/(game)/leaderboard" },
-    { label: isNormal ? "⚔️ Arena" : "ARENA", sub: isNormal ? "Challenge friends in real-time multiplayer — same cards, best portfolio wins." : "MULTIPLAYER — COMPETE ON SAME CARDS IN REAL TIME.", to: "/(game)/arena" },
+    { label: isNormal ? t("home.links.simulation") : t("home.linksPro.simulation"), sub: isNormal ? t("home.linksSub.simulation") : t("home.linksSubPro.simulation"), to: "/(game)/simulation" },
+    { label: isNormal ? t("home.links.portfolio") : t("home.linksPro.portfolio"), sub: isNormal ? t("home.linksSub.portfolio") : t("home.linksSubPro.portfolio"), to: "/(game)/portfolio" },
+    { label: isNormal ? t("home.links.personas") : t("home.linksPro.personas"), sub: isNormal ? t("home.linksSub.personas") : t("home.linksSubPro.personas"), to: "/(profile)/personas" },
+    { label: isNormal ? t("home.links.decks") : t("home.linksPro.decks"), sub: isNormal ? t("home.linksSub.decks") : t("home.linksSubPro.decks"), to: "/(profile)/decks" },
+    { label: isNormal ? t("home.links.achievements") : t("home.linksPro.achievements"), sub: isNormal ? t("home.linksSub.achievements") : t("home.linksSubPro.achievements"), to: "/(game)/achievements" },
+    { label: isNormal ? t("home.links.leaderboard") : t("home.linksPro.leaderboard"), sub: isNormal ? t("home.linksSub.leaderboard") : t("home.linksSubPro.leaderboard"), to: "/(game)/leaderboard" },
+    { label: isNormal ? t("home.links.arena") : t("home.linksPro.arena"), sub: isNormal ? t("home.linksSub.arena") : t("home.linksSubPro.arena"), to: "/(game)/arena" },
   ];
 
   return (
@@ -193,15 +195,15 @@ export default function GameIndexScreen() {
       <GridBg />
 
       <AppTopBar
-        label={isNormal ? "Home Base" : "INDEX"}
+        label={isNormal ? t("topbar.homeBase") : t("home.topBarPro")}
         rightContent={
           <>
             <ThemeModeToggle navSized />
             <TouchableOpacity style={styles.navBtn} onPress={() => router.push("/(profile)")}>
-              <Text style={styles.navBtnText}>{isNormal ? "Profile" : "PROFILE"}</Text>
+              <Text style={styles.navBtnText}>{isNormal ? t("topbar.profile") : t("home.profilePro")}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.navBtn, styles.logoutBtn]} onPress={clearAuth}>
-              <Text style={styles.navBtnText}>{isNormal ? "Log Out" : "LOGOUT"}</Text>
+              <Text style={styles.navBtnText}>{isNormal ? t("home.logout") : t("home.logoutPro")}</Text>
             </TouchableOpacity>
           </>
         }
@@ -210,50 +212,50 @@ export default function GameIndexScreen() {
       <ScrollView style={styles.contentScroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={[styles.hero, isWide && styles.heroWide]}>
           <View style={styles.heroMain}>
-            <Text style={styles.eyebrow}>{isNormal ? "WELCOME BACK" : "SESSION READY"}</Text>
+            <Text style={styles.eyebrow}>{isNormal ? t("home.eyebrow") : t("home.eyebrowPro")}</Text>
             <Text style={styles.heroTitle}>
-              {isNormal ? `Hi ${user?.username ?? "Investor"}, ready for today's learning run?` : "Primary investor console online."}
+              {isNormal ? t("home.heroTitle", { user: user?.username ?? t("home.defaultUser") }) : t("home.heroTitlePro")}
             </Text>
             <Text style={styles.heroBody}>
               {isNormal
-                ? "Your home screen now highlights the money story, your current learning style, and the guide helping you through the next decisions."
-                : "Portfolio, persona, and deck systems are loaded. Choose a module or continue the active run."}
+                ? t("home.heroBody")
+                : t("home.heroBodyPro")}
             </Text>
 
             <View style={styles.snapshotRow}>
               <SnapshotCard
-                label={isNormal ? "🏦 Total value" : "NET WORTH"}
+                label={isNormal ? t("home.cards.totalValue") : t("home.cards.totalValuePro")}
                 value={loadingData ? "..." : `$${(portfolio?.net_worth ?? 0).toLocaleString("en-US", { maximumFractionDigits: 0 })}`}
-                sub={isNormal ? "Your overall money picture" : "Portfolio total"}
+                sub={isNormal ? t("home.cards.totalValueSub") : t("home.cards.totalValueSubPro")}
                 accent={colors.blue}
               />
               <SnapshotCard
-                label={isNormal ? "🧠 Active style" : "ACTIVE PERSONA"}
-                value={loadingData ? "..." : activePersona?.name ?? "Explorer"}
-                sub={isNormal ? "How the game is reading your choices" : "Current investor style"}
+                label={isNormal ? t("home.cards.activeStyle") : t("home.cards.activeStylePro")}
+                value={loadingData ? "..." : activePersona?.name ?? t("home.defaultPersona")}
+                sub={isNormal ? t("home.cards.activeStyleSub") : t("home.cards.activeStyleSubPro")}
                 accent={colors.teal}
               />
               <SnapshotCard
-                label={isNormal ? "💵 Income" : "INCOME"}
-                value={loadingData ? "..." : portfolio?.can_claim_income ? "Ready" : "Claimed"}
-                sub={portfolio?.can_claim_income ? `+$${portfolio.pending_income.toFixed(0)} available now` : isNormal ? "Next claim tomorrow" : "Next cycle pending"}
+                label={isNormal ? t("home.cards.income") : t("home.cards.incomePro")}
+                value={loadingData ? "..." : portfolio?.can_claim_income ? t("home.cards.incomeReady") : t("home.cards.incomeClaimed")}
+                sub={portfolio?.can_claim_income ? t("home.cards.incomeAvailable", { amount: portfolio.pending_income.toFixed(0) }) : isNormal ? t("home.cards.incomeNext") : t("home.cards.incomeNextPro")}
                 accent={portfolio?.can_claim_income ? colors.green : colors.textDim}
               />
             </View>
 
             <View style={styles.heroActions}>
               <TouchableOpacity style={styles.primaryCta} onPress={handlePlay} disabled={launching}>
-                {launching ? <ActivityIndicator color={colors.bg} size="small" /> : <Text style={styles.primaryCtaText}>{isNormal ? "Start Playing" : "▶ START PLAYING"}</Text>}
+                {launching ? <ActivityIndicator color={colors.bg} size="small" /> : <Text style={styles.primaryCtaText}>{isNormal ? t("home.cta.start") : t("home.cta.startPro")}</Text>}
               </TouchableOpacity>
               <TouchableOpacity style={styles.secondaryCta} onPress={() => router.push("/(game)/portfolio")}>
-                <Text style={styles.secondaryCtaText}>{isNormal ? "Open Portfolio" : "OPEN PORTFOLIO"}</Text>
+                <Text style={styles.secondaryCtaText}>{isNormal ? t("home.cta.portfolio") : t("home.cta.portfolioPro")}</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           <View style={styles.heroSide}>
             <View style={styles.guideCard}>
-              <Text style={styles.panelTitle}>{isNormal ? "🧭 Your Guide" : "GUIDE SYSTEM"}</Text>
+              <Text style={styles.panelTitle}>{isNormal ? t("home.guide.title") : t("home.guide.titlePro")}</Text>
               {currentCompanion ? (
                 <>
                   <View style={styles.guideTop}>
@@ -267,32 +269,32 @@ export default function GameIndexScreen() {
                 </>
               ) : (
                 <Text style={styles.guideQuote}>
-                  {isNormal ? "Pick a guide to make the game feel more personal and easier to follow." : "Select a companion voice for the session."}
+                  {isNormal ? t("home.guide.empty") : t("home.guide.emptyPro")}
                 </Text>
               )}
               <TouchableOpacity style={styles.ghostBtn} onPress={() => setSelectorVisible(true)}>
-                <Text style={styles.ghostBtnText}>{currentCompanion ? (isNormal ? "Change Guide" : "CHANGE GUIDE") : (isNormal ? "Choose Guide" : "SELECT GUIDE")}</Text>
+                <Text style={styles.ghostBtnText}>{currentCompanion ? (isNormal ? t("home.guide.change") : t("home.guide.changePro")) : (isNormal ? t("home.guide.choose") : t("home.guide.choosePro"))}</Text>
               </TouchableOpacity>
             </View>
 
             <View style={styles.modeCard}>
-              <Text style={styles.panelTitle}>{isNormal ? "🎨 Viewing Style" : "VIEW MODE"}</Text>
+              <Text style={styles.panelTitle}>{isNormal ? t("home.mode.title") : t("home.mode.titlePro")}</Text>
               <View style={styles.modeGrid}>
                 <TouchableOpacity
                   activeOpacity={0.9}
                   onPress={() => setMode("normal")}
                   style={[styles.modePane, isNormal && styles.modePaneActive]}
                 >
-                  <Text style={styles.modePaneTitle}>Normal</Text>
-                  <Text style={styles.modePaneBody}>Friendly labels, more breathing room, easier summaries, and a softer learning feel.</Text>
+                  <Text style={styles.modePaneTitle}>{t("home.mode.normal")}</Text>
+                  <Text style={styles.modePaneBody}>{t("home.mode.normalBody")}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   activeOpacity={0.9}
                   onPress={() => setMode("pro")}
                   style={[styles.modePane, !isNormal && styles.modePaneActive]}
                 >
-                  <Text style={styles.modePaneTitle}>Pro</Text>
-                  <Text style={styles.modePaneBody}>Dense market detail, faster scanning, terminal-style layouts, and the full trading feel.</Text>
+                  <Text style={styles.modePaneTitle}>{t("home.mode.pro")}</Text>
+                  <Text style={styles.modePaneBody}>{t("home.mode.proBody")}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -307,20 +309,20 @@ export default function GameIndexScreen() {
         >
           <View style={styles.arenaBannerLeft}>
             <View style={styles.arenaBadge}>
-              <Text style={styles.arenaBadgeText}>{isNormal ? "NEW" : "NEW"}</Text>
+              <Text style={styles.arenaBadgeText}>{t("home.arena.new")}</Text>
             </View>
-            <Text style={styles.arenaBannerTitle}>{isNormal ? "⚔️  Arena — Multiplayer" : "ARENA  /  MULTIPLAYER"}</Text>
+            <Text style={styles.arenaBannerTitle}>{isNormal ? t("home.arena.title") : t("home.arena.titlePro")}</Text>
             <Text style={styles.arenaBannerSub}>
               {isNormal
-                ? "Play the same cards as your friends in real time. Best portfolio wins."
-                : "COMPETE ON IDENTICAL CARD SEQUENCES. REAL-TIME STANDINGS."}
+                ? t("home.arena.sub")
+                : t("home.arena.subPro")}
             </Text>
           </View>
-          <Text style={styles.arenaBannerArrow}>{isNormal ? "→" : "▶"}</Text>
+          <Text style={styles.arenaBannerArrow}>{isNormal ? t("home.arena.arrow") : t("home.arena.arrowPro")}</Text>
         </TouchableOpacity>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{isNormal ? "Explore the app" : "MODULE ACCESS"}</Text>
+          <Text style={styles.sectionTitle}>{isNormal ? t("home.sectionTitle") : t("home.sectionTitlePro")}</Text>
           <View style={styles.quickGrid}>
             {quickLinks.filter(l => l.to !== "/(game)/arena").map((item) => (
               <QuickLink key={item.to} label={item.label} sub={item.sub} onPress={() => router.push(item.to as never)} />
@@ -330,19 +332,25 @@ export default function GameIndexScreen() {
 
         <View style={[styles.section, isWide && styles.lowerGrid]}>
           <View style={styles.learningCard}>
-            <Text style={styles.panelTitle}>{isNormal ? "📘 Your learning snapshot" : "LEARNING SNAPSHOT"}</Text>
+            <Text style={styles.panelTitle}>{isNormal ? t("home.snapshot.title") : t("home.snapshot.titlePro")}</Text>
             <Text style={styles.learningText}>
               {isNormal
-                ? `You are currently learning as ${activePersona?.name ?? "an Explorer"} with ${currentCompanion?.name ?? "a guide"} by your side. The next best step is to keep making decisions and let your style evolve.`
-                : `Active persona: ${activePersona?.name ?? "N/A"}. Companion: ${currentCompanion?.name ?? "N/A"}. Continue sessions to refine your trajectory.`}
+                ? t("home.snapshot.body", {
+                    persona: activePersona?.name ?? t("home.defaultPersonaLong"),
+                    companion: currentCompanion?.name ?? t("home.defaultGuide"),
+                  })
+                : t("home.snapshot.bodyPro", {
+                    persona: activePersona?.name ?? "N/A",
+                    companion: currentCompanion?.name ?? "N/A",
+                  })}
             </Text>
           </View>
 
           <View style={styles.learningCard}>
-            <Text style={styles.panelTitle}>{isNormal ? "✅ System check" : "SYSTEM STATUS"}</Text>
+            <Text style={styles.panelTitle}>{isNormal ? t("home.system.title") : t("home.system.titlePro")}</Text>
             <View style={styles.statusRow}>
-              <SnapshotCard label={isNormal ? "Guide system" : "PERSONA ENGINE"} value="ONLINE" accent={colors.green} />
-              <SnapshotCard label={isNormal ? "Card flow" : "CARD PIPELINE"} value="READY" accent={colors.green} />
+              <SnapshotCard label={isNormal ? t("home.system.guide") : t("home.system.guidePro")} value={t("home.system.online")} accent={colors.green} />
+              <SnapshotCard label={isNormal ? t("home.system.cards") : t("home.system.cardsPro")} value={t("home.system.ready")} accent={colors.green} />
             </View>
           </View>
         </View>

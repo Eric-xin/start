@@ -4,6 +4,7 @@ import {
   ActivityIndicator, Alert, TextInput, useWindowDimensions, Switch,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/authStore";
 import { updateUser, changePassword } from "../../services/user";
 import { listPersonas, PersonaData } from "../../services/persona";
@@ -13,7 +14,7 @@ import { Colors, useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { useThemeStore } from "../../store/themeStore";
 import { ThemeModeToggle } from "../../components/theme/ThemeModeToggle";
-import { AppTopBar } from "../../components/navigation/AppTopBar";
+import { LanguageSwitcher } from "../../components/navigation/LanguageSwitcher";
 
 const TRAIT_LABELS: Record<string, string> = {
   risk_appetite: "Risk Appetite",
@@ -55,6 +56,7 @@ function EditField({
   label: string; value: string; onSave: (v: string) => Promise<void>;
   placeholder?: string; secure?: boolean; keyboardType?: any;
 }) {
+  const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
   const [input, setInput] = useState(value);
   const [saving, setSaving] = useState(false);
@@ -66,7 +68,7 @@ function EditField({
       await onSave(input.trim());
       setEditing(false);
     } catch (e: any) {
-      Alert.alert("Error", e?.response?.data?.detail ?? "Update failed.");
+      Alert.alert(t("common.error"), e?.response?.data?.detail ?? t("profileHome.errors.updateFailed"));
     } finally {
       setSaving(false);
     }
@@ -87,7 +89,7 @@ function EditField({
             selectionColor={Colors.blue}
           />
           <TouchableOpacity style={ef.saveBtn} onPress={handleSave} disabled={saving}>
-            <Text style={ef.saveTxt}>{saving ? "..." : "SAVE"}</Text>
+            <Text style={ef.saveTxt}>{saving ? "..." : t("profileHome.account.save")}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => { setInput(value); setEditing(false); }}>
             <Text style={ef.cancelTxt}>✕</Text>
@@ -96,7 +98,7 @@ function EditField({
       ) : (
         <TouchableOpacity style={ef.row} onPress={() => setEditing(true)}>
           <Text style={ef.value}>{secure ? "••••••••" : (value || placeholder || "—")}</Text>
-          <Text style={ef.editTxt}>EDIT</Text>
+          <Text style={ef.editTxt}>{t("profileHome.account.edit")}</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -135,6 +137,7 @@ const tm = StyleSheet.create({
 
 // ─── Password Change Modal ──────────────────────────────────────────────────
 function PasswordSection() {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [cur, setCur] = useState("");
   const [next, setNext] = useState("");
@@ -142,15 +145,15 @@ function PasswordSection() {
   const [saving, setSaving] = useState(false);
 
   const handleChange = async () => {
-    if (next.length < 8) { Alert.alert("Too short", "Password must be at least 8 characters."); return; }
-    if (next !== confirm) { Alert.alert("Mismatch", "Passwords do not match."); return; }
+    if (next.length < 8) { Alert.alert(t("profileHome.password.tooShortTitle"), t("profileHome.password.tooShortBody")); return; }
+    if (next !== confirm) { Alert.alert(t("profileHome.password.mismatchTitle"), t("profileHome.password.mismatchBody")); return; }
     setSaving(true);
     try {
       await changePassword(cur, next);
-      Alert.alert("Success", "Password updated.");
+      Alert.alert(t("profileHome.password.successTitle"), t("profileHome.password.successBody"));
       setCur(""); setNext(""); setConfirm(""); setOpen(false);
     } catch (e: any) {
-      Alert.alert("Error", e?.response?.data?.detail ?? "Failed to change password.");
+      Alert.alert(t("common.error"), e?.response?.data?.detail ?? t("profileHome.password.error"));
     } finally {
       setSaving(false);
     }
@@ -159,20 +162,20 @@ function PasswordSection() {
   if (!open) {
     return (
       <TouchableOpacity style={pw.row} onPress={() => setOpen(true)}>
-        <Text style={pw.label}>PASSWORD</Text>
+        <Text style={pw.label}>{t("profileHome.password.label")}</Text>
         <Text style={pw.value}>••••••••</Text>
-        <Text style={pw.edit}>CHANGE</Text>
+        <Text style={pw.edit}>{t("profileHome.password.change")}</Text>
       </TouchableOpacity>
     );
   }
 
   return (
     <View style={pw.form}>
-      <Text style={pw.formLabel}>CHANGE PASSWORD</Text>
+      <Text style={pw.formLabel}>{t("profileHome.password.changeTitle")}</Text>
       {[
-        { label: "CURRENT", val: cur, set: setCur },
-        { label: "NEW", val: next, set: setNext },
-        { label: "CONFIRM NEW", val: confirm, set: setConfirm },
+        { label: t("profileHome.password.current"), val: cur, set: setCur },
+        { label: t("profileHome.password.new"), val: next, set: setNext },
+        { label: t("profileHome.password.confirm"), val: confirm, set: setConfirm },
       ].map(({ label, val, set }) => (
         <View key={label} style={pw.field}>
           <Text style={pw.fieldLabel}>{label}</Text>
@@ -187,10 +190,10 @@ function PasswordSection() {
       ))}
       <View style={pw.actions}>
         <TouchableOpacity style={[pw.saveBtn, saving && { opacity: 0.5 }]} onPress={handleChange} disabled={saving}>
-          <Text style={pw.saveBtnTxt}>{saving ? "SAVING..." : "UPDATE PASSWORD"}</Text>
+          <Text style={pw.saveBtnTxt}>{saving ? t("profileHome.password.saving") : t("profileHome.password.update")}</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setOpen(false)}>
-          <Text style={pw.cancel}>CANCEL</Text>
+          <Text style={pw.cancel}>{t("common.cancel")}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -215,6 +218,7 @@ const pw = StyleSheet.create({
 // ─── Main screen ─────────────────────────────────────────────────────────────
 export default function ProfileScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const colors = useColors();
   const isNormal = useThemeStore((state) => state.mode === "normal");
   const { user, setUser, clearAuth, setSkipInvestingIntro } = useAuthStore();
@@ -261,7 +265,7 @@ export default function ProfileScreen() {
     if (!progress) return;
     const enabled = new Set(progress.enabled_decks);
     if (currentlyEnabled) {
-      if (enabled.size <= 1) { Alert.alert("Required", "At least one deck must remain enabled."); return; }
+      if (enabled.size <= 1) { Alert.alert(t("profileHome.requiredTitle"), t("profileHome.keepOneDeck")); return; }
       enabled.delete(key);
     } else {
       enabled.add(key);
@@ -270,7 +274,7 @@ export default function ProfileScreen() {
     try {
       const updated = await updateProgress({ enabled_decks: Array.from(enabled) });
       setProgress(updated);
-    } catch { Alert.alert("Error", "Could not update deck."); }
+    } catch { Alert.alert(t("common.error"), t("profileHome.errors.updateDeck")); }
     finally { setTogglingDeck(null); }
   };
 
@@ -278,13 +282,13 @@ export default function ProfileScreen() {
     if (!progress) return;
     const enabled = new Set(progress.enabled_strategies);
     if (currentlyEnabled) {
-      if (enabled.size <= 1) { Alert.alert("Required", "At least one strategy must remain enabled."); return; }
+      if (enabled.size <= 1) { Alert.alert(t("profileHome.requiredTitle"), t("profileHome.keepOneStrategy")); return; }
       enabled.delete(key);
     } else { enabled.add(key); }
     try {
       const updated = await updateProgress({ enabled_strategies: Array.from(enabled) });
       setProgress(updated);
-    } catch { Alert.alert("Error", "Could not update strategy."); }
+    } catch { Alert.alert(t("common.error"), t("profileHome.errors.updateStrategy")); }
   };
 
   if (loading) {
@@ -307,21 +311,21 @@ export default function ProfileScreen() {
     <>
       {/* Account settings */}
       <View style={[s.card, cardSurfaceStyle]}>
-        <SectionHeader title="ACCOUNT SETTINGS" />
-        <EditField label="USERNAME" value={user?.username ?? ""} onSave={handleSaveUsername} placeholder="username" />
-        <EditField label="EMAIL ADDRESS" value={user?.email ?? ""} onSave={handleSaveEmail} placeholder="email" keyboardType="email-address" />
+        <SectionHeader title={t("profileHome.account.title")} />
+        <EditField label={t("profileHome.account.username")} value={user?.username ?? ""} onSave={handleSaveUsername} placeholder={t("profileHome.account.usernamePlaceholder")} />
+        <EditField label={t("profileHome.account.email")} value={user?.email ?? ""} onSave={handleSaveEmail} placeholder={t("profileHome.account.emailPlaceholder")} keyboardType="email-address" />
         <PasswordSection />
         <View style={s.accountMeta}>
           <View style={s.metaBadge}>
-            <Text style={s.metaLabel}>TIER</Text>
+            <Text style={s.metaLabel}>{t("profileHome.account.tier")}</Text>
             <Text style={[s.metaValue, { color: Colors.blue }]}>{user?.subscription_tier?.toUpperCase() ?? "NORMAL"}</Text>
           </View>
           <View style={s.metaBadge}>
-            <Text style={s.metaLabel}>ROLE</Text>
+            <Text style={s.metaLabel}>{t("profileHome.account.role")}</Text>
             <Text style={s.metaValue}>{user?.role?.toUpperCase() ?? "USER"}</Text>
           </View>
           <View style={s.metaBadge}>
-            <Text style={s.metaLabel}>MEMBER SINCE</Text>
+            <Text style={s.metaLabel}>{t("profileHome.account.memberSince")}</Text>
             <Text style={s.metaValue}>{user?.created_at ? new Date(user.created_at as any).getFullYear() : "—"}</Text>
           </View>
         </View>
@@ -333,15 +337,15 @@ export default function ProfileScreen() {
             router.push("/(game)/investing-intro");
           }}
         >
-          <Text style={s.replayIntroTxt}>REPLAY INVESTING INTRO →</Text>
+          <Text style={s.replayIntroTxt}>{t("profile.replayIntro")}</Text>
         </TouchableOpacity>
       </View>
 
       {/* Active Persona */}
       <View style={[s.card, cardSurfaceStyle]}>
         <SectionHeader
-          title="ACTIVE PERSONA"
-          action="MANAGE →"
+          title={t("profileHome.activePersona.title")}
+          action={t("profileHome.activePersona.manage")}
           onAction={() => router.push("/(profile)/personas")}
         />
         {activePersona ? (
@@ -349,13 +353,13 @@ export default function ProfileScreen() {
             <View style={s.personaRow}>
               <View>
                 <Text style={s.personaName}>{activePersona.name}</Text>
-                <Text style={s.personaSub}>{activePersona.cards_played} cards played</Text>
+                <Text style={s.personaSub}>{t("profileHome.activePersona.cardsPlayed", { count: activePersona.cards_played })}</Text>
               </View>
               <TouchableOpacity
                 style={s.viewBtn}
                 onPress={() => router.push(`/(profile)/persona/${activePersona.id}`)}
               >
-                <Text style={s.viewBtnText}>VIEW TRAJECTORY →</Text>
+                <Text style={s.viewBtnText}>{t("profileHome.activePersona.view")}</Text>
               </TouchableOpacity>
             </View>
             {activePersona.traits && (
@@ -370,19 +374,19 @@ export default function ProfileScreen() {
             )}
           </>
         ) : (
-          <Text style={s.emptyTxt}>No personas yet. A default will be created when you start playing.</Text>
+          <Text style={s.emptyTxt}>{t("profileHome.activePersona.empty")}</Text>
         )}
       </View>
 
       {/* Recent Decisions */}
       <View style={[s.card, cardSurfaceStyle]}>
         <SectionHeader
-          title="RECENT DECISIONS"
-          action="VIEW PORTFOLIO →"
+          title={t("profileHome.recent.title")}
+          action={t("profileHome.recent.viewPortfolio")}
           onAction={() => router.push("/(game)/portfolio")}
         />
         {recentPlays.length === 0 ? (
-          <Text style={s.emptyTxt}>No card plays yet. Start playing to build history.</Text>
+          <Text style={s.emptyTxt}>{t("profileHome.recent.empty")}</Text>
         ) : (
           recentPlays.map((play) => {
             const capChange = play.capital_after - play.capital_before;
@@ -392,7 +396,7 @@ export default function ProfileScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={s.sessionCapital}>{play.card?.emoji ?? "•"} {play.card?.title ?? "Card"}</Text>
                   <Text style={s.sessionMeta}>
-                    {play.action === "right" ? "ACCEPTED" : "DECLINED"} · {new Date(play.created_at).toLocaleDateString()}
+                    {play.action === "right" ? t("profileHome.recent.accepted") : t("profileHome.recent.declined")} · {new Date(play.created_at).toLocaleDateString()}
                   </Text>
                 </View>
                 <Text style={[s.sessionDelta, { color: isUp ? Colors.green : Colors.red }]}>
@@ -411,18 +415,18 @@ export default function ProfileScreen() {
     <>
       {/* Progress overview */}
       <View style={[s.card, cardSurfaceStyle]}>
-        <SectionHeader title="PROGRESS" />
+        <SectionHeader title={t("profileHome.progress.title")} />
         <View style={s.statsRow}>
           <View style={s.statBlock}>
-            <Text style={s.statLabel}>CARDS PLAYED</Text>
+            <Text style={s.statLabel}>{t("profileHome.progress.cardsPlayed")}</Text>
             <Text style={s.statValue}>{progress?.total_cards_played ?? 0}</Text>
           </View>
           <View style={s.statBlock}>
-            <Text style={s.statLabel}>STRATEGIES</Text>
+            <Text style={s.statLabel}>{t("profileHome.progress.strategies")}</Text>
             <Text style={[s.statValue, { color: Colors.teal }]}>{progress?.unlocked_strategies.length ?? 1}/5</Text>
           </View>
           <View style={s.statBlock}>
-            <Text style={s.statLabel}>DECKS</Text>
+            <Text style={s.statLabel}>{t("profileHome.progress.decks")}</Text>
             <Text style={[s.statValue, { color: Colors.blue }]}>{progress?.unlocked_decks.length ?? 1}/{progress?.decks.length ?? 7}</Text>
           </View>
         </View>
@@ -431,11 +435,11 @@ export default function ProfileScreen() {
       {/* Strategies & Decks */}
       <View style={[s.card, cardSurfaceStyle]}>
         <SectionHeader
-          title="STRATEGIES & DECKS"
-          action="FULL SETTINGS →"
+          title={t("profileHome.strategyDecks.title")}
+          action={t("profileHome.strategyDecks.settings")}
           onAction={() => router.push("/(profile)/decks")}
         />
-        <Text style={s.deckHint}>Enable or disable strategies and individual decks. Locked items unlock as you play.</Text>
+        <Text style={s.deckHint}>{t("profileHome.strategyDecks.hint")}</Text>
 
         {progress?.strategies.map((strat) => {
           const decks = decksByStrategy[strat.key] ?? [];
@@ -449,7 +453,7 @@ export default function ProfileScreen() {
                     {strat.label}
                   </Text>
                   {!strat.is_unlocked && (
-                    <Text style={s.unlockHint}>Unlocks at {strat.unlock_at} cards</Text>
+                    <Text style={s.unlockHint}>{t("profileHome.strategyDecks.unlocksAt", { count: strat.unlock_at })}</Text>
                   )}
                 </View>
                 {strat.is_unlocked ? (
@@ -462,7 +466,7 @@ export default function ProfileScreen() {
                     style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
                   />
                 ) : (
-                  <View style={s.lockTag}><Text style={s.lockTagTxt}>LOCKED</Text></View>
+                  <View style={s.lockTag}><Text style={s.lockTagTxt}>{t("profileHome.strategyDecks.locked")}</Text></View>
                 )}
               </View>
 
@@ -475,7 +479,7 @@ export default function ProfileScreen() {
                       {deck.label}
                     </Text>
                     {!deck.is_unlocked && (
-                      <Text style={s.unlockHint}>{deck.unlock_at} cards</Text>
+                      <Text style={s.unlockHint}>{t("profileHome.strategyDecks.cardsNeeded", { count: deck.unlock_at })}</Text>
                     )}
                   </View>
                   {deck.is_unlocked ? (
@@ -492,7 +496,7 @@ export default function ProfileScreen() {
                       />
                     )
                   ) : (
-                    <View style={s.lockTag}><Text style={s.lockTagTxt}>LOCKED</Text></View>
+                    <View style={s.lockTag}><Text style={s.lockTagTxt}>{t("profileHome.strategyDecks.locked")}</Text></View>
                   )}
                 </View>
               ))}
@@ -506,18 +510,25 @@ export default function ProfileScreen() {
         style={s.logoutBtn}
         onPress={async () => { await clearAuth(); router.replace("/(auth)/login"); }}
       >
-        <Text style={s.logoutTxt}>LOG OUT</Text>
+        <Text style={s.logoutTxt}>{t("profileHome.logout")}</Text>
       </TouchableOpacity>
     </>
   );
 
   return (
     <View style={[s.container, { backgroundColor: colors.bg }]}>
-      <AppTopBar
-        label={isNormal ? "👤 Profile" : "PROFILE"}
-        onBack={() => router.back()}
-        rightContent={<ThemeModeToggle compact />}
-      />
+      {/* Top bar */}
+      <View style={[s.topBar, { backgroundColor: colors.bgPanel, borderBottomColor: colors.borderPrimary }]}>
+        <Text style={[s.logo, { color: colors.blue }]}>CARDECON</Text>
+        <View style={[s.barSep, { backgroundColor: colors.borderDim }]} />
+        <Text style={[s.topLabel, { color: colors.textDim }]}>{isNormal ? t("profileHome.topLabel") : t("profileHome.topLabelPro")}</Text>
+        <View style={{ flex: 1 }} />
+        <LanguageSwitcher />
+        <ThemeModeToggle compact />
+        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+          <Text style={[s.backText, { color: colors.textDim }]}>{t("profileHome.back")}</Text>
+        </TouchableOpacity>
+      </View>
 
       <ScrollView contentContainerStyle={[s.scroll, isWide && s.scrollWide]}>
         {isWide ? (

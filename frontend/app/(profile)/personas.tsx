@@ -4,6 +4,7 @@ import {
   ActivityIndicator, Alert, TouchableOpacity, TextInput,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import {
   listPersonas, createPersona, deletePersona, updatePersona, PersonaData,
 } from "../../services/persona";
@@ -15,6 +16,7 @@ import { AppTopBar } from "../../components/navigation/AppTopBar";
 
 export default function PersonasScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const colors = useColors();
   const isNormal = useThemeStore((state) => state.mode === "normal");
   const [personas, setPersonas] = useState<PersonaData[]>([]);
@@ -28,7 +30,7 @@ export default function PersonasScreen() {
       const data = await listPersonas();
       setPersonas(data);
     } catch {
-      Alert.alert("Error", "Could not load personas.");
+      Alert.alert(t("common.error"), t("personas.errors.load"));
     } finally {
       setLoading(false);
     }
@@ -37,7 +39,7 @@ export default function PersonasScreen() {
   useEffect(() => { load(); }, []);
 
   const handleCreate = async () => {
-    const name = newName.trim() || "New Persona";
+    const name = newName.trim() || t("personas.defaultName");
     setCreating(true);
     try {
       await createPersona(name);
@@ -45,7 +47,7 @@ export default function PersonasScreen() {
       setShowCreate(false);
       await load();
     } catch {
-      Alert.alert("Error", "Could not create persona.");
+      Alert.alert(t("common.error"), t("personas.errors.create"));
     } finally {
       setCreating(false);
     }
@@ -57,28 +59,28 @@ export default function PersonasScreen() {
       await updatePersona(persona.id, { is_active: true });
       await load();
     } catch {
-      Alert.alert("Error", "Could not activate persona.");
+      Alert.alert(t("common.error"), t("personas.errors.activate"));
     }
   };
 
   const handleDelete = (persona: PersonaData) => {
     if (persona.is_active) {
-      Alert.alert("Cannot Delete", "Activate another persona first before deleting this one.");
+      Alert.alert(t("personas.cannotDeleteTitle"), t("personas.cannotDeleteBody"));
       return;
     }
     Alert.alert(
-      "Delete Persona",
-      `Delete "${persona.name}"? All trajectory snapshots will be lost.`,
+      t("personas.deleteTitle"),
+      t("personas.deletePrompt", { name: persona.name }),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Delete", style: "destructive",
+          text: t("common.delete"), style: "destructive",
           onPress: async () => {
             try {
               await deletePersona(persona.id);
               await load();
             } catch (e: any) {
-              Alert.alert("Error", e?.response?.data?.detail ?? "Could not delete.");
+              Alert.alert(t("common.error"), e?.response?.data?.detail ?? t("personas.errors.delete"));
             }
           },
         },
@@ -97,7 +99,7 @@ export default function PersonasScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
       <AppTopBar
-        label={isNormal ? "🧠 Personas" : "PERSONAS"}
+        label={isNormal ? t("personas.topBar") : t("personas.topBarPro")}
         onBack={() => router.back()}
         rightContent={
           <>
@@ -106,7 +108,7 @@ export default function PersonasScreen() {
               style={[styles.createBtn, { borderColor: colors.blue + "88" }]}
               onPress={() => setShowCreate(!showCreate)}
             >
-              <Text style={[styles.createBtnText, { color: colors.blue }]}>{isNormal ? "+ New" : "+ NEW"}</Text>
+              <Text style={[styles.createBtnText, { color: colors.blue }]}>{isNormal ? t("personas.new") : t("personas.newPro")}</Text>
             </TouchableOpacity>
           </>
         }
@@ -116,10 +118,10 @@ export default function PersonasScreen() {
         {isNormal ? (
           <View style={[styles.card, { backgroundColor: colors.bgPanel, borderColor: colors.borderDim, borderRadius: 18 }]}>
             <Text style={{ fontSize: 15, fontFamily: Fonts.sansBold, color: colors.textBright, marginBottom: 6 }}>
-              Pick the kind of investor you want to practice as
+              {t("personas.heroTitle")}
             </Text>
             <Text style={{ fontSize: 12, fontFamily: Fonts.sans, color: colors.textPrimary, lineHeight: 18 }}>
-              Personas let you try different habits and risk styles. Activate one to shape how the game explains choices and tracks progress.
+              {t("personas.heroBody")}
             </Text>
           </View>
         ) : null}
@@ -128,14 +130,14 @@ export default function PersonasScreen() {
           <View style={[styles.card, { backgroundColor: colors.bgPanel, borderColor: colors.borderDim, borderRadius: isNormal ? 18 : 2 }]}>
             <View style={[styles.cardHeader, { borderBottomColor: colors.borderFaint }]}>
               <View style={[styles.blueDot, { backgroundColor: colors.blue }]} />
-              <Text style={[styles.cardHeaderText, { color: colors.blue }]}>{isNormal ? "Create a New Persona" : "CREATE PERSONA"}</Text>
+              <Text style={[styles.cardHeaderText, { color: colors.blue }]}>{isNormal ? t("personas.createTitle") : t("personas.createTitlePro")}</Text>
             </View>
-            <Text style={[styles.fieldLabel, { color: colors.textDim }]}>{isNormal ? "Persona name" : "PERSONA NAME"}</Text>
+            <Text style={[styles.fieldLabel, { color: colors.textDim }]}>{isNormal ? t("personas.nameLabel") : t("personas.nameLabelPro")}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: colors.bgCard, borderColor: colors.borderDim, color: colors.textBright, borderRadius: isNormal ? 14 : 2 }]}
               value={newName}
               onChangeText={setNewName}
-              placeholder="e.g. Risk Taker, Conservative..."
+              placeholder={t("personas.namePlaceholder")}
               placeholderTextColor={colors.textMuted}
               selectionColor={colors.blue}
               autoFocus
@@ -146,10 +148,10 @@ export default function PersonasScreen() {
                 onPress={handleCreate}
                 disabled={creating}
               >
-                <Text style={styles.ctaBtnText}>{creating ? "CREATING..." : "▶ CREATE"}</Text>
+                <Text style={styles.ctaBtnText}>{creating ? t("personas.creating") : t("personas.createCta")}</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setShowCreate(false)}>
-                <Text style={[styles.cancelText, { color: colors.textDim }]}>CANCEL</Text>
+                <Text style={[styles.cancelText, { color: colors.textDim }]}>{t("common.cancel")}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -165,14 +167,14 @@ export default function PersonasScreen() {
                   <Text style={[styles.personaName, { color: colors.textBright, fontFamily: isNormal ? Fonts.sansBold : Fonts.mono }]}>{persona.name}</Text>
                   {persona.is_active && (
                     <View style={[styles.activeBadge, { backgroundColor: colors.green + "22", borderColor: colors.green + "55" }]}>
-                      <Text style={styles.activeBadgeText}>ACTIVE</Text>
+                      <Text style={styles.activeBadgeText}>{t("personas.active")}</Text>
                     </View>
                   )}
                 </View>
                 <Text style={[styles.personaMeta, { color: colors.textDim }]}>
                   {isNormal
-                    ? `${persona.cards_played} learning choices made · Created ${new Date(persona.created_at).toLocaleDateString()}`
-                    : `${persona.cards_played} cards played · Created ${new Date(persona.created_at).toLocaleDateString()}`}
+                    ? t("personas.metaNormal", { count: persona.cards_played, date: new Date(persona.created_at).toLocaleDateString() })
+                    : t("personas.metaPro", { count: persona.cards_played, date: new Date(persona.created_at).toLocaleDateString() })}
                 </Text>
               </View>
               <View style={styles.personaActions}>
@@ -181,21 +183,21 @@ export default function PersonasScreen() {
                     style={styles.actionBtn}
                     onPress={() => handleActivate(persona)}
                   >
-                    <Text style={styles.actionBtnText}>ACTIVATE</Text>
+                    <Text style={styles.actionBtnText}>{t("personas.activate")}</Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity
                   style={styles.actionBtn}
                   onPress={() => router.push(`/(profile)/persona/${persona.id}`)}
                 >
-                  <Text style={styles.actionBtnText}>VIEW →</Text>
+                  <Text style={styles.actionBtnText}>{t("personas.view")}</Text>
                 </TouchableOpacity>
                 {!persona.is_active && (
                   <TouchableOpacity
                     style={[styles.actionBtn, styles.deleteBtn]}
                     onPress={() => handleDelete(persona)}
                   >
-                    <Text style={[styles.actionBtnText, { color: Colors.red }]}>DEL</Text>
+                    <Text style={[styles.actionBtnText, { color: Colors.red }]}>{t("personas.deleteShort")}</Text>
                   </TouchableOpacity>
                 )}
               </View>

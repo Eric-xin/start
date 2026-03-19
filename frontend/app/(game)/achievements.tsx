@@ -4,12 +4,14 @@ import {
   ActivityIndicator, ScrollView, useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { getAchievements, AchievementData } from "../../services/achievements";
 import { AppTopBar } from "../../components/navigation/AppTopBar";
 import { Colors, useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { useThemeStore } from "../../store/themeStore";
 import { ThemeModeToggle } from "../../components/theme/ThemeModeToggle";
+import { AppTopBar } from "../../components/navigation/AppTopBar";
 
 const TIER_COLORS: Record<string, string> = {
   bronze: "#cd7f32",
@@ -58,6 +60,7 @@ function AchievementCard({ achievement }: { achievement: AchievementData }) {
 
 export default function AchievementsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const colors = useColors();
   const isNormal = useThemeStore((state) => state.mode === "normal");
   const { width } = useWindowDimensions();
@@ -87,7 +90,7 @@ export default function AchievementsScreen() {
       <View style={[styles.loading, { backgroundColor: colors.bg }]}>
         <ActivityIndicator color={colors.blue} size="large" />
         <Text style={[styles.loadingText, { color: colors.textDim }]}>
-          {isNormal ? "Loading your wins..." : "LOADING ACHIEVEMENTS"}
+          {isNormal ? t("achievements.loadingNormal") : t("achievements.loadingPro")}
         </Text>
       </View>
     );
@@ -95,24 +98,20 @@ export default function AchievementsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
-      {/* Top bar */}
-      <View style={[styles.topBar, { backgroundColor: colors.bgPanel, borderBottomColor: colors.borderPrimary }]}>
-        <View style={styles.topLeft}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={[styles.backBtn, { color: colors.blue }]}>← BACK</Text>
-          </TouchableOpacity>
-          <View style={[styles.barSep, { backgroundColor: colors.borderDim }]} />
-          <Text style={[styles.topBarLabel, { color: colors.textDim }]}>
-            {isNormal ? "🏆 Achievements" : "ACHIEVEMENTS"}
-          </Text>
-        </View>
-        <View style={styles.topRight}>
-          <ThemeModeToggle compact />
-          <Text style={[styles.counter, { color: colors.blue }]}>
-            {isNormal ? `${unlocked}/${total} earned` : `${unlocked}/${total} UNLOCKED`}
-          </Text>
-        </View>
-      </View>
+      <AppTopBar
+        label={isNormal ? t("achievements.topBar") : t("achievements.topBarPro")}
+        onBack={() => router.back()}
+        rightContent={
+          <>
+            <ThemeModeToggle compact />
+            <Text style={[styles.counter, { color: colors.blue }]}>
+              {isNormal
+                ? t("achievements.counterNormal", { unlocked, total })
+                : t("achievements.counterPro", { unlocked, total })}
+            </Text>
+          </>
+        }
+      />
 
       {/* Progress bar */}
       <View style={[styles.progressBar, { backgroundColor: colors.borderDim }]}>
@@ -123,10 +122,10 @@ export default function AchievementsScreen() {
         {isNormal ? (
           <View style={[styles.section, { backgroundColor: colors.bgPanel, borderWidth: 1, borderColor: colors.borderDim, borderRadius: 18, padding: 16 }]}>
             <Text style={{ fontSize: 15, fontFamily: Fonts.sansBold, color: colors.textBright, marginBottom: 6 }}>
-              Collect milestones as you learn
+              {t("achievements.heroTitle")}
             </Text>
             <Text style={{ fontSize: 12, fontFamily: Fonts.sans, color: colors.textPrimary, lineHeight: 18 }}>
-              Each badge marks progress in money habits, market lessons, and decision-making. Locked badges show what you can grow into next.
+              {t("achievements.heroBody")}
             </Text>
           </View>
         ) : null}
@@ -140,7 +139,9 @@ export default function AchievementsScreen() {
               <View style={[styles.sectionHeader, { borderBottomColor: colors.borderFaint }]}>
                 <View style={[styles.blueDot, { backgroundColor: colors.blue }]} />
                 <Text style={[styles.sectionTitle, { color: colors.blue }]}>
-                  {isNormal ? (CATEGORY_LABELS[cat] ?? cat).replace("MONEY & PERFORMANCE", "Money & progress").replace("INVESTOR RANK", "Investor growth").replace("LEARNING MASTERY", "Learning wins").replace("DECISION QUALITY", "Decision quality").replace("STRATEGY & DECKS", "Strategies & decks").replace("STAGES", "Journey steps").replace("STREAKS", "Streaks") : CATEGORY_LABELS[cat] ?? cat.toUpperCase()}
+                  {isNormal
+                    ? t(`achievements.categories.normal.${cat}`)
+                    : t(`achievements.categories.pro.${cat}`, CATEGORY_LABELS[cat] ?? cat.toUpperCase())}
                 </Text>
                 <Text style={[styles.sectionCount, { color: colors.textDim }]}>{catUnlocked}/{items.length}</Text>
               </View>

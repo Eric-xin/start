@@ -10,6 +10,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { useColors } from "../../../../constants/colors";
 import { Fonts } from "../../../../constants/fonts";
 import { Layout } from "../../../../constants/layout";
@@ -220,6 +221,7 @@ function PlayerChip({
 export default function ArenaPlayScreen() {
   const { code } = useLocalSearchParams<{ code: string }>();
   const router = useRouter();
+  const { t } = useTranslation();
   const colors = useColors();
   const isNormal = useThemeStore((s) => s.mode === "normal");
   const user = useAuthStore((s) => s.user);
@@ -251,7 +253,7 @@ export default function ArenaPlayScreen() {
         setRoom(r, r.players);
         if (me && !myPlayerId) setMyPlayerId(me.id);
       })
-      .catch(() => Alert.alert("Error", "Could not load room"))
+        .catch(() => Alert.alert(t("common.error"), t("arena.play.errors.loadRoom")))
       .finally(() => setLoading(false));
   }, [code]);
 
@@ -270,7 +272,7 @@ export default function ArenaPlayScreen() {
         await playArenaCard(code, action);
       } catch (e: any) {
         setSwiped(false);
-        Alert.alert("Error", e?.response?.data?.detail ?? "Swipe failed");
+        Alert.alert(t("common.error"), e?.response?.data?.detail ?? t("arena.play.errors.swipe"));
       }
     },
     [code, currentCard, isChoiceFlipped, swiped]
@@ -285,7 +287,7 @@ export default function ArenaPlayScreen() {
       <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center", gap: 14 }}>
         <ActivityIndicator color={colors.blue} size="large" />
         <Text style={{ fontFamily: Fonts.mono, fontSize: 11, color: colors.textDim, letterSpacing: 2 }}>
-          {isNormal ? "Loading arena..." : "LOADING ARENA"}
+          {isNormal ? t("arena.play.loading") : t("arena.play.loadingPro")}
         </Text>
       </View>
     );
@@ -328,7 +330,7 @@ export default function ArenaPlayScreen() {
           <Text style={styles.arenaTag}>{isNormal ? "⚔️ Arena" : "ARENA"}</Text>
           <View style={styles.sep} />
           <Text style={styles.roundTag}>
-            {isNormal ? `Round ${currentRound} / ${totalRounds}` : `R${currentRound}/${totalRounds}`}
+            {isNormal ? t("arena.play.round", { currentRound, totalRounds }) : t("arena.play.roundPro", { currentRound, totalRounds })}
           </Text>
         </View>
 
@@ -351,13 +353,13 @@ export default function ArenaPlayScreen() {
         <View style={styles.topRight}>
           <View style={[styles.wsChip, { borderColor: wsConnected ? colors.green + "60" : colors.borderDim }]}>
             <View style={[styles.wsDot, { backgroundColor: wsConnected ? colors.green : colors.amber }]} />
-            <Text style={styles.wsLabel}>{wsConnected ? "LIVE" : "..."}</Text>
+            <Text style={styles.wsLabel}>{wsConnected ? t("arena.play.live") : "..."}</Text>
           </View>
           <TouchableOpacity
             style={styles.exitBtn}
             onPress={() => { reset(); router.replace("/(game)/arena"); }}
           >
-            <Text style={styles.exitBtnText}>{isNormal ? "Exit" : "EXIT"}</Text>
+            <Text style={styles.exitBtnText}>{isNormal ? t("arena.play.exit") : t("arena.play.exitPro")}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -367,8 +369,8 @@ export default function ArenaPlayScreen() {
         {isWide && (
           <View style={[styles.sidebar, { width: sidebarW }]}>
             <View style={styles.sidebarHeader}>
-              <Text style={styles.sidebarTitle}>{isNormal ? "Standings" : "STANDINGS"}</Text>
-              <Text style={styles.sidebarCount}>{players.length} players</Text>
+              <Text style={styles.sidebarTitle}>{isNormal ? t("arena.play.standings") : t("arena.play.standingsPro")}</Text>
+              <Text style={styles.sidebarCount}>{t("arena.play.playersCount", { count: players.length })}</Text>
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
               {sortedPlayers.map((p, i) => {
@@ -393,7 +395,7 @@ export default function ArenaPlayScreen() {
 
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.sidebarName, isMe && { color: colors.blue }]} numberOfLines={1}>
-                        {p.username}{isMe ? (isNormal ? " (You)" : " <YOU>") : ""}
+                        {p.username}{isMe ? (isNormal ? ` (${t("arena.play.you")})` : ` <${t("arena.play.youPro")}>`) : ""}
                       </Text>
                       <Text style={[styles.sidebarCapital, { color: delta >= 0 ? colors.green : colors.red }]}>
                         {delta >= 0 ? "+" : ""}${Math.round(delta).toLocaleString()}
@@ -436,7 +438,7 @@ export default function ArenaPlayScreen() {
           {/* My capital strip */}
           {myPlayer && (
             <View style={styles.myCapitalStrip}>
-              <Text style={styles.myCapitalLabel}>{isNormal ? "Your Capital" : "YOUR CAPITAL"}</Text>
+              <Text style={styles.myCapitalLabel}>{isNormal ? t("arena.play.yourCapital") : t("arena.play.yourCapitalPro")}</Text>
               <Text style={[styles.myCapitalValue, {
                 color: myPlayer.capital >= startCap ? colors.green : colors.red,
               }]}>
@@ -465,7 +467,7 @@ export default function ArenaPlayScreen() {
             <View style={styles.waitingBox}>
               <ActivityIndicator color={colors.blue} size="large" style={{ marginBottom: 12 }} />
               <Text style={styles.waitingTitle}>
-                {isNormal ? "Waiting for others..." : "WAITING FOR PLAYERS"}
+                {isNormal ? t("arena.play.waitingOthers") : t("arena.play.waitingOthersPro")}
               </Text>
               {waitingFor && (
                 <>
@@ -476,8 +478,8 @@ export default function ArenaPlayScreen() {
                   </View>
                   <Text style={styles.waitingCount}>
                     {isNormal
-                      ? `${waitingFor.played_count} of ${waitingFor.total_count} played`
-                      : `${waitingFor.played_count}/${waitingFor.total_count} PLAYED`}
+                      ? t("arena.play.playedCount", { played: waitingFor.played_count, total: waitingFor.total_count })
+                      : t("arena.play.playedCountPro", { played: waitingFor.played_count, total: waitingFor.total_count })}
                   </Text>
                 </>
               )}
@@ -486,7 +488,7 @@ export default function ArenaPlayScreen() {
             <View style={styles.waitingBox}>
               <ActivityIndicator color={colors.blue} size="large" />
               <Text style={styles.waitingTitle}>
-                {isNormal ? "Loading next card..." : "LOADING NEXT CARD"}
+                {isNormal ? t("arena.play.loadingCard") : t("arena.play.loadingCardPro")}
               </Text>
             </View>
           ) : null}
@@ -494,8 +496,8 @@ export default function ArenaPlayScreen() {
           {/* Swipe hints */}
           {currentCard && !swiped && !roundResults && (
             <View style={styles.hints} pointerEvents="none">
-              <Text style={styles.hintText}>{isNormal ? "← Pass" : "← PASS"}</Text>
-              <Text style={styles.hintText}>{isNormal ? "Accept →" : "ACCEPT →"}</Text>
+                <Text style={styles.hintText}>{isNormal ? t("arena.play.hints.pass") : t("arena.play.hints.passPro")}</Text>
+                <Text style={styles.hintText}>{isNormal ? t("arena.play.hints.accept") : t("arena.play.hints.acceptPro")}</Text>
             </View>
           )}
         </View>

@@ -4,6 +4,7 @@ import {
   ActivityIndicator, ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { getSessions, SessionData } from "../../services/game";
 import { useGameStore } from "../../store/gameStore";
 import { Colors, useColors } from "../../constants/colors";
@@ -14,6 +15,8 @@ const RANK_LABELS = ["—", "ANALYST I", "ASSOCIATE II", "DIRECTOR III", "MD IV"
 
 export default function SessionsScreen() {
   const router = useRouter();
+  const colors = useColors();
+  const { t } = useTranslation();
   const colors = useColors();
   const { setSession } = useGameStore();
   const [sessions, setSessions] = useState<SessionData[]>([]);
@@ -34,8 +37,9 @@ export default function SessionsScreen() {
   return (
     <View style={styles.container}>
       <AppTopBar
-        label={`SESSION HISTORY (${sessions.length})`}
+        label={t("sessions.topBar")}
         onBack={() => router.back()}
+        rightContent={<Text style={styles.sessionCount}>{t("sessions.count", { count: sessions.length })}</Text>}
       />
 
       {loading ? (
@@ -45,7 +49,7 @@ export default function SessionsScreen() {
       ) : (
         <ScrollView contentContainerStyle={styles.scroll}>
           {sessions.length === 0 ? (
-            <Text style={styles.emptyText}>No sessions yet. Launch your first session to get started.</Text>
+            <Text style={styles.emptyText}>{t("sessions.empty")}</Text>
           ) : (
             sessions.map((session, idx) => {
               const delta = session.capital - 10000;
@@ -65,7 +69,7 @@ export default function SessionsScreen() {
                         })}
                       </Text>
                       <Text style={styles.sessionUpdated}>
-                        Last played {new Date(session.updated_at).toLocaleDateString()}
+                        {t("sessions.lastPlayed", { date: new Date(session.updated_at).toLocaleDateString() })}
                       </Text>
                     </View>
                     <View style={styles.sessionActions}>
@@ -73,13 +77,13 @@ export default function SessionsScreen() {
                         style={styles.reviewBtn}
                         onPress={() => router.push(`/(game)/session/${session.id}`)}
                       >
-                        <Text style={styles.reviewBtnText}>REVIEW</Text>
+                        <Text style={styles.reviewBtnText}>{t("sessions.review")}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={styles.continueBtn}
                         onPress={() => handleContinue(session)}
                       >
-                        <Text style={styles.continueBtnText}>CONTINUE →</Text>
+                        <Text style={styles.continueBtnText}>{t("sessions.continue")}</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -87,31 +91,31 @@ export default function SessionsScreen() {
                   {/* Stats row */}
                   <View style={styles.statsRow}>
                     <View style={styles.statItem}>
-                      <Text style={styles.statLabel}>CAPITAL</Text>
+                      <Text style={styles.statLabel}>{t("sessions.stats.capital")}</Text>
                       <Text style={styles.statValue}>${Math.round(session.capital).toLocaleString()}</Text>
                     </View>
                     <View style={styles.statSep} />
                     <View style={styles.statItem}>
-                      <Text style={styles.statLabel}>RETURN</Text>
+                      <Text style={styles.statLabel}>{t("sessions.stats.return")}</Text>
                       <Text style={[styles.statValue, { color: isUp ? Colors.green : Colors.red }]}>
                         {isUp ? "+" : ""}{deltaPct}%
                       </Text>
                     </View>
                     <View style={styles.statSep} />
                     <View style={styles.statItem}>
-                      <Text style={styles.statLabel}>STAGE</Text>
+                      <Text style={styles.statLabel}>{t("sessions.stats.stage")}</Text>
                       <Text style={styles.statValue}>{session.stage}/5</Text>
                     </View>
                     <View style={styles.statSep} />
                     <View style={styles.statItem}>
-                      <Text style={styles.statLabel}>RANK</Text>
+                      <Text style={styles.statLabel}>{t("sessions.stats.rank")}</Text>
                       <Text style={[styles.statValue, { color: Colors.teal, fontSize: 11 }]}>
                         {RANK_LABELS[session.investor_rank] ?? "—"}
                       </Text>
                     </View>
                     <View style={styles.statSep} />
                     <View style={styles.statItem}>
-                      <Text style={styles.statLabel}>PEAK</Text>
+                      <Text style={styles.statLabel}>{t("sessions.stats.peak")}</Text>
                       <Text style={[styles.statValue, { color: Colors.amber }]}>
                         ${Math.round(session.peak_capital).toLocaleString()}
                       </Text>
@@ -131,15 +135,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
   loading: { flex: 1, alignItems: "center", justifyContent: "center" },
 
-  topBar: {
-    height: 40, backgroundColor: Colors.bgPanel,
-    borderBottomWidth: 1, borderBottomColor: Colors.borderPrimary,
-    flexDirection: "row", alignItems: "center", paddingHorizontal: 16, gap: 10,
-  },
-  backText: { fontSize: 9, fontFamily: Fonts.sansBold, color: Colors.textDim, letterSpacing: 1.5 },
-  logo: { fontSize: 13, fontFamily: Fonts.mono, color: Colors.blue, letterSpacing: 3 },
-  barSep: { width: 1, height: 14, backgroundColor: Colors.borderDim },
-  topLabel: { fontSize: 9, fontFamily: Fonts.sansBold, color: Colors.textDim, letterSpacing: 2, flex: 1 },
   sessionCount: { fontSize: 9, fontFamily: Fonts.mono, color: Colors.textMuted },
 
   scroll: { padding: 20, gap: 12, alignItems: "center" },

@@ -12,6 +12,7 @@ import {
   Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { useColors } from "../../../constants/colors";
 import { Fonts } from "../../../constants/fonts";
 import { useThemeStore } from "../../../store/themeStore";
@@ -25,6 +26,7 @@ const PLAYER_OPTIONS = [2, 4, 6, 8];
 
 export default function ArenaHubScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const colors = useColors();
   const isNormal = useThemeStore((s) => s.mode === "normal");
   const user = useAuthStore((s) => s.user);
@@ -52,7 +54,7 @@ export default function ArenaHubScreen() {
       if (me) setMyPlayerId(me.id);
       router.push(`/(game)/arena/lobby/${room.code}`);
     } catch (e: any) {
-      Alert.alert("Error", e?.response?.data?.detail ?? "Could not create room");
+      Alert.alert(t("common.error"), e?.response?.data?.detail ?? t("arena.hub.errors.create"));
     } finally {
       setLoading(false);
     }
@@ -61,7 +63,7 @@ export default function ArenaHubScreen() {
   const handleJoin = async () => {
     const code = roomCode.trim().toUpperCase();
     if (code.length < 4) {
-      Alert.alert("Invalid code", "Please enter a valid room code");
+      Alert.alert(t("arena.hub.errors.invalidCodeTitle"), t("arena.hub.errors.invalidCodeBody"));
       return;
     }
     setLoading(true);
@@ -73,7 +75,7 @@ export default function ArenaHubScreen() {
       if (me) setMyPlayerId(me.id);
       router.push(`/(game)/arena/lobby/${room.code}`);
     } catch (e: any) {
-      Alert.alert("Error", e?.response?.data?.detail ?? "Room not found");
+      Alert.alert(t("common.error"), e?.response?.data?.detail ?? t("arena.hub.errors.notFound"));
     } finally {
       setLoading(false);
     }
@@ -87,9 +89,9 @@ export default function ArenaHubScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>{isNormal ? "← Back" : "← BACK"}</Text>
+          <Text style={styles.backBtnText}>{isNormal ? t("arena.hub.back") : t("arena.hub.backPro")}</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{isNormal ? "Arena" : "ARENA"}</Text>
+        <Text style={styles.headerTitle}>{isNormal ? t("arena.hub.title") : t("arena.hub.titlePro")}</Text>
         <View style={{ width: 60 }} />
       </View>
 
@@ -108,21 +110,21 @@ export default function ArenaHubScreen() {
             </View>
           )}
           <Text style={styles.heroTitle}>
-            {isNormal ? "Multiplayer Arena" : "MULTIPLAYER ARENA"}
+            {isNormal ? t("arena.hub.heroTitle") : t("arena.hub.heroTitlePro")}
           </Text>
           <Text style={styles.heroSubtitle}>
             {isNormal
-              ? "Same cards, real stakes. See who makes the best decisions under pressure."
-              : "IDENTICAL CARD SEQUENCES FOR ALL PLAYERS — ONE WINNER."}
+              ? t("arena.hub.heroSubtitle")
+              : t("arena.hub.heroSubtitlePro")}
           </Text>
 
           {/* Rules row */}
           <View style={styles.rulesRow}>
             {[
-              { icon: isNormal ? "🃏" : "01", label: isNormal ? "Same cards" : "SAME DECK" },
-              { icon: isNormal ? "⏳" : "02", label: isNormal ? "Wait for all" : "SYNC PLAY" },
-              { icon: isNormal ? "📈" : "03", label: isNormal ? "Live standings" : "LIVE BOARD" },
-              { icon: isNormal ? "🏆" : "04", label: isNormal ? "Best wins" : "BEST WINS" },
+              { icon: isNormal ? "🃏" : "01", label: isNormal ? t("arena.hub.rules.sameCards") : t("arena.hub.rules.sameCardsPro") },
+              { icon: isNormal ? "⏳" : "02", label: isNormal ? t("arena.hub.rules.waitAll") : t("arena.hub.rules.waitAllPro") },
+              { icon: isNormal ? "📈" : "03", label: isNormal ? t("arena.hub.rules.liveStandings") : t("arena.hub.rules.liveStandingsPro") },
+              { icon: isNormal ? "🏆" : "04", label: isNormal ? t("arena.hub.rules.bestWins") : t("arena.hub.rules.bestWinsPro") },
             ].map((r) => (
               <View key={r.label} style={styles.ruleChip}>
                 <Text style={styles.ruleChipIcon}>{r.icon}</Text>
@@ -142,8 +144,8 @@ export default function ArenaHubScreen() {
             >
               <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
                 {t === "create"
-                  ? isNormal ? "Create Room" : "CREATE"
-                  : isNormal ? "Join Room" : "JOIN"}
+                  ? isNormal ? t("arena.hub.tabs.create") : t("arena.hub.tabs.createPro")
+                  : isNormal ? t("arena.hub.tabs.join") : t("arena.hub.tabs.joinPro")}
               </Text>
             </TouchableOpacity>
           ))}
@@ -153,7 +155,7 @@ export default function ArenaHubScreen() {
         {tab === "create" && (
           <View style={styles.form}>
             <OptionRow
-              label={isNormal ? "Number of Rounds" : "ROUNDS"}
+              label={isNormal ? t("arena.hub.form.rounds") : t("arena.hub.form.roundsPro")}
               options={ROUND_OPTIONS}
               selected={rounds}
               onSelect={setRounds}
@@ -162,7 +164,7 @@ export default function ArenaHubScreen() {
               isNormal={isNormal}
             />
             <OptionRow
-              label={isNormal ? "Starting Capital" : "STARTING CAPITAL"}
+              label={isNormal ? t("arena.hub.form.capital") : t("arena.hub.form.capitalPro")}
               options={CAPITAL_OPTIONS}
               selected={capital}
               onSelect={setCapital}
@@ -171,7 +173,7 @@ export default function ArenaHubScreen() {
               isNormal={isNormal}
             />
             <OptionRow
-              label={isNormal ? "Max Players" : "MAX PLAYERS"}
+              label={isNormal ? t("arena.hub.form.maxPlayers") : t("arena.hub.form.maxPlayersPro")}
               options={PLAYER_OPTIONS}
               selected={maxPlayers}
               onSelect={setMaxPlayers}
@@ -184,17 +186,17 @@ export default function ArenaHubScreen() {
             <View style={styles.summaryBox}>
               <View style={styles.summaryItem}>
                 <Text style={styles.summaryVal}>{rounds}</Text>
-                <Text style={styles.summaryKey}>{isNormal ? "rounds" : "ROUNDS"}</Text>
+                <Text style={styles.summaryKey}>{isNormal ? t("arena.hub.summary.rounds") : t("arena.hub.summary.roundsPro")}</Text>
               </View>
               <View style={styles.summaryDivider} />
               <View style={styles.summaryItem}>
                 <Text style={styles.summaryVal}>${(capital / 1000).toFixed(0)}K</Text>
-                <Text style={styles.summaryKey}>{isNormal ? "start" : "CAPITAL"}</Text>
+                <Text style={styles.summaryKey}>{isNormal ? t("arena.hub.summary.start") : t("arena.hub.summary.startPro")}</Text>
               </View>
               <View style={styles.summaryDivider} />
               <View style={styles.summaryItem}>
                 <Text style={styles.summaryVal}>{maxPlayers}</Text>
-                <Text style={styles.summaryKey}>{isNormal ? "players max" : "MAX PLY"}</Text>
+                <Text style={styles.summaryKey}>{isNormal ? t("arena.hub.summary.players") : t("arena.hub.summary.playersPro")}</Text>
               </View>
             </View>
 
@@ -207,7 +209,7 @@ export default function ArenaHubScreen() {
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
                 <Text style={styles.primaryBtnText}>
-                  {isNormal ? "Create Room →" : "CREATE ROOM →"}
+                  {isNormal ? t("arena.hub.createCta") : t("arena.hub.createCtaPro")}
                 </Text>
               )}
             </TouchableOpacity>
@@ -218,7 +220,7 @@ export default function ArenaHubScreen() {
         {tab === "join" && (
           <View style={styles.form}>
             <Text style={styles.joinLabel}>
-              {isNormal ? "Enter Room Code" : "ROOM CODE"}
+              {isNormal ? t("arena.hub.join.codeLabel") : t("arena.hub.join.codeLabelPro")}
             </Text>
             <View style={styles.codeInputWrap}>
               <TextInput
@@ -235,20 +237,20 @@ export default function ArenaHubScreen() {
 
             <Text style={styles.joinHint}>
               {isNormal
-                ? "Ask your friend for their 6-character room code, or tap the share link they sent."
-                : "ENTER 6-CHAR ALPHANUMERIC CODE FROM ROOM HOST"}
+                ? t("arena.hub.join.hint1")
+                : t("arena.hub.join.hint1Pro")}
             </Text>
 
             <View style={styles.dividerRow}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>{isNormal ? "or" : "OR"}</Text>
+              <Text style={styles.dividerText}>{isNormal ? t("arena.hub.join.or") : t("arena.hub.join.orPro")}</Text>
               <View style={styles.dividerLine} />
             </View>
 
             <Text style={styles.joinHint}>
               {isNormal
-                ? "You can also open a share link from your friend directly — it'll bring you right here."
-                : "SHARE LINKS WILL AUTO-FILL THE CODE ON OPEN"}
+                ? t("arena.hub.join.hint2")
+                : t("arena.hub.join.hint2Pro")}
             </Text>
 
             <TouchableOpacity
@@ -260,7 +262,7 @@ export default function ArenaHubScreen() {
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
                 <Text style={styles.primaryBtnText}>
-                  {isNormal ? "Join Room →" : "JOIN ROOM →"}
+                  {isNormal ? t("arena.hub.joinCta") : t("arena.hub.joinCtaPro")}
                 </Text>
               )}
             </TouchableOpacity>

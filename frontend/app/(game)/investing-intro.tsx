@@ -1,6 +1,7 @@
 import React from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { AppTopBar } from "../../components/navigation/AppTopBar";
@@ -10,6 +11,7 @@ export default function InvestingIntroScreen() {
   const router = useRouter();
   const colors = useColors();
   const styles = createStyles(colors);
+  const { t } = useTranslation();
   const skipInvestingIntro = useAuthStore((state) => state.skipInvestingIntro);
   const setSkipInvestingIntro = useAuthStore((state) => state.setSkipInvestingIntro);
 
@@ -20,37 +22,33 @@ export default function InvestingIntroScreen() {
 
   return (
     <View style={styles.container}>
-      <AppTopBar label="Why Investing Matters" onBack={() => router.back()} />
+      <AppTopBar label={t("topbar.whyInvesting")} />
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <View style={styles.quoteCard}>
           <Text style={styles.quoteMark}>"</Text>
-          <Text style={styles.quoteText}>The biggest risk is not taking any risk.</Text>
-          <Text style={styles.quoteAuthor}>- Mark Zuckerberg</Text>
+          <Text style={styles.quoteText}>{t("intro.quote")}</Text>
+          <Text style={styles.quoteAuthor}>{t("intro.quoteAuthor")}</Text>
         </View>
 
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Why this is important</Text>
+          <Text style={styles.sectionTitle}>{t("intro.whyTitle")}</Text>
           <Text style={styles.bodyText}>
-            Investing is one of the strongest ways to build long-term wealth. If money only sits in cash,
-            inflation can slowly reduce what it can buy. Investing gives your money a chance to grow over time.
+            {t("intro.whyBody1")}
           </Text>
           <Text style={styles.bodyText}>
-            Taking investing seriously means learning the basics, staying consistent, and making thoughtful
-            decisions instead of emotional ones. Small, smart steps repeated over time can lead to meaningful
-            financial progress.
+            {t("intro.whyBody2")}
           </Text>
           <Text style={styles.bodyText}>
-            This game is built to help you practice those decisions in a safe environment so you can become more
-            confident with real-world money choices.
+            {t("intro.whyBody3")}
           </Text>
         </View>
 
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>What to keep in mind</Text>
-          <Text style={styles.bullet}>1. Growth takes time: focus on steady progress, not quick wins.</Text>
-          <Text style={styles.bullet}>2. Risk and reward are connected: understand both before deciding.</Text>
-          <Text style={styles.bullet}>3. Consistency matters more than perfect timing.</Text>
+          <Text style={styles.sectionTitle}>{t("intro.keepTitle")}</Text>
+          <Text style={styles.bullet}>{t("intro.keep1")}</Text>
+          <Text style={styles.bullet}>{t("intro.keep2")}</Text>
+          <Text style={styles.bullet}>{t("intro.keep3")}</Text>
         </View>
 
         <TouchableOpacity
@@ -61,11 +59,11 @@ export default function InvestingIntroScreen() {
           <View style={[styles.checkbox, skipInvestingIntro && styles.checkboxOn]}>
             {skipInvestingIntro ? <Text style={styles.check}>✓</Text> : null}
           </View>
-          <Text style={styles.toggleLabel}>Don't show this again</Text>
+          <Text style={styles.toggleLabel}>{t("intro.dontShow")}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.cta} onPress={handleContinue}>
-          <Text style={styles.ctaText}>I understand, take me to Start Game</Text>
+          <Text style={styles.ctaText}>{t("intro.continue")}</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>

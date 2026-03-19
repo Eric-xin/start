@@ -10,6 +10,7 @@ import {
   ScrollView,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { useColors } from "../../../../constants/colors";
 import { Fonts } from "../../../../constants/fonts";
 import { useThemeStore } from "../../../../store/themeStore";
@@ -20,6 +21,7 @@ import { startGame, getRoom } from "../../../../services/arena";
 export default function ArenaLobbyScreen() {
   const { code } = useLocalSearchParams<{ code: string }>();
   const router = useRouter();
+  const { t } = useTranslation();
   const colors = useColors();
   const isNormal = useThemeStore((s) => s.mode === "normal");
   const user = useAuthStore((s) => s.user);
@@ -65,7 +67,7 @@ export default function ArenaLobbyScreen() {
     try {
       await startGame(code);
     } catch (e: any) {
-      Alert.alert("Error", e?.response?.data?.detail ?? "Could not start game");
+      Alert.alert(t("common.error"), e?.response?.data?.detail ?? t("arena.lobby.errors.start"));
       setStarting(false);
     }
   };
@@ -73,8 +75,8 @@ export default function ArenaLobbyScreen() {
   const handleShare = () => {
     Share.share({
       message: isNormal
-        ? `Join my CardEcon Arena game! Room code: ${code}`
-        : `CARDECON ARENA — CODE: ${code}`,
+        ? t("arena.lobby.shareMessage", { code })
+        : t("arena.lobby.shareMessagePro", { code }),
     });
   };
 
@@ -86,12 +88,12 @@ export default function ArenaLobbyScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.replace("/(game)/arena")} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>{isNormal ? "✕ Leave" : "✕ LEAVE"}</Text>
+          <Text style={styles.backBtnText}>{isNormal ? t("arena.lobby.leave") : t("arena.lobby.leavePro")}</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{isNormal ? "Waiting Room" : "LOBBY"}</Text>
+        <Text style={styles.headerTitle}>{isNormal ? t("arena.lobby.title") : t("arena.lobby.titlePro")}</Text>
         <View style={styles.liveChip}>
           <View style={[styles.liveDot, { backgroundColor: wsConnected ? colors.green : colors.amber }]} />
-          <Text style={styles.liveLabel}>{wsConnected ? (isNormal ? "Live" : "LIVE") : "..."}</Text>
+          <Text style={styles.liveLabel}>{wsConnected ? (isNormal ? t("arena.lobby.live") : t("arena.lobby.livePro")) : "..."}</Text>
         </View>
       </View>
 
@@ -99,26 +101,26 @@ export default function ArenaLobbyScreen() {
 
         {/* Code card */}
         <View style={styles.codeCard}>
-          <Text style={styles.codeCardLabel}>{isNormal ? "Room Code" : "ROOM CODE"}</Text>
+          <Text style={styles.codeCardLabel}>{isNormal ? t("arena.lobby.roomCode") : t("arena.lobby.roomCodePro")}</Text>
           <Text style={styles.codeDisplay}>{code}</Text>
 
           <View style={styles.codeHintRow}>
             <Text style={styles.codeHint}>
-              {isNormal ? "Share this with friends to invite them" : "SHARE TO INVITE PLAYERS"}
+              {isNormal ? t("arena.lobby.shareHint") : t("arena.lobby.shareHintPro")}
             </Text>
           </View>
 
           <TouchableOpacity style={styles.shareBtn} onPress={handleShare}>
-            <Text style={styles.shareBtnText}>{isNormal ? "📤  Share Invite" : "SHARE INVITE →"}</Text>
+            <Text style={styles.shareBtnText}>{isNormal ? t("arena.lobby.shareCta") : t("arena.lobby.shareCtaPro")}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Settings chips */}
         <View style={styles.settingsRow}>
           {[
-            { label: isNormal ? "Rounds" : "ROUNDS", value: String(room?.round_count ?? "—"), icon: isNormal ? "🔁" : "" },
-            { label: isNormal ? "Capital" : "CAPITAL", value: room ? `$${(room.starting_capital / 1000).toFixed(0)}K` : "—", icon: isNormal ? "💰" : "" },
-            { label: isNormal ? "Max" : "MAX PLY", value: String(room?.max_players ?? "—"), icon: isNormal ? "👥" : "" },
+            { label: isNormal ? t("arena.lobby.settings.rounds") : t("arena.lobby.settings.roundsPro"), value: String(room?.round_count ?? "—"), icon: isNormal ? "🔁" : "" },
+            { label: isNormal ? t("arena.lobby.settings.capital") : t("arena.lobby.settings.capitalPro"), value: room ? `$${(room.starting_capital / 1000).toFixed(0)}K` : "—", icon: isNormal ? "💰" : "" },
+            { label: isNormal ? t("arena.lobby.settings.max") : t("arena.lobby.settings.maxPro"), value: String(room?.max_players ?? "—"), icon: isNormal ? "👥" : "" },
           ].map((item) => (
             <View key={item.label} style={styles.settingChip}>
               {isNormal && <Text style={styles.settingIcon}>{item.icon}</Text>}
@@ -132,7 +134,7 @@ export default function ArenaLobbyScreen() {
         <View style={styles.playersSection}>
           <View style={styles.playersSectionHeader}>
             <Text style={styles.playersSectionTitle}>
-              {isNormal ? "Players" : "PLAYERS"}
+              {isNormal ? t("arena.lobby.playersTitle") : t("arena.lobby.playersTitlePro")}
             </Text>
             <Text style={styles.playersCountBadge}>
               {players.length}/{room?.max_players ?? "?"}
@@ -165,21 +167,21 @@ export default function ArenaLobbyScreen() {
                       </Text>
                       {p.is_host && (
                         <View style={styles.hostBadge}>
-                          <Text style={styles.hostBadgeText}>{isNormal ? "HOST" : "HOST"}</Text>
+                          <Text style={styles.hostBadgeText}>{t("arena.lobby.player.host")}</Text>
                         </View>
                       )}
                       {isMe && (
                         <View style={[styles.hostBadge, { backgroundColor: isNormal ? colors.blueDim : "rgba(10,108,245,0.2)", borderColor: colors.blue }]}>
-                          <Text style={[styles.hostBadgeText, { color: colors.blue }]}>{isNormal ? "YOU" : "YOU"}</Text>
+                          <Text style={[styles.hostBadgeText, { color: colors.blue }]}>{t("arena.lobby.player.you")}</Text>
                         </View>
                       )}
                     </View>
                     <Text style={styles.playerStatus}>
                       {isDisconnected
-                        ? (isNormal ? "disconnected" : "OFFLINE")
+                        ? (isNormal ? t("arena.lobby.player.disconnected") : t("arena.lobby.player.disconnectedPro"))
                         : p.status === "ready"
-                        ? (isNormal ? "✓ connected" : "CONNECTED")
-                        : (isNormal ? "joining..." : "JOINING")}
+                        ? (isNormal ? t("arena.lobby.player.connected") : t("arena.lobby.player.connectedPro"))
+                        : (isNormal ? t("arena.lobby.player.joining") : t("arena.lobby.player.joiningPro"))}
                     </Text>
                   </View>
 
@@ -197,7 +199,7 @@ export default function ArenaLobbyScreen() {
                 <View style={[styles.avatar, styles.avatarEmpty]}>
                   <Text style={styles.avatarEmptyText}>?</Text>
                 </View>
-                <Text style={styles.emptySlotText}>{isNormal ? "Waiting for player..." : "OPEN SLOT"}</Text>
+                <Text style={styles.emptySlotText}>{isNormal ? t("arena.lobby.waitingPlayer") : t("arena.lobby.waitingPlayerPro")}</Text>
               </View>
             ))}
           </View>
@@ -215,14 +217,14 @@ export default function ArenaLobbyScreen() {
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
                 <Text style={styles.startBtnText}>
-                  {isNormal ? "▶  Start Game" : "▶  START GAME"}
+                  {isNormal ? t("arena.lobby.startCta") : t("arena.lobby.startCtaPro")}
                 </Text>
               )}
             </TouchableOpacity>
             <Text style={styles.startHint}>
               {isNormal
-                ? "All players will see the same cards in the same order."
-                : "ALL PLAYERS RECEIVE IDENTICAL CARD SEQUENCE."}
+                ? t("arena.lobby.startHint")
+                : t("arena.lobby.startHintPro")}
             </Text>
           </View>
         ) : (
@@ -230,7 +232,7 @@ export default function ArenaLobbyScreen() {
             <View style={styles.waitingInner}>
               <ActivityIndicator color={colors.blue} size="small" />
               <Text style={styles.waitingText}>
-                {isNormal ? "Waiting for host to start the game..." : "WAITING FOR HOST"}
+                {isNormal ? t("arena.lobby.waitingHost") : t("arena.lobby.waitingHostPro")}
               </Text>
             </View>
           </View>

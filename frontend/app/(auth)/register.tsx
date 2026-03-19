@@ -4,9 +4,11 @@ import {
   KeyboardAvoidingView, Platform, useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { register } from "../../services/auth";
 import { Colors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
+import { LanguageSwitcher } from "../../components/navigation/LanguageSwitcher";
 
 function GridBg() {
   const { width, height } = useWindowDimensions();
@@ -22,25 +24,26 @@ function GridBg() {
   );
 }
 
-function parseError(e: any): string {
+function parseError(e: any, t: (key: string) => string): string {
   const detail = e?.response?.data?.detail;
-  if (!detail) return "Unable to connect. Check your network.";
+  if (!detail) return t("auth.networkError");
   if (Array.isArray(detail)) {
     const msg = detail[0]?.msg ?? "";
-    if (msg.toLowerCase().includes("email")) return "Enter a valid email address.";
-    if (msg.toLowerCase().includes("password")) return "Password must be at least 8 characters.";
+    if (msg.toLowerCase().includes("email")) return t("auth.register.errors.invalidEmail");
+    if (msg.toLowerCase().includes("password")) return t("auth.register.errors.passwordTooShort");
     return msg;
   }
   const s = String(detail).toLowerCase();
-  if (s.includes("email") && s.includes("exist")) return "That email is already registered. Try logging in.";
-  if (s.includes("username") && s.includes("exist")) return "That username is already taken. Choose a different one.";
-  if (s.includes("email")) return "That email is already registered. Try logging in.";
-  if (s.includes("username")) return "That username is already taken. Choose a different one.";
+  if (s.includes("email") && s.includes("exist")) return t("auth.register.errors.emailExists");
+  if (s.includes("username") && s.includes("exist")) return t("auth.register.errors.usernameExists");
+  if (s.includes("email")) return t("auth.register.errors.emailExists");
+  if (s.includes("username")) return t("auth.register.errors.usernameExists");
   return String(detail);
 }
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -51,11 +54,11 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     setError(null);
     if (!email.trim() || !username.trim() || !password) {
-      setError("All fields are required.");
+      setError(t("auth.register.errors.required"));
       return;
     }
     if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+      setError(t("auth.register.errors.passwordTooShort"));
       return;
     }
     setLoading(true);
@@ -63,7 +66,7 @@ export default function RegisterScreen() {
       await register(email.trim(), username.trim(), password);
       setSuccess(true);
     } catch (e: any) {
-      setError(parseError(e));
+      setError(parseError(e, t));
     } finally {
       setLoading(false);
     }
@@ -77,30 +80,31 @@ export default function RegisterScreen() {
       <GridBg />
 
       <View style={styles.topBar}>
-        <Text style={styles.logo}>CARDECON</Text>
-        <Text style={styles.topBarSub}>NEW INVESTOR REGISTRATION</Text>
+        <Text style={styles.logo}>{t("common.appName")}</Text>
+        <Text style={styles.topBarSub}>{t("auth.register.topBar")}</Text>
+        <View style={{ flex: 1 }} />
+        <LanguageSwitcher />
       </View>
 
       <View style={styles.center}>
         <View style={styles.panel}>
           <View style={styles.panelHeader}>
             <View style={styles.blueDot} />
-            <Text style={styles.panelTitle}>CREATE INVESTOR PROFILE</Text>
+            <Text style={styles.panelTitle}>{t("auth.register.title")}</Text>
           </View>
 
           {success ? (
             <View style={styles.successBlock}>
               <Text style={styles.successIcon}>✓</Text>
-              <Text style={styles.successTitle}>ACCOUNT CREATED</Text>
+              <Text style={styles.successTitle}>{t("auth.register.successTitle")}</Text>
               <Text style={styles.successBody}>
-                Your investor profile has been created.{"\n"}
-                Check your email to verify your account, then log in to begin.
+                {t("auth.register.successBody")}
               </Text>
               <TouchableOpacity
                 style={styles.submitBtn}
                 onPress={() => router.replace("/(auth)/login")}
               >
-                <Text style={styles.submitText}>▶  PROCEED TO LOGIN</Text>
+                <Text style={styles.submitText}>{t("auth.register.proceedToLogin")}</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -112,7 +116,7 @@ export default function RegisterScreen() {
                 </View>
               )}
 
-              <Text style={styles.fieldLabel}>EMAIL ADDRESS</Text>
+              <Text style={styles.fieldLabel}>{t("auth.register.emailLabel")}</Text>
               <TextInput
                 style={[styles.input, error && styles.inputError]}
                 value={email}
@@ -121,12 +125,12 @@ export default function RegisterScreen() {
                 keyboardType="email-address"
                 autoCorrect={false}
                 placeholderTextColor={Colors.textMuted}
-                placeholder="your@email.com"
+                placeholder={t("auth.placeholders.email")}
                 selectionColor={Colors.blue}
                 returnKeyType="next"
               />
 
-              <Text style={styles.fieldLabel}>USERNAME</Text>
+              <Text style={styles.fieldLabel}>{t("auth.register.usernameLabel")}</Text>
               <TextInput
                 style={[styles.input, error && styles.inputError]}
                 value={username}
@@ -134,19 +138,19 @@ export default function RegisterScreen() {
                 autoCapitalize="none"
                 autoCorrect={false}
                 placeholderTextColor={Colors.textMuted}
-                placeholder="investor_handle"
+                placeholder={t("auth.placeholders.username")}
                 selectionColor={Colors.blue}
                 returnKeyType="next"
               />
 
-              <Text style={styles.fieldLabel}>PASSWORD</Text>
+              <Text style={styles.fieldLabel}>{t("auth.register.passwordLabel")}</Text>
               <TextInput
                 style={[styles.input, error && styles.inputError]}
                 value={password}
                 onChangeText={(v) => { setPassword(v); setError(null); }}
                 secureTextEntry
                 placeholderTextColor={Colors.textMuted}
-                placeholder="min 8 characters"
+                placeholder={t("auth.placeholders.passwordMin")}
                 selectionColor={Colors.blue}
                 returnKeyType="done"
                 onSubmitEditing={handleRegister}
@@ -158,7 +162,7 @@ export default function RegisterScreen() {
                 disabled={loading}
               >
                 <Text style={styles.submitText}>
-                  {loading ? "REGISTERING..." : "▶  CREATE ACCOUNT"}
+                  {loading ? t("auth.register.registering") : t("auth.register.createAccount")}
                 </Text>
               </TouchableOpacity>
             </>
@@ -167,13 +171,13 @@ export default function RegisterScreen() {
           <View style={styles.divider} />
 
           <TouchableOpacity style={styles.linkBtn} onPress={() => router.back()}>
-            <Text style={styles.linkText}>← BACK TO LOGIN</Text>
+            <Text style={styles.linkText}>{t("auth.register.backToLogin")}</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <View style={styles.bottomBar}>
-        <Text style={styles.bottomText}>SECURE REGISTRATION · DATA ENCRYPTED AT REST</Text>
+        <Text style={styles.bottomText}>{t("auth.register.footer")}</Text>
       </View>
     </KeyboardAvoidingView>
   );

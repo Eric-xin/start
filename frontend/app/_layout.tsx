@@ -6,6 +6,8 @@ import { useAppFonts } from "../hooks/useFont";
 import { useAuthStore } from "../store/authStore";
 import { StyleSheet, View, ActivityIndicator } from "react-native";
 import { Colors } from "../constants/colors";
+import "../i18n";
+import { hydrateLanguage } from "../i18n";
 
 export default function RootLayout() {
   const [fontsLoaded] = useAppFonts();
@@ -15,6 +17,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     hydrate();
+    hydrateLanguage();
   }, []);
 
   useEffect(() => {

@@ -4,9 +4,11 @@ import {
   KeyboardAvoidingView, Platform, useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { forgotPassword } from "../../services/auth";
 import { Colors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
+import { LanguageSwitcher } from "../../components/navigation/LanguageSwitcher";
 
 function GridBg() {
   const { width, height } = useWindowDimensions();
@@ -24,6 +26,7 @@ function GridBg() {
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +35,7 @@ export default function ForgotPasswordScreen() {
   const handleSubmit = async () => {
     setError(null);
     if (!email.trim()) {
-      setError("Enter your email address.");
+      setError(t("auth.forgot.errors.required"));
       return;
     }
     setLoading(true);
@@ -55,36 +58,37 @@ export default function ForgotPasswordScreen() {
       <GridBg />
 
       <View style={styles.topBar}>
-        <Text style={styles.logo}>CARDECON</Text>
-        <Text style={styles.topBarSub}>ACCOUNT RECOVERY</Text>
+        <Text style={styles.logo}>{t("common.appName")}</Text>
+        <Text style={styles.topBarSub}>{t("auth.forgot.topBar")}</Text>
+        <View style={{ flex: 1 }} />
+        <LanguageSwitcher />
       </View>
 
       <View style={styles.center}>
         <View style={styles.panel}>
           <View style={styles.panelHeader}>
             <View style={styles.blueDot} />
-            <Text style={styles.panelTitle}>PASSWORD RESET</Text>
+            <Text style={styles.panelTitle}>{t("auth.forgot.title")}</Text>
           </View>
 
           {sent ? (
             <View style={styles.successBlock}>
               <Text style={styles.successIcon}>✉</Text>
-              <Text style={styles.successTitle}>RESET LINK SENT</Text>
+              <Text style={styles.successTitle}>{t("auth.forgot.successTitle")}</Text>
               <Text style={styles.successBody}>
-                If that email is associated with an account, you'll receive a password reset link shortly.
-                Check your inbox and spam folder.
+                {t("auth.forgot.successBody")}
               </Text>
               <TouchableOpacity
                 style={styles.submitBtn}
                 onPress={() => router.replace("/(auth)/login")}
               >
-                <Text style={styles.submitText}>← RETURN TO LOGIN</Text>
+                <Text style={styles.submitText}>{t("auth.forgot.returnToLogin")}</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <>
               <Text style={styles.description}>
-                Enter the email address associated with your account. We'll send you a link to reset your password.
+                {t("auth.forgot.description")}
               </Text>
 
               {error && (
@@ -94,7 +98,7 @@ export default function ForgotPasswordScreen() {
                 </View>
               )}
 
-              <Text style={styles.fieldLabel}>EMAIL ADDRESS</Text>
+              <Text style={styles.fieldLabel}>{t("auth.forgot.emailLabel")}</Text>
               <TextInput
                 style={[styles.input, error && styles.inputError]}
                 value={email}
@@ -103,7 +107,7 @@ export default function ForgotPasswordScreen() {
                 keyboardType="email-address"
                 autoCorrect={false}
                 placeholderTextColor={Colors.textMuted}
-                placeholder="your@email.com"
+                placeholder={t("auth.placeholders.email")}
                 selectionColor={Colors.blue}
                 returnKeyType="done"
                 onSubmitEditing={handleSubmit}
@@ -115,7 +119,7 @@ export default function ForgotPasswordScreen() {
                 disabled={loading}
               >
                 <Text style={styles.submitText}>
-                  {loading ? "SENDING..." : "▶  SEND RESET LINK"}
+                  {loading ? t("auth.forgot.sending") : t("auth.forgot.sendReset")}
                 </Text>
               </TouchableOpacity>
             </>
@@ -124,13 +128,13 @@ export default function ForgotPasswordScreen() {
           <View style={styles.divider} />
 
           <TouchableOpacity style={styles.linkBtn} onPress={() => router.back()}>
-            <Text style={styles.linkText}>← BACK TO LOGIN</Text>
+            <Text style={styles.linkText}>{t("auth.forgot.backToLogin")}</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <View style={styles.bottomBar}>
-        <Text style={styles.bottomText}>SECURE TOKEN · EXPIRES IN 1 HOUR</Text>
+        <Text style={styles.bottomText}>{t("auth.forgot.footer")}</Text>
       </View>
     </KeyboardAvoidingView>
   );

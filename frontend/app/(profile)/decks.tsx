@@ -4,6 +4,7 @@ import {
   ActivityIndicator, Alert, TouchableOpacity, Switch, useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import {
   getProgress, updateProgress, purchaseDeck,
   ProgressData, StrategyInfo, DeckInfo,
@@ -23,14 +24,6 @@ const STRATEGY_ICONS: Record<string, string> = {
   alternatives: "🔮",
 };
 
-const STRATEGY_DESCRIPTIONS: Record<string, string> = {
-  savings: "Cash, money market funds, and savings accounts. Low risk, low return.",
-  bonds: "Government and corporate debt instruments. Fixed income with predictable cash flows.",
-  stocks: "Equity ownership in public companies. Higher volatility, higher expected return.",
-  index: "Diversified market exposure via index funds and ETFs. Passive investing at its core.",
-  alternatives: "Commodities, derivatives, real estate, and crypto. Advanced instruments.",
-};
-
 const DECK_ICONS: Record<string, string> = {
   savings_core: "🏦",
   bonds_core: "📋",
@@ -45,6 +38,7 @@ const DECK_ICONS: Record<string, string> = {
 
 export default function DecksScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const colors = useColors();
   const isNormal = useThemeStore((state) => state.mode === "normal");
   const { width } = useWindowDimensions();
@@ -61,14 +55,14 @@ export default function DecksScreen() {
         setProgress(p);
         setCapital(pf.capital);
       })
-      .catch(() => Alert.alert("Error", "Could not load deck settings."))
+      .catch(() => Alert.alert(t("common.error"), t("decks.errors.load")))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   const handlePurchaseDeck = async (deck: DeckInfo) => {
     if (!deck.is_purchasable || !deck.shop_price) return;
     if (capital < deck.shop_price) {
-      Alert.alert("Insufficient Capital", `You need $${deck.shop_price.toLocaleString()} to buy this deck.`);
+      Alert.alert(t("decks.alerts.insufficientTitle"), t("decks.alerts.insufficientBody", { amount: deck.shop_price.toLocaleString() }));
       return;
     }
     setPurchasingDeck(deck.key);
@@ -76,9 +70,9 @@ export default function DecksScreen() {
       const resp = await purchaseDeck(deck.key);
       setProgress(resp.progress);
       setCapital(resp.remaining_capital);
-      Alert.alert("Deck Purchased", `${deck.label} unlocked for $${deck.shop_price.toLocaleString()}.`);
+      Alert.alert(t("decks.alerts.purchasedTitle"), t("decks.alerts.purchasedBody", { label: deck.label, amount: deck.shop_price.toLocaleString() }));
     } catch {
-      Alert.alert("Purchase Failed", "Could not purchase this deck right now.");
+      Alert.alert(t("decks.alerts.purchaseFailedTitle"), t("decks.alerts.purchaseFailedBody"));
     } finally {
       setPurchasingDeck(null);
     }
@@ -92,7 +86,7 @@ export default function DecksScreen() {
     const enabled = new Set(progress.enabled_strategies);
     if (currentlyEnabled) {
       if (enabled.size <= 1) {
-        Alert.alert("Required", "At least one strategy must remain enabled.");
+        Alert.alert(t("decks.alerts.requiredTitle"), t("decks.alerts.keepOneStrategy"));
         return;
       }
       enabled.delete(key);
@@ -105,7 +99,7 @@ export default function DecksScreen() {
       const updated = await updateProgress({ enabled_strategies: Array.from(enabled) });
       setProgress(updated);
     } catch {
-      Alert.alert("Error", "Could not update strategy settings.");
+      Alert.alert(t("common.error"), t("decks.errors.updateStrategy"));
     } finally {
       setSaving(false);
     }
@@ -119,7 +113,7 @@ export default function DecksScreen() {
     const enabled = new Set(progress.enabled_decks);
     if (currentlyEnabled) {
       if (enabled.size <= 1) {
-        Alert.alert("Required", "At least one deck must remain enabled.");
+        Alert.alert(t("decks.alerts.requiredTitle"), t("decks.alerts.keepOneDeck"));
         return;
       }
       enabled.delete(key);
@@ -132,7 +126,7 @@ export default function DecksScreen() {
       const updated = await updateProgress({ enabled_decks: Array.from(enabled) });
       setProgress(updated);
     } catch {
-      Alert.alert("Error", "Could not update deck settings.");
+      Alert.alert(t("common.error"), t("decks.errors.updateDeck"));
     } finally {
       setSaving(false);
     }
@@ -162,7 +156,7 @@ export default function DecksScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
       <AppTopBar
-        label={isNormal ? "Learning Decks" : "INVESTMENT DECKS"}
+        label={isNormal ? t("decks.topBar") : t("decks.topBarPro")}
         onBack={() => router.back()}
         rightContent={
           <>
@@ -176,28 +170,28 @@ export default function DecksScreen() {
         <View style={[styles.hero, isWide && styles.heroWide]}>
           <View style={[styles.heroMain, { backgroundColor: colors.bgPanel, borderColor: colors.borderDim, borderRadius: isNormal ? 24 : 2 }]}>
             <Text style={[styles.heroEyebrow, { color: isNormal ? colors.blueBright : colors.blue }]}>
-              {isNormal ? "BUILD YOUR LESSON MENU" : "DECK CONTROL"}
+              {isNormal ? t("decks.heroEyebrow") : t("decks.heroEyebrowPro")}
             </Text>
             <Text style={[styles.heroTitle, { color: colors.textBright }]}>
-              {isNormal ? "Choose what you want to practice next." : "Configure active strategies and deck exposure."}
+              {isNormal ? t("decks.heroTitle") : t("decks.heroTitlePro")}
             </Text>
             <Text style={[styles.heroBody, { color: colors.textPrimary }]}>
               {isNormal
-                ? "Turn themes on to see more of them while you play. Start simple, then unlock more advanced packs when you feel ready."
-                : "Strategies are the top-level investment categories. Each strategy contains one or more specialized decks that shape which cards appear in sessions."}
+                ? t("decks.heroBody")
+                : t("decks.heroBodyPro")}
             </Text>
 
             <View style={styles.statsRow}>
               <View style={[styles.statBlock, { backgroundColor: colors.bg, borderColor: colors.borderDim, borderRadius: isNormal ? 16 : 2 }]}>
-                <Text style={[styles.statLabel, { color: colors.textDim }]}>{isNormal ? "Cards seen" : "TOTAL CARDS"}</Text>
+                <Text style={[styles.statLabel, { color: colors.textDim }]}>{isNormal ? t("decks.stats.cardsSeen") : t("decks.stats.cardsSeenPro")}</Text>
                 <Text style={[styles.statValue, { color: colors.textBright }]}>{totalCards}</Text>
               </View>
               <View style={[styles.statBlock, { backgroundColor: colors.bg, borderColor: colors.borderDim, borderRadius: isNormal ? 16 : 2 }]}>
-                <Text style={[styles.statLabel, { color: colors.textDim }]}>{isNormal ? "Themes" : "STRATEGIES"}</Text>
+                <Text style={[styles.statLabel, { color: colors.textDim }]}>{isNormal ? t("decks.stats.themes") : t("decks.stats.themesPro")}</Text>
                 <Text style={[styles.statValue, { color: colors.teal }]}>{unlockedStrategies}/5</Text>
               </View>
               <View style={[styles.statBlock, { backgroundColor: colors.bg, borderColor: colors.borderDim, borderRadius: isNormal ? 16 : 2 }]}>
-                <Text style={[styles.statLabel, { color: colors.textDim }]}>{isNormal ? "Decks" : "DECKS"}</Text>
+                <Text style={[styles.statLabel, { color: colors.textDim }]}>{isNormal ? t("decks.stats.decks") : t("decks.stats.decksPro")}</Text>
                 <Text style={[styles.statValue, { color: colors.blue }]}>{unlockedDecks}/{totalDecks}</Text>
               </View>
             </View>
@@ -206,16 +200,16 @@ export default function DecksScreen() {
           <View style={styles.heroSide}>
             <View style={[styles.summaryCard, { backgroundColor: colors.bgPanel, borderColor: colors.borderDim, borderRadius: isNormal ? 24 : 2 }]}>
               <Text style={[styles.summaryTitle, { color: isNormal ? colors.blueBright : colors.blue }]}>
-                {isNormal ? "Quick status" : "STATUS"}
+                {isNormal ? t("decks.summary.title") : t("decks.summary.titlePro")}
               </Text>
               <Text style={[styles.summaryLine, { color: colors.textPrimary }]}>
-                {enabledDecks} active deck{enabledDecks === 1 ? "" : "s"}
+                {t("decks.summary.activeDecks", { count: enabledDecks })}
               </Text>
               <Text style={[styles.summaryLine, { color: colors.textPrimary }]}>
-                ${Math.round(capital).toLocaleString()} ready to spend
+                {t("decks.summary.readyToSpend", { amount: Math.round(capital).toLocaleString() })}
               </Text>
               <Text style={[styles.summaryNote, { color: colors.textDim }]}>
-                {isNormal ? "Locked packs open as you keep learning." : "Unlock additional content through play progression."}
+                {isNormal ? t("decks.summary.note") : t("decks.summary.notePro")}
               </Text>
             </View>
           </View>
@@ -226,7 +220,9 @@ export default function DecksScreen() {
           {progress?.strategies.map((strat) => {
             const decks = decksByStrategy[strat.key] ?? [];
             const icon = STRATEGY_ICONS[strat.key] ?? "•";
-            const desc = STRATEGY_DESCRIPTIONS[strat.key] ?? "";
+            const desc = isNormal
+              ? t(`decks.strategyDescriptions.normal.${strat.key}`)
+              : t(`decks.strategyDescriptions.pro.${strat.key}`);
 
             return (
               <View
@@ -251,7 +247,9 @@ export default function DecksScreen() {
                       {isNormal ? strat.label : strat.label.toUpperCase()}
                     </Text>
                     <Text style={[styles.strategyStage, { color: colors.textMuted }]}>
-                      {isNormal ? (strat.is_unlocked ? "Ready to use" : `Opens after ${strat.unlock_at} cards`) : `STAGE ${strat.stage}`}
+                      {isNormal
+                        ? (strat.is_unlocked ? t("decks.strategy.ready") : t("decks.strategy.opensAfter", { count: strat.unlock_at }))
+                        : t("decks.strategy.stage", { stage: strat.stage })}
                     </Text>
                   </View>
                 </View>
@@ -266,8 +264,8 @@ export default function DecksScreen() {
                     />
                   ) : (
                     <View style={styles.lockBadge}>
-                      <Text style={[styles.lockText, { color: colors.textMuted }]}>🔒 LOCKED</Text>
-                      <Text style={[styles.unlockAt, { color: colors.textMuted }]}>{strat.unlock_at} cards</Text>
+                      <Text style={[styles.lockText, { color: colors.textMuted }]}>{t("decks.strategy.locked")}</Text>
+                      <Text style={[styles.unlockAt, { color: colors.textMuted }]}>{t("decks.strategy.opensAfterShort", { count: strat.unlock_at })}</Text>
                     </View>
                   )}
                 </View>
@@ -275,19 +273,16 @@ export default function DecksScreen() {
 
               {/* Strategy description */}
               <Text style={[styles.strategyDesc, { color: colors.textPrimary }, !strat.is_unlocked && { opacity: 0.4 }]}>
-                {isNormal
-                  ? desc
-                      .replace("Low risk, low return.", "Usually safer, but slower-growing.")
-                      .replace("Higher volatility, higher expected return.", "Can grow faster, but feels bumpier.")
-                      .replace("Advanced instruments.", "More advanced and trickier to master.")
-                  : desc}
+                {desc}
               </Text>
 
               {/* Status indicator */}
               {strat.is_unlocked && (
                 <View style={[styles.stratStatus, { borderTopColor: colors.borderFaint }, strat.is_enabled && { borderTopColor: colors.green + "33" }]}>
                   <Text style={[styles.stratStatusText, { color: strat.is_enabled ? colors.green : colors.textMuted }]}>
-                    {strat.is_enabled ? (isNormal ? "● Theme turned on" : "● STRATEGY ACTIVE") : (isNormal ? "○ Theme turned off" : "○ STRATEGY DISABLED")}
+                    {strat.is_enabled
+                      ? (isNormal ? t("decks.strategy.on") : t("decks.strategy.onPro"))
+                      : (isNormal ? t("decks.strategy.off") : t("decks.strategy.offPro"))}
                   </Text>
                 </View>
               )}
@@ -295,7 +290,7 @@ export default function DecksScreen() {
               {/* Decks within this strategy */}
               {decks.length > 0 && (
                 <View style={[styles.decksContainer, { backgroundColor: isNormal ? colors.bgSurface : Colors.bg + "80", borderTopColor: colors.borderDim }]}>
-                  <Text style={[styles.decksLabel, { color: colors.textMuted }]}>{isNormal ? "CARD PACKS" : "CARD DECKS"}</Text>
+                  <Text style={[styles.decksLabel, { color: colors.textMuted }]}>{isNormal ? t("decks.deckPacks") : t("decks.deckPacksPro")}</Text>
                   {decks.map((deck, idx) => {
                     const deckIcon = DECK_ICONS[deck.key] ?? "📁";
                     return (
@@ -320,8 +315,12 @@ export default function DecksScreen() {
                             {!deck.is_unlocked && (
                               <Text style={[styles.deckUnlockAt, { color: colors.textMuted }]}>
                                 {deck.is_purchasable && deck.shop_price
-                                  ? (isNormal ? `Unlock now for $${deck.shop_price.toLocaleString()}` : `Buy for $${deck.shop_price.toLocaleString()}`)
-                                  : (isNormal ? `Opens after ${deck.unlock_at} cards` : `Unlocks at ${deck.unlock_at} cards`)}
+                                  ? (isNormal
+                                    ? t("decks.deck.unlockNow", { amount: deck.shop_price.toLocaleString() })
+                                    : t("decks.deck.buyFor", { amount: deck.shop_price.toLocaleString() }))
+                                  : (isNormal
+                                    ? t("decks.deck.opensAfter", { count: deck.unlock_at })
+                                    : t("decks.deck.unlocksAt", { count: deck.unlock_at }))}
                               </Text>
                             )}
                           </View>
@@ -351,7 +350,7 @@ export default function DecksScreen() {
                                     (purchasingDeck === deck.key || capital < deck.shop_price) && { opacity: 0.5 },
                                   ]}
                                 >
-                                  {purchasingDeck === deck.key ? "BUYING..." : "BUY"}
+                                  {purchasingDeck === deck.key ? t("decks.deck.buying") : t("decks.deck.buy")}
                                 </Text>
                               </TouchableOpacity>
                             ) : (

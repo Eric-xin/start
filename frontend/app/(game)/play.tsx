@@ -9,6 +9,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { usePortfolioStore } from "../../store/portfolioStore";
 import { getNextCard, playCard } from "../../services/portfolio";
 import type { AchievementData } from "../../services/achievements";
@@ -75,11 +76,13 @@ function TopStatusBar({
   onExit,
   activePanel,
   onOpenPanel,
+  t,
 }: {
   session: any;
   onExit: () => void;
   activePanel: PanelType;
   onOpenPanel: (p: PanelType) => void;
+  t: (k: string) => string;
 }) {
   const colors = useColors();
   const isNormal = useThemeStore((state) => state.mode === "normal");
@@ -110,17 +113,17 @@ function TopStatusBar({
       <View style={styles.left}>
         <Text style={styles.logo}>CARDECON</Text>
         <View style={styles.sep} />
-        <Text style={styles.label}>{isNormal ? "💰 Cash" : "STAGE"}</Text>
+        <Text style={styles.label}>{isNormal ? t("play.top.cash") : t("play.top.stage")}</Text>
         <Text style={[styles.value, { color: isNormal ? (session.capital >= 10000 ? colors.green : session.capital >= 8500 ? colors.amber : colors.red) : colors.textBright }]}>
           {isNormal ? `$${Math.round(session.capital).toLocaleString()}` : `${session.stage}/5`}
         </Text>
         {!isNormal && (
           <>
             <View style={styles.sep} />
-            <Text style={styles.label}>RANK</Text>
+            <Text style={styles.label}>{t("play.top.rank")}</Text>
             <Text style={styles.value}>{session.investor_rank}</Text>
             <View style={styles.sep} />
-            <Text style={styles.label}>CAPITAL</Text>
+            <Text style={styles.label}>{t("play.top.capital")}</Text>
           </>
         )}
         {!isNormal && (
@@ -131,9 +134,9 @@ function TopStatusBar({
       </View>
 
       <View style={styles.panelBtns}>
-        {panelBtn("market", isNormal ? "Market" : "MARKET")}
-        {panelBtn("news", isNormal ? "News" : "NEWS")}
-        {panelBtn("portfolio", isNormal ? "Portfolio" : "PORTFOLIO")}
+        {panelBtn("market", isNormal ? t("play.top.market") : t("play.top.marketPro"))}
+        {panelBtn("news", isNormal ? t("play.top.news") : t("play.top.newsPro"))}
+        {panelBtn("portfolio", isNormal ? t("play.top.portfolio") : t("play.top.portfolioPro"))}
       </View>
 
       <View style={styles.right}>
@@ -143,7 +146,7 @@ function TopStatusBar({
         <ThemeModeToggle />
 
         <TouchableOpacity style={styles.exitBtn} onPress={onExit}>
-          <Text style={styles.exitBtnText}>EXIT</Text>
+          <Text style={styles.exitBtnText}>{t("play.top.exit")}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -172,6 +175,7 @@ function GhostCard() {
 
 export default function PlayScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const colors = useColors();
   const isNormal = useThemeStore((state) => state.mode === "normal");
   const styles = createStyles(colors, isNormal);
@@ -220,7 +224,7 @@ export default function PlayScreen() {
       .then((c) => {
         if (mounted.current && c) setCurrentCard(c);
       })
-      .catch(() => Alert.alert("Error", "Could not load card."))
+      .catch(() => Alert.alert(t("common.error"), t("play.errors.loadCard")))
       .finally(() => {
         if (mounted.current) setInitializing(false);
       });
@@ -272,10 +276,10 @@ export default function PlayScreen() {
       } catch {
         setSwipeLocked(false);
         setCurrentCard(currentCard);
-        Alert.alert("Error", "Swipe failed. Check connection.");
+        Alert.alert(t("common.error"), t("play.errors.swipe"));
       }
     },
-    [companionId, currentCard, isChoiceFlipped, isSwipeLocked, portfolio?.investor_rank, recentPhrases, setCurrentCard, setLesson, setNextCard, setPortfolio, setSwipeLocked, showBubble]
+    [companionId, currentCard, isChoiceFlipped, isSwipeLocked, portfolio?.investor_rank, recentPhrases, setCurrentCard, setLesson, setNextCard, setPortfolio, setSwipeLocked, showBubble, t]
   );
 
   const handleLessonDismiss = useCallback(() => {
@@ -293,7 +297,7 @@ export default function PlayScreen() {
     return (
       <View style={styles.loading}>
         <ActivityIndicator color={colors.blue} size="large" />
-        <Text style={styles.loadingText}>{isNormal ? "Loading cards..." : "LOADING CARDS"}</Text>
+        <Text style={styles.loadingText}>{isNormal ? t("play.loading") : t("play.loadingPro")}</Text>
       </View>
     );
   }
@@ -331,6 +335,7 @@ export default function PlayScreen() {
         onExit={() => router.replace("/(game)")}
         activePanel={activePanel}
         onOpenPanel={setActivePanel}
+        t={t}
       />
 
       <View style={styles.body}>
@@ -342,7 +347,7 @@ export default function PlayScreen() {
 
         <View style={[styles.arena, { width: cardAreaW, height: cardAreaH }]}>
           <View style={styles.panelLabel}>
-            <Text style={styles.panelLabelText}>{isNormal ? "💡 Your Decisions" : "DECISION ENGINE"}</Text>
+            <Text style={styles.panelLabelText}>{isNormal ? t("play.decisionTitle") : t("play.decisionTitlePro")}</Text>
           </View>
 
           {(nextCard || (lesson && nextCard)) && <GhostCard />}
@@ -367,7 +372,7 @@ export default function PlayScreen() {
             />
           ) : !initializing ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>{isNormal ? "Loading next decision..." : "LOADING NEXT DECISION..."}</Text>
+              <Text style={styles.emptyText}>{isNormal ? t("play.nextLoading") : t("play.nextLoadingPro")}</Text>
               <ActivityIndicator color={colors.blue} size="small" style={{ marginTop: 10 }} />
             </View>
           ) : null}
@@ -393,8 +398,8 @@ export default function PlayScreen() {
 
           {currentCard && !isSwipeLocked && !lesson && (
             <View style={styles.swipeHints} pointerEvents="none">
-              <Text style={styles.swipeHintText}>{isNormal ? "← Pass" : "← OPTION"}</Text>
-              <Text style={styles.swipeHintText}>{isNormal ? "Take it →" : "OPTION →"}</Text>
+              <Text style={styles.swipeHintText}>{isNormal ? t("play.hints.left") : t("play.hints.leftPro")}</Text>
+              <Text style={styles.swipeHintText}>{isNormal ? t("play.hints.right") : t("play.hints.rightPro")}</Text>
             </View>
           )}
         </View>

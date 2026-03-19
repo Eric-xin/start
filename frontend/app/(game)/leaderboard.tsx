@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { Colors, useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { usePortfolioStore } from "../../store/portfolioStore";
@@ -85,6 +86,7 @@ interface RankedPlayer {
 
 function LeaderRow({ player, maxValue }: { player: RankedPlayer; maxValue: number }) {
   const colors = useColors();
+  const { t } = useTranslation();
   const isNormal = useThemeStore((s) => s.mode === "normal");
   const medal = medalFor(player.rank);
   const barFraction = maxValue > 0 ? player.net_worth / maxValue : 0;
@@ -132,7 +134,7 @@ function LeaderRow({ player, maxValue }: { player: RankedPlayer; maxValue: numbe
         <Text style={[styles.name, { color: colors.textBright }]} numberOfLines={1}>
           {player.name}
           {player.isYou && (
-            <Text style={[styles.youTag, { color: colors.blue }]}> · you</Text>
+            <Text style={[styles.youTag, { color: colors.blue }]}> · {t("leaderboard.you")}</Text>
           )}
         </Text>
 
@@ -166,6 +168,8 @@ function LeaderRow({ player, maxValue }: { player: RankedPlayer; maxValue: numbe
 
 export default function LeaderboardScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
+  const { t } = useTranslation();
   const colors = useColors();
   const isNormal = useThemeStore((s) => s.mode === "normal");
   const portfolio = usePortfolioStore((s) => s.portfolio);
@@ -202,7 +206,7 @@ export default function LeaderboardScreen() {
           <Text style={styles.headerBrand}>CARDECON</Text>
           <View style={[styles.headerSep, { backgroundColor: colors.borderDim }]} />
           <Text style={[styles.headerTitle, { color: colors.textDim }]}>
-            {isNormal ? "🏆 Leaderboard" : "LEADERBOARD"}
+            {isNormal ? t("leaderboard.topBar") : t("leaderboard.topBarPro")}
           </Text>
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -225,18 +229,18 @@ export default function LeaderboardScreen() {
       >
         <View style={styles.bannerLeft}>
           <Text style={[styles.bannerLabel, { color: colors.textDim }]}>
-            {isNormal ? "Your position" : "YOUR RANK"}
+            {isNormal ? t("leaderboard.positionNormal") : t("leaderboard.positionPro")}
           </Text>
           <Text style={[styles.bannerRank, { color: colors.blue }]}>
             {medalFor(you?.rank) ?? `#${you?.rank}`}{" "}
             <Text style={[styles.bannerRankOf, { color: colors.textDim }]}>
-              out of {ranked.length}
+              {t("leaderboard.outOf", { count: ranked.length })}
             </Text>
           </Text>
         </View>
         <View style={styles.bannerRight}>
           <Text style={[styles.bannerLabel, { color: colors.textDim }]}>
-            {isNormal ? "Your value" : "NET WORTH"}
+            {isNormal ? t("leaderboard.valueNormal") : t("leaderboard.valuePro")}
           </Text>
           <Text style={[styles.bannerValue, { color: colors.green }]}>
             {formatValue(userNetWorth)}
@@ -271,7 +275,7 @@ export default function LeaderboardScreen() {
           onPress={() => router.back()}
           activeOpacity={0.75}
         >
-          <Text style={[styles.backBtnText, { color: colors.blue }]}>← Back</Text>
+          <Text style={[styles.backBtnText, { color: colors.blue }]}>{t("leaderboard.back")}</Text>
         </TouchableOpacity>
       </View>
     </View>
