@@ -1,11 +1,10 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Modal,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
-  useWindowDimensions,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { COMPANION_LIST, COMPANIONS, type CompanionId } from "../../constants/companions";
@@ -29,15 +28,33 @@ export function CompanionSelector({
 }: Props) {
   const colors = useColors();
   const isNormal = useThemeStore((state) => state.mode === "normal");
-  const styles = createStyles(colors);
-  const { width } = useWindowDimensions();
-  const isWide = width >= 980;
-  const [draftId, setDraftId] = useState<CompanionId>(selectedId ?? "sage");
+  const styles = createStyles(colors, isNormal);
+  const initialId = selectedId ?? "sage";
+  const [draftId, setDraftId] = useState<CompanionId>(initialId);
 
-  const activeCompanion = useMemo(
-    () => COMPANIONS[draftId],
-    [draftId]
+  useEffect(() => {
+    if (visible) {
+      setDraftId(selectedId ?? "sage");
+    }
+  }, [selectedId, visible]);
+
+  const activeIndex = Math.max(
+    0,
+    COMPANION_LIST.findIndex((companion) => companion.id === draftId)
   );
+  const activeCompanion = useMemo(() => COMPANIONS[draftId], [draftId]);
+
+  const shift = (direction: -1 | 1) => {
+    const nextIndex =
+      (activeIndex + direction + COMPANION_LIST.length) % COMPANION_LIST.length;
+    setDraftId(COMPANION_LIST[nextIndex].id);
+  };
+
+  const neighbors = [
+    COMPANION_LIST[(activeIndex - 1 + COMPANION_LIST.length) % COMPANION_LIST.length],
+    COMPANION_LIST[activeIndex],
+    COMPANION_LIST[(activeIndex + 1) % COMPANION_LIST.length],
+  ];
 
   return (
     <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
@@ -45,64 +62,81 @@ export function CompanionSelector({
         <View style={styles.card}>
           <Text style={styles.title}>{isNormal ? "Choose Your Guide" : "CHOOSE YOUR GUIDE"}</Text>
           <Text style={styles.subtitle}>
-            {isNormal ? "Pick the voice and energy you want beside you while you learn." : "Select the companion voice for this run."}
+            {isNormal
+              ? "Slide through the guide belt, meet each personality, and bring one with you."
+              : "Cycle through available companion profiles and confirm a guide."}
           </Text>
 
-          <View style={[styles.layout, isWide && styles.layoutWide]}>
-            <ScrollView
-              contentContainerStyle={styles.grid}
-              showsVerticalScrollIndicator={false}
-              style={[styles.gridScroll, isWide && styles.gridScrollWide]}
-            >
-              {COMPANION_LIST.map((companion) => {
-                const active = draftId === companion.id;
+          <View style={styles.beltShell}>
+            <TouchableOpacity style={styles.arrowBtn} onPress={() => shift(-1)}>
+              <Text style={styles.arrowText}>‹</Text>
+            </TouchableOpacity>
+
+            <View style={styles.beltTrack}>
+              {neighbors.map((companion, index) => {
+                const active = companion.id === draftId;
+                const scale = index === 1 ? 1 : 0.78;
                 return (
                   <Pressable
-                    key={companion.id}
+                    key={`${companion.id}-${index}`}
                     onPress={() => setDraftId(companion.id)}
                     style={[
-                      styles.option,
-                      active && {
-                        borderColor: companion.accentColor,
-                        backgroundColor: companion.accentColor + "14",
+                      styles.beltCard,
+                      {
+                        transform: [{ scale }],
+                        opacity: active ? 1 : 0.72,
+                        borderColor: active ? companion.accentColor : colors.borderDim,
+                        backgroundColor: active ? companion.accentColor + "14" : colors.bg,
                       },
                     ]}
                   >
-                    <CompanionVisual companionId={companion.id} size={64} />
-                    <Text style={styles.optionName}>{companion.name}</Text>
-                    <Text style={styles.optionMood}>{companion.personality}</Text>
+                    <CompanionVisual companionId={companion.id} size={active ? 96 : 72} />
+                    <Text style={[styles.beltName, active && { color: companion.accentColor }]}>
+                      {companion.name}
+                    </Text>
                   </Pressable>
                 );
               })}
-            </ScrollView>
-
-            <View style={[styles.preview, { borderColor: activeCompanion.accentColor }]}>
-              <View style={[styles.previewGlow, { backgroundColor: activeCompanion.accentColor + "12" }]} />
-              <CompanionVisual companionId={activeCompanion.id} size={112} />
-              <Text style={styles.previewName}>{activeCompanion.name}</Text>
-              <Text style={styles.personality}>{activeCompanion.personality}</Text>
-              <Text style={styles.quote}>"{activeCompanion.previewQuote}"</Text>
-              <View style={styles.previewTagRow}>
-                <View style={[styles.previewTag, { borderColor: activeCompanion.accentColor + "55" }]}>
-                  <Text style={[styles.previewTagText, { color: activeCompanion.accentColor }]}>{isNormal ? "Friendly guide" : "VOICE PROFILE"}</Text>
-                </View>
-                <View style={styles.previewTag}>
-                  <Text style={styles.previewTagText}>{isNormal ? "Always on-screen" : "SESSION READY"}</Text>
-                </View>
-              </View>
             </View>
+
+            <TouchableOpacity style={styles.arrowBtn} onPress={() => shift(1)}>
+              <Text style={styles.arrowText}>›</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={[styles.preview, { borderColor: activeCompanion.accentColor }]}>
+            <Text style={styles.previewName}>{activeCompanion.name}</Text>
+            <Text style={styles.personality}>{activeCompanion.personality}</Text>
+            <Text style={styles.quote}>"{activeCompanion.previewQuote}"</Text>
+          </View>
+
+          <View style={styles.dotRow}>
+            {COMPANION_LIST.map((companion) => (
+              <Pressable
+                key={companion.id}
+                onPress={() => setDraftId(companion.id)}
+                style={[
+                  styles.dot,
+                  {
+                    backgroundColor:
+                      companion.id === draftId ? companion.accentColor : colors.borderDim,
+                    transform: [{ scale: companion.id === draftId ? 1.1 : 1 }],
+                  },
+                ]}
+              />
+            ))}
           </View>
 
           <View style={styles.actions}>
-            <Pressable style={styles.cancelBtn} onPress={onClose}>
-              <Text style={styles.cancelText}>Close</Text>
-            </Pressable>
-            <Pressable
+            <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
+              <Text style={styles.cancelText}>{isNormal ? "Close" : "CLOSE"}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
               style={[styles.confirmBtn, { backgroundColor: activeCompanion.accentColor }]}
               onPress={() => onConfirm(activeCompanion.id)}
             >
-              <Text style={styles.confirmText}>{isNormal ? "Let's go!" : "CONFIRM"}</Text>
-            </Pressable>
+              <Text style={styles.confirmText}>{isNormal ? `Let's go with ${activeCompanion.name}!` : "LET'S GO"}</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -110,168 +144,157 @@ export function CompanionSelector({
   );
 }
 
-const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: "rgba(10, 14, 24, 0.55)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-  card: {
-    width: "100%",
-    maxWidth: 960,
-    maxHeight: "90%",
-    backgroundColor: colors.bgPanel,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: colors.borderPrimary,
-    padding: 24,
-  },
-  title: {
-    fontSize: 22,
-    fontFamily: Fonts.sansBold,
-    color: colors.textBright,
-  },
-  subtitle: {
-    fontSize: 14,
-    fontFamily: Fonts.sans,
-    color: colors.textDim,
-    marginTop: 6,
-    marginBottom: 18,
-  },
-  layout: {
-    gap: 18,
-  },
-  layoutWide: {
-    flexDirection: "row",
-    alignItems: "stretch",
-  },
-  gridScroll: {
-    width: "100%",
-    maxHeight: 340,
-  },
-  gridScrollWide: {
-    flex: 1,
-    maxHeight: undefined,
-  },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-    justifyContent: "center",
-  },
-  option: {
-    width: "47%",
-    minWidth: 140,
-    alignItems: "center",
-    paddingVertical: 16,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: colors.borderDim,
-    backgroundColor: colors.bg,
-    paddingHorizontal: 12,
-    gap: 6,
-  },
-  optionName: {
-    fontSize: 14,
-    fontFamily: Fonts.sansBold,
-    color: colors.textBright,
-  },
-  optionMood: {
-    fontSize: 11,
-    lineHeight: 16,
-    fontFamily: Fonts.sans,
-    color: colors.textDim,
-    textAlign: "center",
-  },
-  preview: {
-    borderWidth: 2,
-    borderRadius: 20,
-    padding: 18,
-    alignItems: "center",
-    backgroundColor: colors.bg,
-    justifyContent: "center",
-    width: "100%",
-    minWidth: 0,
-    position: "relative",
-    overflow: "hidden",
-  },
-  previewGlow: {
-    position: "absolute",
-    top: -30,
-    right: -20,
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-  },
-  previewName: {
-    marginTop: 12,
-    fontSize: 24,
-    fontFamily: Fonts.sansBold,
-    color: colors.textBright,
-  },
-  personality: {
-    marginTop: 6,
-    fontSize: 13,
-    fontFamily: Fonts.sansBold,
-    color: colors.textBright,
-    textAlign: "center",
-  },
-  quote: {
-    marginTop: 8,
-    fontSize: 13,
-    lineHeight: 20,
-    fontFamily: Fonts.sans,
-    color: colors.textPrimary,
-    textAlign: "center",
-  },
-  previewTagRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    justifyContent: "center",
-    marginTop: 12,
-  },
-  previewTag: {
-    borderWidth: 1,
-    borderColor: colors.borderDim,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    backgroundColor: colors.bgPanel,
-  },
-  previewTagText: {
-    fontSize: 10,
-    fontFamily: Fonts.sansBold,
-    color: colors.textDim,
-  },
-  actions: {
-    marginTop: 18,
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 12,
-  },
-  cancelBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.borderDim,
-  },
-  cancelText: {
-    fontSize: 12,
-    fontFamily: Fonts.sansBold,
-    color: colors.textDim,
-  },
-  confirmBtn: {
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 999,
-  },
-  confirmText: {
-    fontSize: 12,
-    fontFamily: Fonts.sansBold,
-    color: "#fff",
-  },
-});
+const createStyles = (colors: ReturnType<typeof useColors>, isNormal: boolean) =>
+  StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      backgroundColor: "rgba(10, 14, 24, 0.45)",
+      justifyContent: "center",
+      alignItems: "center",
+      padding: 20,
+    },
+    card: {
+      width: "100%",
+      maxWidth: 860,
+      backgroundColor: colors.bgPanel,
+      borderRadius: 28,
+      borderWidth: 1,
+      borderColor: colors.borderPrimary,
+      padding: 24,
+    },
+    title: {
+      fontSize: 24,
+      fontFamily: Fonts.sansBold,
+      color: colors.textBright,
+      textAlign: "center",
+    },
+    subtitle: {
+      fontSize: 14,
+      lineHeight: 21,
+      fontFamily: Fonts.sans,
+      color: colors.textDim,
+      textAlign: "center",
+      marginTop: 8,
+      marginBottom: 18,
+      paddingHorizontal: 16,
+    },
+    beltShell: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      marginBottom: 16,
+    },
+    arrowBtn: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      borderWidth: 1,
+      borderColor: colors.borderDim,
+      backgroundColor: colors.bg,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    arrowText: {
+      fontSize: 28,
+      lineHeight: 30,
+      fontFamily: Fonts.sansBold,
+      color: colors.textBright,
+      marginTop: -2,
+    },
+    beltTrack: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 10,
+      minHeight: 190,
+    },
+    beltCard: {
+      flex: 1,
+      maxWidth: 190,
+      minHeight: 170,
+      borderWidth: 1,
+      borderRadius: 22,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 12,
+      paddingVertical: 16,
+      gap: 10,
+    },
+    beltName: {
+      fontSize: 15,
+      fontFamily: Fonts.sansBold,
+      color: colors.textBright,
+      textAlign: "center",
+    },
+    preview: {
+      borderWidth: 2,
+      borderRadius: 22,
+      backgroundColor: colors.bg,
+      padding: 18,
+      alignItems: "center",
+    },
+    previewName: {
+      fontSize: 24,
+      fontFamily: Fonts.sansBold,
+      color: colors.textBright,
+      marginBottom: 4,
+    },
+    personality: {
+      fontSize: 13,
+      fontFamily: Fonts.sansBold,
+      color: colors.textDim,
+      textAlign: "center",
+      marginBottom: 8,
+    },
+    quote: {
+      fontSize: 14,
+      lineHeight: 21,
+      fontFamily: Fonts.sans,
+      color: colors.textPrimary,
+      textAlign: "center",
+    },
+    dotRow: {
+      flexDirection: "row",
+      justifyContent: "center",
+      gap: 8,
+      marginTop: 16,
+    },
+    dot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+    },
+    actions: {
+      marginTop: 20,
+      flexDirection: "row",
+      gap: 12,
+      justifyContent: "center",
+    },
+    cancelBtn: {
+      borderWidth: 1,
+      borderColor: colors.borderDim,
+      borderRadius: 999,
+      backgroundColor: colors.bg,
+      paddingHorizontal: 16,
+      paddingVertical: 11,
+    },
+    cancelText: {
+      fontSize: 12,
+      fontFamily: Fonts.sansBold,
+      color: colors.textDim,
+    },
+    confirmBtn: {
+      borderRadius: 999,
+      paddingHorizontal: 20,
+      paddingVertical: 11,
+      maxWidth: "70%",
+    },
+    confirmText: {
+      fontSize: 12,
+      fontFamily: Fonts.sansBold,
+      color: "#fff",
+      textAlign: "center",
+      letterSpacing: isNormal ? 0.2 : 1.2,
+    },
+  });
