@@ -11,6 +11,7 @@ from app.routers import achievements as achievements_router
 from app.routers import simulation as simulation_router
 from app.routers import game_hud as game_hud_router
 from app.routers import companion_chat as companion_chat_router
+from app.routers import arena as arena_router
 
 # Import models so Base.metadata knows about all tables
 import app.models.user  # noqa: F401
@@ -21,6 +22,7 @@ import app.models.progress  # noqa: F401
 import app.models.portfolio  # noqa: F401
 import app.models.achievement  # noqa: F401
 import app.models.market  # noqa: F401
+import app.models.arena  # noqa: F401
 
 settings = get_settings()
 
@@ -193,6 +195,7 @@ app.include_router(achievements_router.router)
 app.include_router(simulation_router.router)
 app.include_router(game_hud_router.router)
 app.include_router(companion_chat_router.router)
+app.include_router(arena_router.router)
 
 
 @app.get("/health")

@@ -185,6 +185,7 @@ export default function GameIndexScreen() {
     { label: isNormal ? "🃏 Decks" : "DECKS", sub: isNormal ? "Choose the lesson packs you want to see more often." : "Configure strategies and deck availability.", to: "/(profile)/decks" },
     { label: isNormal ? "🏆 Achievements" : "ACHIEVEMENTS", sub: isNormal ? "Track milestones and see what to unlock next." : "Review progression achievements.", to: "/(game)/achievements" },
     { label: isNormal ? "📊 Leaderboard" : "LEADERBOARD", sub: isNormal ? "See how your portfolio stacks up against others." : "Rank players by net worth.", to: "/(game)/leaderboard" },
+    { label: isNormal ? "⚔️ Arena" : "ARENA", sub: isNormal ? "Challenge friends in real-time multiplayer — same cards, best portfolio wins." : "MULTIPLAYER — COMPETE ON SAME CARDS IN REAL TIME.", to: "/(game)/arena" },
   ];
 
   return (
@@ -298,10 +299,30 @@ export default function GameIndexScreen() {
           </View>
         </View>
 
+        {/* Arena Feature Banner */}
+        <TouchableOpacity
+          style={styles.arenaBanner}
+          onPress={() => router.push("/(game)/arena" as never)}
+          activeOpacity={0.88}
+        >
+          <View style={styles.arenaBannerLeft}>
+            <View style={styles.arenaBadge}>
+              <Text style={styles.arenaBadgeText}>{isNormal ? "NEW" : "NEW"}</Text>
+            </View>
+            <Text style={styles.arenaBannerTitle}>{isNormal ? "⚔️  Arena — Multiplayer" : "ARENA  /  MULTIPLAYER"}</Text>
+            <Text style={styles.arenaBannerSub}>
+              {isNormal
+                ? "Play the same cards as your friends in real time. Best portfolio wins."
+                : "COMPETE ON IDENTICAL CARD SEQUENCES. REAL-TIME STANDINGS."}
+            </Text>
+          </View>
+          <Text style={styles.arenaBannerArrow}>{isNormal ? "→" : "▶"}</Text>
+        </TouchableOpacity>
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{isNormal ? "Explore the app" : "MODULE ACCESS"}</Text>
           <View style={styles.quickGrid}>
-            {quickLinks.map((item) => (
+            {quickLinks.filter(l => l.to !== "/(game)/arena").map((item) => (
               <QuickLink key={item.to} label={item.label} sub={item.sub} onPress={() => router.push(item.to as never)} />
             ))}
           </View>
@@ -581,5 +602,56 @@ const createStyles = (colors: ReturnType<typeof useColors>, isNormal: boolean) =
       flexDirection: "row",
       flexWrap: "wrap",
       gap: 12,
+    },
+    arenaBanner: {
+      width: "100%",
+      maxWidth: 1180,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      backgroundColor: isNormal ? colors.bgPanel : "#07122b",
+      borderWidth: 1.5,
+      borderColor: colors.blue,
+      borderRadius: isNormal ? 24 : 2,
+      paddingHorizontal: 24,
+      paddingVertical: 20,
+      overflow: "hidden",
+    },
+    arenaBannerLeft: {
+      flex: 1,
+      gap: 6,
+    },
+    arenaBadge: {
+      alignSelf: "flex-start",
+      backgroundColor: colors.blue,
+      borderRadius: isNormal ? 999 : 1,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      marginBottom: 2,
+    },
+    arenaBadgeText: {
+      fontFamily: Fonts.sansBold,
+      fontSize: 9,
+      color: "#fff",
+      letterSpacing: 1.5,
+    },
+    arenaBannerTitle: {
+      fontFamily: isNormal ? Fonts.sansBold : Fonts.mono,
+      fontSize: isNormal ? 20 : 14,
+      color: colors.textBright,
+      letterSpacing: isNormal ? 0 : 2,
+    },
+    arenaBannerSub: {
+      fontFamily: Fonts.sans,
+      fontSize: 12,
+      color: colors.textPrimary,
+      lineHeight: 18,
+      letterSpacing: isNormal ? 0 : 0.3,
+    },
+    arenaBannerArrow: {
+      fontFamily: Fonts.mono,
+      fontSize: 22,
+      color: colors.blue,
+      marginLeft: 16,
     },
   });
