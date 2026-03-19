@@ -5,6 +5,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { COMPANION_LIST, COMPANIONS, type CompanionId } from "../../constants/companions";
@@ -29,6 +30,8 @@ export function CompanionSelector({
   const colors = useColors();
   const isNormal = useThemeStore((state) => state.mode === "normal");
   const styles = createStyles(colors);
+  const { width } = useWindowDimensions();
+  const isWide = width >= 980;
   const [draftId, setDraftId] = useState<CompanionId>(selectedId ?? "sage");
 
   const activeCompanion = useMemo(
@@ -42,34 +45,52 @@ export function CompanionSelector({
         <View style={styles.card}>
           <Text style={styles.title}>{isNormal ? "Choose Your Guide" : "CHOOSE YOUR GUIDE"}</Text>
           <Text style={styles.subtitle}>
-            {isNormal ? "Who's coming with you today?" : "Select the companion voice for this run."}
+            {isNormal ? "Pick the voice and energy you want beside you while you learn." : "Select the companion voice for this run."}
           </Text>
 
-          <ScrollView contentContainerStyle={styles.grid} showsVerticalScrollIndicator={false}>
-            {COMPANION_LIST.map((companion) => {
-              const active = draftId === companion.id;
-              return (
-                <Pressable
-                  key={companion.id}
-                  onPress={() => setDraftId(companion.id)}
-                  style={[
-                    styles.option,
-                    active && {
-                      borderColor: companion.accentColor,
-                      backgroundColor: companion.accentColor + "14",
-                    },
-                  ]}
-                >
-                  <CompanionVisual companionId={companion.id} size={72} />
-                </Pressable>
-              );
-            })}
-          </ScrollView>
+          <View style={[styles.layout, isWide && styles.layoutWide]}>
+            <ScrollView
+              contentContainerStyle={styles.grid}
+              showsVerticalScrollIndicator={false}
+              style={[styles.gridScroll, isWide && styles.gridScrollWide]}
+            >
+              {COMPANION_LIST.map((companion) => {
+                const active = draftId === companion.id;
+                return (
+                  <Pressable
+                    key={companion.id}
+                    onPress={() => setDraftId(companion.id)}
+                    style={[
+                      styles.option,
+                      active && {
+                        borderColor: companion.accentColor,
+                        backgroundColor: companion.accentColor + "14",
+                      },
+                    ]}
+                  >
+                    <CompanionVisual companionId={companion.id} size={64} />
+                    <Text style={styles.optionName}>{companion.name}</Text>
+                    <Text style={styles.optionMood}>{companion.personality}</Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
 
-          <View style={[styles.preview, { borderColor: activeCompanion.accentColor }]}>
-            <CompanionVisual companionId={activeCompanion.id} size={108} />
-            <Text style={styles.personality}>{activeCompanion.personality}</Text>
-            <Text style={styles.quote}>"{activeCompanion.previewQuote}"</Text>
+            <View style={[styles.preview, { borderColor: activeCompanion.accentColor }]}>
+              <View style={[styles.previewGlow, { backgroundColor: activeCompanion.accentColor + "12" }]} />
+              <CompanionVisual companionId={activeCompanion.id} size={112} />
+              <Text style={styles.previewName}>{activeCompanion.name}</Text>
+              <Text style={styles.personality}>{activeCompanion.personality}</Text>
+              <Text style={styles.quote}>"{activeCompanion.previewQuote}"</Text>
+              <View style={styles.previewTagRow}>
+                <View style={[styles.previewTag, { borderColor: activeCompanion.accentColor + "55" }]}>
+                  <Text style={[styles.previewTagText, { color: activeCompanion.accentColor }]}>{isNormal ? "Friendly guide" : "VOICE PROFILE"}</Text>
+                </View>
+                <View style={styles.previewTag}>
+                  <Text style={styles.previewTagText}>{isNormal ? "Always on-screen" : "SESSION READY"}</Text>
+                </View>
+              </View>
+            </View>
           </View>
 
           <View style={styles.actions}>
@@ -99,8 +120,8 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   },
   card: {
     width: "100%",
-    maxWidth: 860,
-    maxHeight: "92%",
+    maxWidth: 960,
+    maxHeight: "90%",
     backgroundColor: colors.bgPanel,
     borderRadius: 24,
     borderWidth: 1,
@@ -119,6 +140,21 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     marginTop: 6,
     marginBottom: 18,
   },
+  layout: {
+    gap: 18,
+  },
+  layoutWide: {
+    flexDirection: "row",
+    alignItems: "stretch",
+  },
+  gridScroll: {
+    width: "100%",
+    maxHeight: 340,
+  },
+  gridScrollWide: {
+    flex: 1,
+    maxHeight: undefined,
+  },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -126,28 +162,61 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     justifyContent: "center",
   },
   option: {
-    width: "31%",
-    minWidth: 180,
+    width: "47%",
+    minWidth: 140,
     alignItems: "center",
     paddingVertical: 16,
     borderRadius: 18,
     borderWidth: 1,
     borderColor: colors.borderDim,
     backgroundColor: colors.bg,
+    paddingHorizontal: 12,
+    gap: 6,
+  },
+  optionName: {
+    fontSize: 14,
+    fontFamily: Fonts.sansBold,
+    color: colors.textBright,
+  },
+  optionMood: {
+    fontSize: 11,
+    lineHeight: 16,
+    fontFamily: Fonts.sans,
+    color: colors.textDim,
+    textAlign: "center",
   },
   preview: {
-    marginTop: 18,
     borderWidth: 2,
     borderRadius: 20,
     padding: 18,
     alignItems: "center",
     backgroundColor: colors.bg,
+    justifyContent: "center",
+    width: "100%",
+    minWidth: 0,
+    position: "relative",
+    overflow: "hidden",
+  },
+  previewGlow: {
+    position: "absolute",
+    top: -30,
+    right: -20,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+  },
+  previewName: {
+    marginTop: 12,
+    fontSize: 24,
+    fontFamily: Fonts.sansBold,
+    color: colors.textBright,
   },
   personality: {
-    marginTop: 10,
+    marginTop: 6,
     fontSize: 13,
     fontFamily: Fonts.sansBold,
     color: colors.textBright,
+    textAlign: "center",
   },
   quote: {
     marginTop: 8,
@@ -156,6 +225,26 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     fontFamily: Fonts.sans,
     color: colors.textPrimary,
     textAlign: "center",
+  },
+  previewTagRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    justifyContent: "center",
+    marginTop: 12,
+  },
+  previewTag: {
+    borderWidth: 1,
+    borderColor: colors.borderDim,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: colors.bgPanel,
+  },
+  previewTagText: {
+    fontSize: 10,
+    fontFamily: Fonts.sansBold,
+    color: colors.textDim,
   },
   actions: {
     marginTop: 18,
