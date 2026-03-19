@@ -5,9 +5,10 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import {
-  getProgress, updateProgress,
+  getProgress, updateProgress, purchaseDeck,
   ProgressData, StrategyInfo, DeckInfo,
 } from "../../services/progress";
+import { getPortfolio } from "../../services/portfolio";
 import { Colors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 
@@ -35,20 +36,46 @@ const DECK_ICONS: Record<string, string> = {
   index_core: "📦",
   real_estate_deck: "🏠",
   derivatives_deck: "⚗️",
+  great_depression_deck: "📰",
+  covid_era_deck: "🧬",
 };
 
 export default function DecksScreen() {
   const router = useRouter();
   const [progress, setProgress] = useState<ProgressData | null>(null);
+  const [capital, setCapital] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [purchasingDeck, setPurchasingDeck] = useState<string | null>(null);
 
   useEffect(() => {
-    getProgress()
-      .then(setProgress)
+    Promise.all([getProgress(), getPortfolio()])
+      .then(([p, pf]) => {
+        setProgress(p);
+        setCapital(pf.capital);
+      })
       .catch(() => Alert.alert("Error", "Could not load deck settings."))
       .finally(() => setLoading(false));
   }, []);
+
+  const handlePurchaseDeck = async (deck: DeckInfo) => {
+    if (!deck.is_purchasable || !deck.shop_price) return;
+    if (capital < deck.shop_price) {
+      Alert.alert("Insufficient Capital", `You need $${deck.shop_price.toLocaleString()} to buy this deck.`);
+      return;
+    }
+    setPurchasingDeck(deck.key);
+    try {
+      const resp = await purchaseDeck(deck.key);
+      setProgress(resp.progress);
+      setCapital(resp.remaining_capital);
+      Alert.alert("Deck Purchased", `${deck.label} unlocked for $${deck.shop_price.toLocaleString()}.`);
+    } catch {
+      Alert.alert("Purchase Failed", "Could not purchase this deck right now.");
+    } finally {
+      setPurchasingDeck(null);
+    }
+  };
 
   const handleToggleStrategy = async (key: string, currentlyEnabled: boolean) => {
     if (!progress) return;
@@ -123,6 +150,7 @@ export default function DecksScreen() {
   const unlockedStrategies = progress?.unlocked_strategies.length ?? 0;
   const unlockedDecks = progress?.unlocked_decks.length ?? 0;
   const enabledDecks = progress?.enabled_decks.length ?? 0;
+  const totalDecks = progress?.decks.length ?? 0;
 
   return (
     <View style={styles.container}>
@@ -149,11 +177,15 @@ export default function DecksScreen() {
           </View>
           <View style={[styles.statBlock, styles.statBorder]}>
             <Text style={styles.statLabel}>DECKS</Text>
-            <Text style={[styles.statValue, { color: Colors.blue }]}>{unlockedDecks}/7</Text>
+            <Text style={[styles.statValue, { color: Colors.blue }]}>{unlockedDecks}/{totalDecks}</Text>
           </View>
           <View style={[styles.statBlock, styles.statBorder]}>
             <Text style={styles.statLabel}>ACTIVE</Text>
             <Text style={[styles.statValue, { color: Colors.green }]}>{enabledDecks}</Text>
+          </View>
+          <View style={[styles.statBlock, styles.statBorder]}>
+            <Text style={styles.statLabel}>CAPITAL</Text>
+            <Text style={[styles.statValue, { color: Colors.amber }]}>${Math.round(capital).toLocaleString()}</Text>
           </View>
         </View>
 
@@ -245,7 +277,11 @@ export default function DecksScreen() {
                               <Text style={styles.deckDesc}>{deck.description}</Text>
                             ) : null}
                             {!deck.is_unlocked && (
-                              <Text style={styles.deckUnlockAt}>Unlocks at {deck.unlock_at} cards</Text>
+                              <Text style={styles.deckUnlockAt}>
+                                {deck.is_purchasable && deck.shop_price
+                                  ? `Buy for $${deck.shop_price.toLocaleString()}`
+                                  : `Unlocks at ${deck.unlock_at} cards`}
+                              </Text>
                             )}
                           </View>
                         </View>
@@ -261,7 +297,24 @@ export default function DecksScreen() {
                               style={!strat.is_enabled ? { opacity: 0.4 } : undefined}
                             />
                           ) : (
-                            <Text style={styles.deckLockIcon}>🔒</Text>
+                            deck.is_purchasable && deck.shop_price ? (
+                              <TouchableOpacity
+                                style={styles.buyBtn}
+                                onPress={() => handlePurchaseDeck(deck)}
+                                disabled={purchasingDeck === deck.key || capital < deck.shop_price}
+                              >
+                                <Text
+                                  style={[
+                                    styles.buyBtnText,
+                                    (purchasingDeck === deck.key || capital < deck.shop_price) && { opacity: 0.5 },
+                                  ]}
+                                >
+                                  {purchasingDeck === deck.key ? "BUYING..." : "BUY"}
+                                </Text>
+                              </TouchableOpacity>
+                            ) : (
+                              <Text style={styles.deckLockIcon}>🔒</Text>
+                            )
                           )}
                         </View>
                       </View>
@@ -365,4 +418,18 @@ const styles = StyleSheet.create({
   deckUnlockAt: { fontSize: 9, fontFamily: Fonts.mono, color: Colors.textMuted, marginTop: 2 },
   deckRight: { paddingLeft: 12 },
   deckLockIcon: { fontSize: 14, opacity: 0.5 },
+  buyBtn: {
+    borderWidth: 1,
+    borderColor: Colors.amber,
+    backgroundColor: Colors.amber + "22",
+    borderRadius: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  buyBtnText: {
+    fontSize: 9,
+    fontFamily: Fonts.sansBold,
+    color: Colors.amber,
+    letterSpacing: 1.2,
+  },
 });

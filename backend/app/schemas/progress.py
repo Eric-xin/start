@@ -18,6 +18,9 @@ class DeckInfo(BaseModel):
     unlock_at: int
     is_unlocked: bool
     is_enabled: bool
+    is_purchasable: bool = False
+    shop_price: int | None = None
+    card_style: str | None = None
 
 
 class UserProgressOut(BaseModel):
@@ -33,3 +36,14 @@ class UserProgressOut(BaseModel):
 class UserProgressUpdate(BaseModel):
     enabled_strategies: list[str] | None = None
     enabled_decks: list[str] | None = None
+
+
+class PurchaseDeckRequest(BaseModel):
+    deck_key: str
+
+
+class PurchaseDeckResponse(BaseModel):
+    progress: UserProgressOut
+    remaining_capital: float
+    remaining_net_worth: float
+    purchased_deck_key: str
