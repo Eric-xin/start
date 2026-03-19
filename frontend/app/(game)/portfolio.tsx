@@ -305,7 +305,7 @@ export default function PortfolioScreen() {
             <Text style={[styles.worthSub, { color: colors.textDim }]}>
               {isNormal
                 ? `${p.total_cards_played} decisions made so far`
-                : `STAGE ${p.stage}/5 · RANK ${p.investor_rank} — ${RANK_LABELS[p.investor_rank]}`}
+                : `RANK ${p.investor_rank} — ${RANK_LABELS[p.investor_rank]}`}
             </Text>
           </View>
         </View>
@@ -362,8 +362,8 @@ export default function PortfolioScreen() {
             </Text>
             <Text style={[styles.incomeClaimedSub, { color: colors.textMuted }]}>
               {isNormal
-                ? `Streak: ${p.income_streak} days · Base: $500 · Bonus: $${100 * (p.stage - 1)}`
-                : `STREAK: ${p.income_streak} DAYS  ·  BASE: $500  ·  STAGE BONUS: $${100 * (p.stage - 1)}`}
+                ? `Streak: ${p.income_streak} days · Base: $500`
+                : `STREAK: ${p.income_streak} DAYS  ·  BASE: $500`}
             </Text>
           </View>
         )}
@@ -381,24 +381,8 @@ export default function PortfolioScreen() {
           )}
         </View>
 
-        {/* ── Progress ── */}
+        {/* ── Income Breakdown ── */}
         <View style={[styles.rowCards, isWide && { flexDirection: "row" }]}>
-          <View style={[styles.card, { backgroundColor: colors.bgPanel, borderColor: colors.borderDim, borderRadius: isNormal ? 18 : 2 }, isWide && { flex: 1 }]}>
-            <SectionHeader title="LEARNING STAGE" />
-            <View style={styles.stageRow}>
-              <Text style={styles.stageBig}>STAGE {p.stage}</Text>
-              <Text style={styles.stageOf}>/ 5</Text>
-            </View>
-            <View style={styles.progressTrack}>
-              <View style={[styles.progressFill, {
-                width: `${Math.min(((p.total_cards_played % 20) / 20) * 100, 100)}%`
-              }]} />
-            </View>
-            <Text style={styles.progressHint}>
-              {20 - (p.total_cards_played % 20)} cards until Stage {Math.min(p.stage + 1, 5)}
-            </Text>
-          </View>
-
           <View style={[styles.card, { backgroundColor: colors.bgPanel, borderColor: colors.borderDim, borderRadius: isNormal ? 18 : 2 }, isWide && { flex: 1 }]}>
             <SectionHeader title="INCOME BREAKDOWN" />
             <View style={styles.incomeBreakdown}>
@@ -563,13 +547,6 @@ const styles = StyleSheet.create({
   },
 
   rowCards: { width: "100%", maxWidth: 720, gap: 14 },
-
-  stageRow: { flexDirection: "row", alignItems: "baseline", gap: 4, marginBottom: 10 },
-  stageBig: { fontSize: 24, fontFamily: Fonts.mono, color: Colors.textBright },
-  stageOf: { fontSize: 14, fontFamily: Fonts.mono, color: Colors.textMuted },
-  progressTrack: { height: 6, backgroundColor: Colors.borderDim, borderRadius: 1, marginBottom: 6 },
-  progressFill: { height: "100%", backgroundColor: Colors.blue, borderRadius: 1 },
-  progressHint: { fontSize: 9, fontFamily: Fonts.sans, color: Colors.textMuted },
 
   incomeBreakdown: { gap: 8 },
   incomeLine: { flexDirection: "row", justifyContent: "space-between" },
