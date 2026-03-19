@@ -17,6 +17,29 @@ import app.models.progress   # noqa: F401
 settings = get_settings()
 
 
+async def _ensure_sqlite_card_columns() -> None:
+    """Dev helper: keep local SQLite cards schema in sync for added columns."""
+    if not settings.database_url.startswith("sqlite"):
+        return
+
+    async with engine.begin() as conn:
+        try:
+            rows = await conn.execute(text("PRAGMA table_info(cards)"))
+            existing = {row[1] for row in rows.fetchall()}
+
+            if "value_min" not in existing:
+                await conn.execute(text("ALTER TABLE cards ADD COLUMN value_min FLOAT"))
+            if "value_max" not in existing:
+                await conn.execute(text("ALTER TABLE cards ADD COLUMN value_max FLOAT"))
+            if "value_step" not in existing:
+                await conn.execute(text("ALTER TABLE cards ADD COLUMN value_step FLOAT"))
+            if "alpha" not in existing:
+                await conn.execute(text("ALTER TABLE cards ADD COLUMN alpha FLOAT DEFAULT 1.0 NOT NULL"))
+        except Exception:
+            # Non-fatal in dev: startup should continue even if schema patch fails.
+            pass
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Create all tables (new tables only — won't modify existing)
@@ -52,6 +75,8 @@ async def lifespan(app: FastAPI):
                 """))
             except Exception:
                 pass  # ignore if not postgres or already applied
+
+        await _ensure_sqlite_card_columns()
 
     # Seed data in development
     if settings.environment == "development":

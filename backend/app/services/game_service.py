@@ -285,7 +285,11 @@ async def process_swipe(
 
     # Cooldown in Redis
     cooldown_key = f"cooldown:{session.id}:{card.id}"
-    await redis.setex(cooldown_key, card.cooldown * COOLDOWN_TTL_SECS, "1")
+    try:
+        await redis.setex(cooldown_key, card.cooldown * COOLDOWN_TTL_SECS, "1")
+    except Exception:
+        # Allow gameplay to continue when Redis is not available locally.
+        pass
 
     enabled_strat = progress.enabled_strategies if progress else STRATEGIES
     enabled_deck = progress.enabled_decks if progress else None

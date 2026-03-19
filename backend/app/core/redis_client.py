@@ -9,7 +9,13 @@ _redis: Redis | None = None
 async def get_redis_client() -> Redis:
     global _redis
     if _redis is None:
-        _redis = await from_url(settings.redis_url, decode_responses=True)
+        _redis = await from_url(
+            settings.redis_url,
+            decode_responses=True,
+            socket_connect_timeout=0.2,
+            socket_timeout=0.2,
+            retry_on_timeout=False,
+        )
     return _redis
 
 
