@@ -99,6 +99,9 @@ export default function GameIndexScreen() {
           <TouchableOpacity style={styles.topBtn} onPress={() => router.push("/(profile)/personas")}>
             <Text style={styles.topBtnText}>PERSONAS</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={styles.topBtn} onPress={() => router.push("/(game)/simulation")}>
+            <Text style={styles.topBtnText}>SIMULATION</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={styles.topBtn} onPress={() => router.push("/(profile)/decks")}>
             <Text style={styles.topBtnText}>DECKS</Text>
           </TouchableOpacity>
@@ -180,19 +183,19 @@ export default function GameIndexScreen() {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={styles.historyLink}
             onPress={() => router.push("/(game)/portfolio")}
           >
             <Text style={styles.historyLinkText}>NET WORTH HISTORY & DECISIONS →</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={[styles.historyLink, { marginTop: 4 }]}
             onPress={() => router.push("/(game)/simulation")}
           >
             <Text style={[styles.historyLinkText, { color: Colors.blue }]}>⬡ SIMULATION ENGINE →</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
 
         {/* System status panel */}
