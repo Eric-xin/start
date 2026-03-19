@@ -38,7 +38,7 @@ async def register_user(db: AsyncSession, data: RegisterRequest) -> User:
     db.add(user)
     await db.flush()
     if not auto_verify:
-        send_verification_email(data.email, token, data.username)
+        await send_verification_email(data.email, token, data.username)
     return user
 
 
@@ -78,7 +78,7 @@ async def initiate_password_reset(db: AsyncSession, email: str) -> None:
     token = generate_verification_token()
     user.reset_token = token
     user.reset_token_expires = datetime.now(timezone.utc) + timedelta(hours=1)
-    send_password_reset_email(email, token)
+    await send_password_reset_email(email, token)
 
 
 async def complete_password_reset(db: AsyncSession, token: str, new_password: str) -> None:

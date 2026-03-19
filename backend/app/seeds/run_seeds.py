@@ -12,6 +12,16 @@ from app.models.card import Card
 from app.models.game import GameConfig
 from app.seeds.cards import SEED_CARDS
 
+SMTP_CONFIGS = [
+    {"key": "smtp_host",      "value": "smtp.mailtrap.io",   "description": "SMTP server hostname"},
+    {"key": "smtp_port",      "value": 587,                  "description": "SMTP server port"},
+    {"key": "smtp_user",      "value": "",                   "description": "SMTP username / API key"},
+    {"key": "smtp_password",  "value": "",                   "description": "SMTP password"},
+    {"key": "smtp_from",      "value": "noreply@cardecon.app", "description": "From email address"},
+    {"key": "smtp_from_name", "value": "CardEcon",           "description": "From display name"},
+    {"key": "email_backend",  "value": "console",            "description": "Email backend: 'console' (logs only) or 'smtp' (sends real email)"},
+]
+
 DEFAULT_CONFIGS = [
     {
         "key": "persona_update_rates",
@@ -59,7 +69,7 @@ async def seed_cards(db: AsyncSession) -> int:
 
 async def seed_configs(db: AsyncSession) -> int:
     seeded = 0
-    for cfg_data in DEFAULT_CONFIGS:
+    for cfg_data in DEFAULT_CONFIGS + SMTP_CONFIGS:
         result = await db.execute(select(GameConfig).where(GameConfig.key == cfg_data["key"]))
         if not result.scalar_one_or_none():
             config = GameConfig(**cfg_data)
