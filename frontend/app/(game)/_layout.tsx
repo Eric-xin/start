@@ -14,6 +14,7 @@ export default function GameLayout() {
       <Stack.Screen name="play" />
       <Stack.Screen name="portfolio" />
       <Stack.Screen name="achievements" />
+      <Stack.Screen name="simulation" />
     </Stack>
   );
 }

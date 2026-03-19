@@ -186,6 +186,13 @@ export default function GameIndexScreen() {
           >
             <Text style={styles.historyLinkText}>NET WORTH HISTORY & DECISIONS →</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.historyLink, { marginTop: 4 }]}
+            onPress={() => router.push("/(game)/simulation")}
+          >
+            <Text style={[styles.historyLinkText, { color: Colors.blue }]}>⬡ SIMULATION ENGINE →</Text>
+          </TouchableOpacity>
         </View>
 
         {/* System status panel */}
