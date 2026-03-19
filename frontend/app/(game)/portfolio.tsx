@@ -417,6 +417,11 @@ const styles = StyleSheet.create({
   },
   playBtnSmallText: { fontSize: 9, fontFamily: Fonts.sansBold, color: Colors.bg, letterSpacing: 1.5 },
 
+  topBtn: {
+    backgroundColor: Colors.borderDim, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 2,
+  },
+  topBtnText: { fontSize: 8, fontFamily: Fonts.sansBold, color: Colors.textDim, letterSpacing: 1.5 },
+
   scroll: { padding: 20, gap: 14, alignItems: "center" },
 
   worthStrip: {
