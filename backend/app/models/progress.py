@@ -52,6 +52,26 @@ DECK_META = {
         "is_purchasable": True,
         "card_style": "metal",
     },
+    "financial_statements_deck": {
+        "label": "Financial Statements Lab",
+        "strategy": "savings",
+        "topics": ["financial_statements"],
+        "description": "Income statements, balance sheets, cash flow, and earnings quality decisions.",
+        "unlock_at": 9_999,
+        "shop_price": 5000,
+        "is_purchasable": True,
+        "card_style": "metal",
+    },
+    "macro_events_deck": {
+        "label": "Macro Events & Signals",
+        "strategy": "savings",
+        "topics": ["macro_events"],
+        "description": "CPI, jobs, rates, policy shifts, and geopolitical market information flow.",
+        "unlock_at": 9_999,
+        "shop_price": 5000,
+        "is_purchasable": True,
+        "card_style": "metal",
+    },
 }
 
 DECKS = list(DECK_META.keys())

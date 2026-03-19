@@ -34,6 +34,8 @@ const DECK_ICONS: Record<string, string> = {
   derivatives_deck: "⚗️",
   great_depression_deck: "📰",
   covid_era_deck: "🧬",
+  financial_statements_deck: "📘",
+  macro_events_deck: "🌐",
 };
 
 export default function DecksScreen() {
