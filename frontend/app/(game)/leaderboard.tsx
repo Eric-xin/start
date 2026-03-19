@@ -1,297 +1,452 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useMemo } from "react";
 import {
   View,
   Text,
-  TouchableOpacity,
-  StyleSheet,
   ScrollView,
-  ActivityIndicator,
-  Alert,
+  StyleSheet,
+  TouchableOpacity,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { getLeaderboard, LeaderboardData, getRankLabel } from "../../services/leaderboard";
-import { Colors } from "../../constants/colors";
+import { router } from "expo-router";
+import { Colors, useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
+import { usePortfolioStore } from "../../store/portfolioStore";
+import { useThemeStore } from "../../store/themeStore";
+import { ThemeModeToggle } from "../../components/theme/ThemeModeToggle";
+import { LEADERBOARD_SEED } from "../../seeds/leaderboard";
 
-export default function LeaderboardScreen() {
-  const router = useRouter();
-  const [leaderboard, setLeaderboard] = useState<LeaderboardData | null>(null);
-  const [loading, setLoading] = useState(true);
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-  const loadLeaderboard = useCallback(async () => {
-    try {
-      const data = await getLeaderboard(100);
-      setLeaderboard(data);
-    } catch {
-      Alert.alert("Error", "Could not load leaderboard.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+function formatValue(n: number): string {
+  if (n >= 1_000_000) return "$" + (n / 1_000_000).toFixed(2) + "M";
+  if (n >= 1_000)     return "$" + (n / 1_000).toFixed(1) + "K";
+  return "$" + n.toLocaleString("en-US");
+}
 
-  useEffect(() => {
-    loadLeaderboard();
-  }, []);
+function medalFor(rank: number): string | null {
+  if (rank === 1) return "🥇";
+  if (rank === 2) return "🥈";
+  if (rank === 3) return "🥉";
+  return null;
+}
 
-  if (loading) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={Colors.blue} size="large" />
-        <Text style={styles.loadingText}>LOADING LEADERBOARD</Text>
-      </View>
-    );
-  }
+// ─── Avatar ───────────────────────────────────────────────────────────────────
 
-  const currentUserEntry = leaderboard?.entries.find(e => leaderboard.current_user_rank === e.rank);
-
+function Avatar({
+  initials,
+  size = 36,
+  color,
+  isYou,
+}: {
+  initials: string;
+  size?: number;
+  color: string;
+  isYou?: boolean;
+}) {
+  const colors = useColors();
   return (
-    <View style={styles.container}>
-      {/* Top bar */}
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backText}>← BACK</Text>
-        </TouchableOpacity>
-        <Text style={styles.logo}>CARDECON</Text>
-        <View style={styles.barSep} />
-        <Text style={styles.topLabel}>LEADERBOARD</Text>
-        <View style={{ flex: 1 }} />
-      </View>
-
-      <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Current user widget */}
-        {currentUserEntry && (
-          <View style={styles.currentUserCard}>
-            <Text style={styles.currentUserLabel}>YOUR POSITION</Text>
-            <View style={styles.currentUserContent}>
-              <View style={styles.currentUserRank}>
-                <Text style={styles.currentUserRankNum}>#{currentUserEntry.rank}</Text>
-                <Text style={styles.currentUserRankLabel}>of {leaderboard?.entries.length ?? 0}</Text>
-              </View>
-              <View style={styles.currentUserStats}>
-                <Text style={styles.currentUserName}>{currentUserEntry.username}</Text>
-                <View style={styles.currentUserMetrics}>
-                  <Text style={styles.currentUserMetric}>
-                    <Text style={{ color: Colors.blue }}>Net Worth:</Text> ${currentUserEntry.net_worth.toLocaleString("en-US", { maximumFractionDigits: 0 })}
-                  </Text>
-                  <Text style={styles.currentUserMetric}>
-                    <Text style={{ color: Colors.teal }}>Level:</Text> {currentUserEntry.investor_rank}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* Leaderboard table */}
-        <View style={styles.tableContainer}>
-          <View style={styles.tableHeader}>
-            <Text style={[styles.tableHeaderCell, { flex: 0.4 }]}>RANK</Text>
-            <Text style={[styles.tableHeaderCell, { flex: 1.5 }]}>PLAYER</Text>
-            <Text style={[styles.tableHeaderCell, { flex: 1 }]}>NET WORTH</Text>
-            <Text style={[styles.tableHeaderCell, { flex: 0.5 }]}>LVL</Text>
-          </View>
-
-          {leaderboard?.entries.map((entry, idx) => {
-            const isCurrentUser = leaderboard?.current_user_rank === entry.rank;
-            const rowBg = isCurrentUser ? Colors.bgPanel : Colors.bg;
-            const borderColor = isCurrentUser ? Colors.blue : Colors.borderFaint;
-
-            return (
-              <View
-                key={entry.portfolio_id}
-                style={[
-                  styles.tableRow,
-                  {
-                    backgroundColor: rowBg,
-                    borderColor,
-                    borderLeftWidth: isCurrentUser ? 3 : 0,
-                  },
-                ]}
-              >
-                <Text style={[styles.tableCell, { flex: 0.4 }]}>
-                  <Text style={{ color: Colors.blue, fontWeight: "bold" }}>#{entry.rank}</Text>
-                </Text>
-                <Text style={[styles.tableCell, { flex: 1.5 }]} numberOfLines={1}>
-                  {entry.username}
-                  {isCurrentUser && " ◆"}
-                </Text>
-                <Text style={[styles.tableCell, { flex: 1, color: Colors.green }]}>
-                  ${(entry.net_worth / 1000).toFixed(0)}k
-                </Text>
-                <Text style={[styles.tableCell, { flex: 0.5, color: Colors.teal }]}>
-                  {entry.investor_rank}
-                </Text>
-              </View>
-            );
-          })}
-        </View>
-
-        {/* Info section */}
-        <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>LEADERBOARD</Text>
-          <Text style={styles.infoText}>
-            Rankings are based on net worth accumulated through strategic investment decisions. Climb the ranks by making wise choices and growing your portfolio.
-          </Text>
-        </View>
-
-        <View style={{ height: 20 }} />
-      </ScrollView>
+    <View
+      style={[
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: isYou ? color : colors.bgCard,
+          borderWidth: isYou ? 0 : 1,
+          borderColor: colors.borderDim,
+          alignItems: "center",
+          justifyContent: "center",
+        },
+      ]}
+    >
+      <Text
+        style={{
+          fontFamily: Fonts.sansBold,
+          fontSize: size * 0.38,
+          color: isYou ? "#fff" : colors.textDim,
+          fontWeight: "700",
+        }}
+      >
+        {initials}
+      </Text>
     </View>
   );
 }
 
+// ─── Row ──────────────────────────────────────────────────────────────────────
+
+interface RankedPlayer {
+  id: string;
+  name: string;
+  initials: string;
+  net_worth: number;
+  rank: number;
+  isYou: boolean;
+}
+
+function LeaderRow({ player, maxValue }: { player: RankedPlayer; maxValue: number }) {
+  const colors = useColors();
+  const isNormal = useThemeStore((s) => s.mode === "normal");
+  const medal = medalFor(player.rank);
+  const barFraction = maxValue > 0 ? player.net_worth / maxValue : 0;
+
+  const rowBg = player.isYou
+    ? isNormal
+      ? colors.blueDim
+      : "#0a2040"
+    : isNormal
+    ? "#ffffff"
+    : Colors.bgPanel;
+
+  const rowBorder = player.isYou ? colors.blue : colors.borderFaint;
+
+  return (
+    <View
+      style={[
+        styles.row,
+        {
+          backgroundColor: rowBg,
+          borderColor: rowBorder,
+          borderWidth: player.isYou ? 1.5 : 1,
+        },
+      ]}
+    >
+      {/* Rank */}
+      <View style={styles.rankCol}>
+        {medal ? (
+          <Text style={styles.medal}>{medal}</Text>
+        ) : (
+          <Text style={[styles.rankNum, { color: colors.textDim }]}>
+            {player.rank}
+          </Text>
+        )}
+      </View>
+
+      {/* Avatar + Name */}
+      <Avatar
+        initials={player.initials}
+        size={34}
+        color={colors.blue}
+        isYou={player.isYou}
+      />
+      <View style={styles.nameBlock}>
+        <Text style={[styles.name, { color: colors.textBright }]} numberOfLines={1}>
+          {player.name}
+          {player.isYou && (
+            <Text style={[styles.youTag, { color: colors.blue }]}> · you</Text>
+          )}
+        </Text>
+
+        {/* Bar */}
+        <View style={[styles.barTrack, { backgroundColor: colors.borderFaint }]}>
+          <View
+            style={[
+              styles.barFill,
+              {
+                width: `${Math.max(barFraction * 100, 2)}%` as any,
+                backgroundColor: player.isYou
+                  ? colors.blue
+                  : player.rank <= 3
+                  ? colors.green
+                  : colors.borderDim,
+              },
+            ]}
+          />
+        </View>
+      </View>
+
+      {/* Value */}
+      <Text style={[styles.value, { color: player.isYou ? colors.blue : colors.green }]}>
+        {formatValue(player.net_worth)}
+      </Text>
+    </View>
+  );
+}
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
+
+export default function LeaderboardScreen() {
+  const colors = useColors();
+  const isNormal = useThemeStore((s) => s.mode === "normal");
+  const portfolio = usePortfolioStore((s) => s.portfolio);
+
+  const userNetWorth: number = (portfolio as any)?.net_worth ?? 50_000;
+  const userName: string    = (portfolio as any)?.companion_id
+    ? "You"
+    : "You";
+
+  const ranked = useMemo<RankedPlayer[]>(() => {
+    const all = [
+      ...LEADERBOARD_SEED.map((p) => ({ ...p, isYou: false })),
+      { id: "you", name: userName, initials: "YO", net_worth: userNetWorth, isYou: true },
+    ]
+      .sort((a, b) => b.net_worth - a.net_worth)
+      .map((p, i) => ({ ...p, rank: i + 1 }));
+    return all;
+  }, [userNetWorth, userName]);
+
+  const you = ranked.find((p) => p.isYou)!;
+  const maxValue = ranked[0]?.net_worth ?? 1;
+
+  return (
+    <View style={[styles.screen, isNormal && { backgroundColor: colors.bg }]}>
+
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <View
+        style={[
+          styles.header,
+          isNormal && { backgroundColor: colors.bgPanel, borderBottomColor: colors.borderDim },
+        ]}
+      >
+        <View style={styles.headerLeft}>
+          <Text style={styles.headerBrand}>CARDECON</Text>
+          <View style={[styles.headerSep, { backgroundColor: colors.borderDim }]} />
+          <Text style={[styles.headerTitle, { color: colors.textDim }]}>
+            {isNormal ? "🏆 Leaderboard" : "LEADERBOARD"}
+          </Text>
+        </View>
+        <ThemeModeToggle compact />
+      </View>
+
+      {/* ── Your rank banner ───────────────────────────────────────────────── */}
+      <View
+        style={[
+          styles.banner,
+          {
+            backgroundColor: isNormal ? colors.bgPanel : Colors.bgPanel,
+            borderBottomColor: colors.borderFaint,
+          },
+        ]}
+      >
+        <View style={styles.bannerLeft}>
+          <Text style={[styles.bannerLabel, { color: colors.textDim }]}>
+            {isNormal ? "Your position" : "YOUR RANK"}
+          </Text>
+          <Text style={[styles.bannerRank, { color: colors.blue }]}>
+            {medalFor(you?.rank) ?? `#${you?.rank}`}{" "}
+            <Text style={[styles.bannerRankOf, { color: colors.textDim }]}>
+              out of {ranked.length}
+            </Text>
+          </Text>
+        </View>
+        <View style={styles.bannerRight}>
+          <Text style={[styles.bannerLabel, { color: colors.textDim }]}>
+            {isNormal ? "Your value" : "NET WORTH"}
+          </Text>
+          <Text style={[styles.bannerValue, { color: colors.green }]}>
+            {formatValue(userNetWorth)}
+          </Text>
+        </View>
+      </View>
+
+      {/* ── List ───────────────────────────────────────────────────────────── */}
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[
+          styles.listContent,
+          isNormal && { backgroundColor: colors.bg },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        {ranked.map((p) => (
+          <LeaderRow key={p.id} player={p} maxValue={maxValue} />
+        ))}
+        <View style={{ height: 80 }} />
+      </ScrollView>
+
+      {/* ── Footer back button ─────────────────────────────────────────────── */}
+      <View
+        style={[
+          styles.footer,
+          isNormal && { backgroundColor: colors.bgPanel, borderTopColor: colors.borderDim },
+        ]}
+      >
+        <TouchableOpacity
+          style={[styles.backBtn, { borderColor: colors.blue }]}
+          onPress={() => router.back()}
+          activeOpacity={0.75}
+        >
+          <Text style={[styles.backBtnText, { color: colors.blue }]}>← Back</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bg },
-  loading: {
+  screen: {
     flex: 1,
     backgroundColor: Colors.bg,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 14,
-  },
-  loadingText: {
-    fontSize: 10,
-    fontFamily: Fonts.mono,
-    color: Colors.textDim,
-    letterSpacing: 2,
   },
 
-  topBar: {
-    height: 40,
-    backgroundColor: Colors.bgPanel,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderPrimary,
+  // Header
+  header: {
+    height: 44,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
-    gap: 10,
-  },
-  backText: {
-    fontSize: 9,
-    fontFamily: Fonts.sansBold,
-    color: Colors.textDim,
-    letterSpacing: 1.5,
-  },
-  logo: { fontSize: 13, fontFamily: Fonts.mono, color: Colors.blue, letterSpacing: 3 },
-  barSep: { width: 1, height: 14, backgroundColor: Colors.borderDim },
-  topLabel: {
-    fontSize: 8,
-    fontFamily: Fonts.sansBold,
-    color: Colors.textDim,
-    letterSpacing: 2,
-  },
-
-  scroll: { padding: 20, gap: 14, alignItems: "center" },
-
-  currentUserCard: {
-    width: "100%",
-    maxWidth: 720,
-    backgroundColor: Colors.bgPanel,
-    borderWidth: 2,
-    borderColor: Colors.blue,
-    borderRadius: 2,
-    padding: 16,
-  },
-  currentUserLabel: {
-    fontSize: 7,
-    fontFamily: Fonts.sansBold,
-    color: Colors.blue,
-    letterSpacing: 2,
-    marginBottom: 12,
-  },
-  currentUserContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-  },
-  currentUserRank: {
-    alignItems: "center",
-  },
-  currentUserRankNum: {
-    fontSize: 32,
-    fontFamily: Fonts.mono,
-    color: Colors.blue,
-    fontWeight: "bold",
-  },
-  currentUserRankLabel: {
-    fontSize: 9,
-    fontFamily: Fonts.mono,
-    color: Colors.textMuted,
-  },
-  currentUserStats: {
-    flex: 1,
-  },
-  currentUserName: {
-    fontSize: 14,
-    fontFamily: Fonts.sansBold,
-    color: Colors.textBright,
-    marginBottom: 6,
-  },
-  currentUserMetrics: {
-    gap: 4,
-  },
-  currentUserMetric: {
-    fontSize: 10,
-    fontFamily: Fonts.mono,
-    color: Colors.textDim,
-  },
-
-  tableContainer: {
-    width: "100%",
-    maxWidth: 720,
-    backgroundColor: Colors.bgPanel,
-    borderWidth: 1,
-    borderColor: Colors.borderDim,
-    borderRadius: 2,
-    overflow: "hidden",
-  },
-  tableHeader: {
-    flexDirection: "row",
-    backgroundColor: "#1a1a1a",
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderDim,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  tableHeaderCell: {
-    fontSize: 7,
-    fontFamily: Fonts.sansBold,
-    color: Colors.textMuted,
-    letterSpacing: 1.5,
-  },
-  tableRow: {
-    flexDirection: "row",
     borderBottomWidth: 1,
     borderBottomColor: Colors.borderFaint,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  tableCell: {
-    fontSize: 11,
-    fontFamily: Fonts.mono,
-    color: Colors.textBright,
-  },
-
-  infoCard: {
-    width: "100%",
-    maxWidth: 720,
     backgroundColor: Colors.bgPanel,
-    borderWidth: 1,
-    borderColor: Colors.borderDim,
-    borderRadius: 2,
-    padding: 14,
   },
-  infoTitle: {
-    fontSize: 8,
-    fontFamily: Fonts.sansBold,
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  headerBrand: {
+    fontSize: 13,
+    fontFamily: Fonts.mono,
     color: Colors.blue,
     letterSpacing: 2,
-    marginBottom: 10,
+    fontWeight: "700",
   },
-  infoText: {
-    fontSize: 10,
+  headerSep: {
+    width: 1,
+    height: 16,
+    backgroundColor: Colors.borderFaint,
+  },
+  headerTitle: {
+    fontSize: 11,
+    fontFamily: Fonts.mono,
+    color: Colors.textDim,
+    letterSpacing: 1.5,
+  },
+
+  // Banner
+  banner: {
+    flexDirection: "row",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    backgroundColor: Colors.bgPanel,
+    gap: 24,
+  },
+  bannerLeft: { flex: 1 },
+  bannerRight: { flex: 1, alignItems: "flex-end" },
+  bannerLabel: {
+    fontSize: 9,
+    fontFamily: Fonts.mono,
+    color: Colors.textDim,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    marginBottom: 4,
+  },
+  bannerRank: {
+    fontSize: 22,
+    fontFamily: Fonts.sansBold,
+    color: Colors.blue,
+    fontWeight: "700",
+  },
+  bannerRankOf: {
+    fontSize: 13,
     fontFamily: Fonts.sans,
     color: Colors.textDim,
-    lineHeight: 16,
+    fontWeight: "400",
+  },
+  bannerValue: {
+    fontSize: 20,
+    fontFamily: Fonts.mono,
+    color: Colors.green,
+    fontWeight: "600",
+  },
+
+  // List
+  scroll: { flex: 1 },
+  listContent: {
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    backgroundColor: Colors.bg,
+  },
+
+  // Row
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginBottom: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.borderFaint,
+    backgroundColor: Colors.bgPanel,
+  },
+  rankCol: {
+    width: 28,
+    alignItems: "center",
+  },
+  medal: {
+    fontSize: 18,
+  },
+  rankNum: {
+    fontSize: 13,
+    fontFamily: Fonts.mono,
+    fontWeight: "600",
+    color: Colors.textDim,
+  },
+  nameBlock: {
+    flex: 1,
+    gap: 5,
+  },
+  name: {
+    fontSize: 13,
+    fontFamily: Fonts.sans,
+    fontWeight: "500",
+    color: Colors.textBright,
+  },
+  youTag: {
+    fontSize: 11,
+    fontFamily: Fonts.mono,
+    color: Colors.blue,
+    fontWeight: "600",
+  },
+  barTrack: {
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: Colors.borderFaint,
+    overflow: "hidden",
+  },
+  barFill: {
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: Colors.green,
+  },
+  value: {
+    fontSize: 13,
+    fontFamily: Fonts.mono,
+    fontWeight: "600",
+    color: Colors.green,
+    minWidth: 72,
+    textAlign: "right",
+  },
+
+  // Footer
+  footer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: Colors.bgPanel,
+    borderTopWidth: 1,
+    borderTopColor: Colors.borderFaint,
+  },
+  backBtn: {
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingVertical: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  backBtnText: {
+    fontSize: 12,
+    fontFamily: Fonts.mono,
+    letterSpacing: 1,
+    fontWeight: "600",
+    color: Colors.blue,
   },
 });

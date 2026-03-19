@@ -184,6 +184,7 @@ export default function GameIndexScreen() {
     { label: isNormal ? "🧠 Personas" : "PERSONAS", sub: isNormal ? "Compare your investor styles and switch the one you want to train." : "Manage active and archived personas.", to: "/(profile)/personas" },
     { label: isNormal ? "🃏 Decks" : "DECKS", sub: isNormal ? "Choose the lesson packs you want to see more often." : "Configure strategies and deck availability.", to: "/(profile)/decks" },
     { label: isNormal ? "🏆 Achievements" : "ACHIEVEMENTS", sub: isNormal ? "Track milestones and see what to unlock next." : "Review progression achievements.", to: "/(game)/achievements" },
+    { label: isNormal ? "📊 Leaderboard" : "LEADERBOARD", sub: isNormal ? "See how your portfolio stacks up against others." : "Rank players by net worth.", to: "/(game)/leaderboard" },
   ];
 
   return (
