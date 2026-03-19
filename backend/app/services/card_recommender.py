@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from redis.asyncio import Redis
 from app.models.card import Card
-from app.models.game import GameSession
 from app.services.persona_engine import TOPIC_CATS, CARD_TYPE_IDX, encode_event
 
 # Score component weights
@@ -53,15 +52,15 @@ def compute_persona_value(card: Card, persona_vector: list) -> float:
     return (cos_sim + 1.0) / 2.0
 
 
-def compute_timing_fit(card: Card, session: GameSession) -> float:
+def compute_timing_fit(card: Card, portfolio) -> float:
     """Event/action cards matter more at higher stages."""
     card_type = card.type if isinstance(card.type, str) else card.type.value
     if card_type == "education":
-        return 0.7 if session.stage <= 2 else 0.4
+        return 0.7 if portfolio.stage <= 2 else 0.4
     elif card_type == "event":
-        return 0.4 + session.stage * 0.1
+        return 0.4 + portfolio.stage * 0.1
     else:  # action
-        return 0.3 + session.stage * 0.12
+        return 0.3 + portfolio.stage * 0.12
 
 
 def compute_diversity(card: Card, last_card_type: str | None) -> float:
@@ -71,8 +70,8 @@ def compute_diversity(card: Card, last_card_type: str | None) -> float:
     return 1.0
 
 
-def compute_difficulty_mismatch(card: Card, session: GameSession) -> float:
-    expected_difficulty = session.stage / 5.0
+def compute_difficulty_mismatch(card: Card, portfolio) -> float:
+    expected_difficulty = portfolio.stage / 5.0
     return abs(card.difficulty - expected_difficulty)
 
 
@@ -100,23 +99,23 @@ def _softmax(scores: np.ndarray, temp: float = 1.0) -> np.ndarray:
 
 async def score_card(
     card: Card,
-    session: GameSession,
-    session_id: str,
+    portfolio,
+    portfolio_id: str,
     redis: Redis,
 ) -> float:
-    persona = session.persona_vector if isinstance(session.persona_vector, list) else []
-    topic_mastery = session.topic_mastery if isinstance(session.topic_mastery, dict) else {}
+    persona = portfolio.persona_vector if isinstance(portfolio.persona_vector, list) else []
+    topic_mastery = portfolio.topic_mastery if isinstance(portfolio.topic_mastery, dict) else {}
 
-    stage_fit = compute_stage_fit(card, session.stage)
+    stage_fit = compute_stage_fit(card, portfolio.stage)
     if stage_fit == 0.0:
-        return 0.0  # card not eligible for this stage
+        return 0.0
 
     learning_need = compute_learning_need(card, topic_mastery)
     persona_value = compute_persona_value(card, persona) if persona else 0.5
-    timing_fit = compute_timing_fit(card, session)
-    diversity = compute_diversity(card, session.last_card_type)
-    cooldown_penalty = await get_cooldown_penalty(card, session_id, redis)
-    difficulty_mismatch = compute_difficulty_mismatch(card, session)
+    timing_fit = compute_timing_fit(card, portfolio)
+    diversity = compute_diversity(card, getattr(portfolio, "last_card_type", None))
+    cooldown_penalty = await get_cooldown_penalty(card, portfolio_id, redis)
+    difficulty_mismatch = compute_difficulty_mismatch(card, portfolio)
 
     score = (
         WEIGHTS["stage_fit"] * stage_fit
@@ -132,21 +131,20 @@ async def score_card(
 
 async def recommend_next_card(
     db: AsyncSession,
-    session: GameSession,
-    redis: Redis,
+    portfolio,
+    redis: Redis | None,
     enabled_strategies: list[str] | None = None,
     enabled_decks: list[str] | None = None,
 ) -> Card | None:
     from app.models.progress import STRATEGY_META
-    # Compute the max allowed stage from enabled strategies (always include session.stage)
     if enabled_strategies:
         strategy_max = max(
             (STRATEGY_META[s]["stage"] for s in enabled_strategies if s in STRATEGY_META),
-            default=session.stage,
+            default=portfolio.stage,
         )
     else:
-        strategy_max = session.stage
-    max_stage = max(strategy_max, session.stage)
+        strategy_max = portfolio.stage
+    max_stage = max(strategy_max, portfolio.stage)
 
     result = await db.execute(
         select(Card).where(
@@ -184,10 +182,10 @@ async def recommend_next_card(
     if not cards:
         return None
 
-    session_id = str(session.id)
+    portfolio_id = str(portfolio.id)
     scores = []
     for card in cards:
-        s = await score_card(card, session, session_id, redis)
+        s = await score_card(card, portfolio, portfolio_id, redis)
         scores.append(s)
 
     scores_arr = np.array(scores, dtype=np.float32)

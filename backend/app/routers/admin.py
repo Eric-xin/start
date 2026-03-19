@@ -98,7 +98,7 @@ async def create_card(
 
 @router.put("/cards/{card_id}", response_model=CardOut)
 async def update_card(
-    card_id: int,
+    card_id: uuid.UUID,
     data: CardUpdate,
     admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
@@ -114,7 +114,7 @@ async def update_card(
 
 @router.delete("/cards/{card_id}", status_code=204)
 async def delete_card(
-    card_id: int,
+    card_id: uuid.UUID,
     admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):

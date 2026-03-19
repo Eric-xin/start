@@ -4,8 +4,8 @@ import {
   Alert, useWindowDimensions, Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { useGameStore } from "../../store/gameStore";
-import { swipe, getNextCard } from "../../services/game";
+import { usePortfolioStore } from "../../store/portfolioStore";
+import { playCard, getNextCard } from "../../services/portfolio";
 import { CardContainer } from "../../components/Card/CardContainer";
 import { LessonOverlay } from "../../components/Card/LessonOverlay";
 import { StatsPanel } from "../../components/HUD/StatsPanel";
@@ -158,20 +158,25 @@ export default function PlayScreen() {
   const isMedium = width >= Layout.tabletBreakpoint;
 
   const {
-    session, currentCard, nextCard, lesson, isSwipeLocked,
-    setSession, setCurrentCard, setNextCard, setLesson, setSwipeLocked,
-  } = useGameStore();
+    portfolio, currentCard, nextCard, lesson, isSwipeLocked,
+    setPortfolio, setCurrentCard, setNextCard, setLesson, setSwipeLocked,
+  } = usePortfolioStore();
 
   const [initializing, setInitializing] = React.useState(true);
   const mounted = useRef(false);
 
   useEffect(() => {
     mounted.current = true;
-    if (!session) {
+    if (currentCard) {
+      // Card was pre-loaded from the index screen
+      setInitializing(false);
+      return;
+    }
+    if (!portfolio) {
       const t = setTimeout(() => router.replace("/(game)/index"), 0);
       return () => clearTimeout(t);
     }
-    getNextCard(session.id)
+    getNextCard()
       .then((c) => { if (mounted.current && c) setCurrentCard(c); })
       .catch(() => Alert.alert("Error", "Could not load card."))
       .finally(() => { if (mounted.current) setInitializing(false); });
@@ -179,22 +184,20 @@ export default function PlayScreen() {
   }, []);
 
   const handleSwipe = useCallback(async (direction: "left" | "right") => {
-    if (!session || !currentCard || isSwipeLocked) return;
+    if (!currentCard || isSwipeLocked) return;
     setSwipeLocked(true);
-    // Immediately hide the card (it flew off) — show loading state
     setCurrentCard(null);
     try {
-      const result = await swipe(session.id, currentCard.id, direction);
-      setSession(result.session);
-      // Show lesson overlay; store next card ready for after dismiss
+      const result = await playCard(currentCard.id, direction);
+      setPortfolio(result.portfolio);
       setNextCard(result.next_card ?? null);
       setLesson({ text: result.lesson, direction, reward: result.reward });
     } catch {
       setSwipeLocked(false);
-      setCurrentCard(currentCard); // restore on error
+      setCurrentCard(currentCard);
       Alert.alert("Error", "Swipe failed. Check connection.");
     }
-  }, [session, currentCard, isSwipeLocked]);
+  }, [currentCard, isSwipeLocked]);
 
   const handleLessonDismiss = useCallback(() => {
     setLesson(null);
@@ -203,18 +206,23 @@ export default function PlayScreen() {
     setSwipeLocked(false);
   }, [nextCard]);
 
-  if (initializing || !session) {
+  if (initializing || (!currentCard && !lesson)) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator color={Colors.blue} size="large" />
-        <Text style={styles.loadingText}>INITIALIZING SESSION</Text>
+        <Text style={styles.loadingText}>LOADING CARDS</Text>
       </View>
     );
   }
 
-  const showSidebar = isWide || (isMedium && session.investor_rank >= 3);
-  const showDonut = session.investor_rank >= 4 && isWide;
-  const showMarketPill = session.investor_rank >= 2;
+  const rank = portfolio?.investor_rank ?? 1;
+  // Build a session-shaped proxy so HUD components keep working unchanged
+  const sessionProxy = portfolio
+    ? { ...portfolio, progress: (portfolio.total_cards_played % 20) / 20 }
+    : { capital: 0, stage: 1, investor_rank: 1, progress: 0, portfolio_weights: {} };
+  const showSidebar = isWide || (isMedium && rank >= 3);
+  const showDonut = rank >= 4 && isWide;
+  const showMarketPill = rank >= 2;
 
   // Card area: subtract sidebar if visible
   const sidebarW = showSidebar ? Layout.sidebarWidth : 0;
@@ -227,14 +235,14 @@ export default function PlayScreen() {
       <TerminalGrid />
 
       {/* Top status bar */}
-      <TopStatusBar session={session} />
+      <TopStatusBar session={sessionProxy} />
 
       {/* Body */}
       <View style={styles.body}>
         {/* Left sidebar — Rank 3+ or wide screen */}
         {showSidebar && (
           <View style={[styles.sidePanel, { width: Layout.sidebarWidth }]}>
-            <SidebarPanel session={session} />
+            <SidebarPanel session={sessionProxy} />
           </View>
         )}
 
@@ -276,7 +284,7 @@ export default function PlayScreen() {
           {/* Market context pill — Rank 2+ */}
           {showMarketPill && !lesson && (
             <View style={styles.pillRow}>
-              <MarketContextPill stage={session.stage} capital={session.capital} />
+              <MarketContextPill stage={sessionProxy.stage} capital={sessionProxy.capital} />
             </View>
           )}
 
@@ -293,13 +301,13 @@ export default function PlayScreen() {
         {showDonut && (
           <View style={[styles.sidePanel, { width: donutW, alignItems: "center", paddingTop: 24 }]}>
             <Text style={styles.panelLabelText}>PORTFOLIO</Text>
-            <PortfolioDonut weights={session.portfolio_weights} size={100} />
+            <PortfolioDonut weights={sessionProxy.portfolio_weights} size={100} />
           </View>
         )}
       </View>
 
       {/* Bottom stats panel */}
-      <StatsPanel session={session} />
+      <StatsPanel session={sessionProxy} />
     </View>
   );
 }

@@ -5,7 +5,7 @@ from app.models.card import CardType, CardBandColor
 class CardOut(BaseModel):
     model_config = {"from_attributes": True}
 
-    id: int
+    id: str
     card_id: str
     type: CardType
     title: str

@@ -4,10 +4,10 @@ import {
   ActivityIndicator, Alert, useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { createSession, getSessions, SessionData } from "../../services/game";
+import { getPortfolio, getNextCard, PortfolioData } from "../../services/portfolio";
 import { listPersonas, PersonaData } from "../../services/persona";
 import { useAuthStore } from "../../store/authStore";
-import { useGameStore } from "../../store/gameStore";
+import { usePortfolioStore } from "../../store/portfolioStore";
 import { Colors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 
@@ -47,46 +47,38 @@ const db = StyleSheet.create({
 export default function GameIndexScreen() {
   const router = useRouter();
   const { user, clearAuth } = useAuthStore();
-  const { setSession, reset } = useGameStore();
+  const { setPortfolio, setCurrentCard } = usePortfolioStore();
   const [launching, setLaunching] = useState(false);
-  const [loadingLast, setLoadingLast] = useState(false);
-  const [lastSession, setLastSession] = useState<SessionData | null>(null);
+  const [portfolio, setLocalPortfolio] = useState<PortfolioData | null>(null);
   const [activePersona, setActivePersona] = useState<PersonaData | null>(null);
   const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
-    Promise.all([getSessions(), listPersonas()])
-      .then(([sessions, personas]) => {
-        setLastSession(sessions[0] ?? null); // already sorted by updated_at desc
-        setActivePersona(personas.find((p) => p.is_active) ?? personas[0] ?? null);
+    Promise.all([getPortfolio(), listPersonas()])
+      .then(([p, personas]) => {
+        setLocalPortfolio(p);
+        setPortfolio(p);
+        setActivePersona(personas.find((pa) => pa.is_active) ?? personas[0] ?? null);
       })
       .catch(() => {})
       .finally(() => setLoadingData(false));
   }, []);
 
-  const handleNewSession = async () => {
+  const handlePlay = async () => {
     setLaunching(true);
     try {
-      reset();
-      const session = await createSession();
-      setSession(session);
+      const card = await getNextCard();
+      setCurrentCard(card);
       router.push("/(game)/play");
     } catch {
-      Alert.alert("Error", "Could not create session. Is the backend running?");
+      Alert.alert("Error", "Could not load cards. Is the backend running?");
     } finally {
       setLaunching(false);
     }
   };
 
-  const handleContinueLast = async () => {
-    if (!lastSession) return;
-    setSession(lastSession);
-    router.push("/(game)/play");
-  };
-
   const handleLogout = async () => {
     await clearAuth();
-    router.replace("/(auth)/login");
   };
 
   return (
@@ -129,74 +121,67 @@ export default function GameIndexScreen() {
           <Text style={styles.email}>{user?.email ?? "—"}</Text>
 
           <View style={styles.dataRow}>
-            <DataBlock label="TIER" value={user?.subscription_tier?.toUpperCase() ?? "NORMAL"} accent={Colors.blue} />
+            <DataBlock
+              label="NET WORTH"
+              value={loadingData ? "..." : `$${(portfolio?.net_worth ?? 0).toLocaleString("en-US", { maximumFractionDigits: 0 })}`}
+              accent={Colors.blue}
+            />
             <View style={styles.dataSep} />
             <DataBlock
-              label="ACTIVE PERSONA"
-              value={activePersona?.name ?? (loadingData ? "..." : "—")}
-              sub={activePersona ? `${activePersona.cards_played} cards` : undefined}
+              label="STAGE / RANK"
+              value={loadingData ? "..." : `S${portfolio?.stage ?? 1} / R${portfolio?.investor_rank ?? 1}`}
+              sub={portfolio ? RANK_LABELS[portfolio.investor_rank] : undefined}
               accent={Colors.teal}
             />
             <View style={styles.dataSep} />
-            <DataBlock label="STATUS" value="ACTIVE" sub="VERIFIED" accent={Colors.green} />
+            <DataBlock
+              label="INCOME"
+              value={loadingData ? "..." : (portfolio?.can_claim_income ? "READY" : "CLAIMED")}
+              sub={portfolio?.can_claim_income ? `+$${portfolio.pending_income.toFixed(0)} available` : "tomorrow"}
+              accent={portfolio?.can_claim_income ? Colors.green : Colors.textDim}
+            />
           </View>
         </View>
 
-        {/* Session control panel */}
+        {/* Play control panel */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <View style={styles.blueDot} />
-            <Text style={styles.cardHeaderText}>SESSION CONTROL</Text>
+            <Text style={styles.cardHeaderText}>PLAY CONTROL</Text>
           </View>
 
           <Text style={styles.sessionDesc}>
-            Each session is a run through the decision engine. Every swipe updates your active persona
-            {activePersona ? <Text style={{ color: Colors.teal }}> "{activePersona.name}"</Text> : null}.
+            Continuous gameplay — swipe cards to make investment decisions. Each decision
+            updates your behavioral profile
+            {activePersona ? <Text style={{ color: Colors.teal }}> "{activePersona.name}"</Text> : null}{" "}
+            and adjusts your capital. Log in daily to collect salary.
           </Text>
 
           <View style={styles.buttonRow}>
-            {/* Continue last */}
             <TouchableOpacity
-              style={[
-                styles.continueBtn,
-                (!lastSession || loadingData) && styles.continueBtnDisabled,
-              ]}
-              onPress={handleContinueLast}
-              disabled={!lastSession || loadingData}
+              style={[styles.continueBtn]}
+              onPress={() => router.push("/(game)/portfolio")}
             >
-              {loadingData ? (
-                <ActivityIndicator color={Colors.blue} size="small" />
-              ) : lastSession ? (
-                <View style={[styles.continueBtnInner, { flexDirection: "row", gap: 8 }]}>
-                  <Text style={styles.continueBtnText}>CONTINUE LAST SESSION</Text>
-                  <Text style={styles.continueBtnSub}>
-                    · ${Math.round(lastSession.capital).toLocaleString()} · STAGE {lastSession.stage}
-                  </Text>
-                </View>
-              ) : (
-                <Text style={styles.continueBtnText}>NO PRIOR SESSION FOUND</Text>
-              )}
+              <Text style={styles.continueBtnText}>VIEW PORTFOLIO →</Text>
             </TouchableOpacity>
 
-            {/* New session */}
             <TouchableOpacity
               style={[styles.ctaBtn, launching && { opacity: 0.5 }]}
-              onPress={handleNewSession}
-              disabled={launching || loadingLast}
+              onPress={handlePlay}
+              disabled={launching}
             >
               {launching
                 ? <ActivityIndicator color={Colors.bg} size="small" />
-                : <Text style={styles.ctaBtnText}>▶  LAUNCH NEW SESSION</Text>
+                : <Text style={styles.ctaBtnText}>▶  START PLAYING</Text>
               }
             </TouchableOpacity>
           </View>
 
-          {/* History link */}
           <TouchableOpacity
             style={styles.historyLink}
-            onPress={() => router.push("/(game)/sessions")}
+            onPress={() => router.push("/(game)/portfolio")}
           >
-            <Text style={styles.historyLinkText}>VIEW SESSION HISTORY →</Text>
+            <Text style={styles.historyLinkText}>NET WORTH HISTORY & DECISIONS →</Text>
           </TouchableOpacity>
         </View>
 

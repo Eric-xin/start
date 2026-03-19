@@ -6,6 +6,7 @@ from app.config import get_settings
 from app.database import engine, Base
 from app.routers import auth, users, cards, admin, game, progress
 from app.routers import personas as personas_router
+from app.routers import portfolio as portfolio_router
 
 # Import models so Base.metadata knows about all tables
 import app.models.user       # noqa: F401
@@ -13,6 +14,7 @@ import app.models.card       # noqa: F401
 import app.models.game       # noqa: F401
 import app.models.persona    # noqa: F401
 import app.models.progress   # noqa: F401
+import app.models.portfolio  # noqa: F401
 
 settings = get_settings()
 
@@ -53,6 +55,18 @@ async def lifespan(app: FastAPI):
                 await conn.execute(text("""
                     DO $$
                     BEGIN
+                        -- Migrate cards.id from INTEGER to UUID
+                        -- (drop dependents first, then cards; create_all will recreate them)
+                        IF EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name='cards' AND column_name='id'
+                            AND data_type='integer'
+                        ) THEN
+                            DROP TABLE IF EXISTS card_plays CASCADE;
+                            DROP TABLE IF EXISTS game_events CASCADE;
+                            DROP TABLE IF EXISTS cards CASCADE;
+                        END IF;
+
                         IF NOT EXISTS (
                             SELECT 1 FROM information_schema.columns
                             WHERE table_name='game_sessions' AND column_name='persona_id'
@@ -75,6 +89,10 @@ async def lifespan(app: FastAPI):
                 """))
             except Exception:
                 pass  # ignore if not postgres or already applied
+
+        # Re-run create_all after potential table drops
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
 
         await _ensure_sqlite_card_columns()
 
@@ -113,6 +131,7 @@ app.include_router(admin.router)
 app.include_router(game.router)
 app.include_router(personas_router.router)
 app.include_router(progress.router)
+app.include_router(portfolio_router.router)
 
 
 @app.get("/health")
