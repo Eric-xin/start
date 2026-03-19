@@ -1,5 +1,6 @@
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
@@ -20,6 +21,7 @@ export function AppTopBar({
   const colors = useColors();
   const isNormal = useThemeStore((state) => state.mode === "normal");
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const resolvedLabel = labelKey ? t(labelKey) : label;
 
   return (
@@ -29,6 +31,8 @@ export function AppTopBar({
         {
           backgroundColor: colors.bgPanel,
           borderBottomColor: colors.borderPrimary,
+          minHeight: 52 + insets.top,
+          paddingTop: insets.top,
         },
       ]}
     >
@@ -73,7 +77,7 @@ export function AppTopBar({
 
 const styles = StyleSheet.create({
   bar: {
-    height: 52,
+    minHeight: 52,
     borderBottomWidth: 1,
     flexDirection: "row",
     alignItems: "center",
