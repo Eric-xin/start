@@ -4,6 +4,7 @@ import { Colors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { Layout } from "../../constants/layout";
 import type { CardData } from "../../services/game";
+import { PixelArtBackground } from "./PixelArtBackground";
 
 const TYPE_LABELS: Record<string, string> = {
   education: "EDU",
@@ -19,11 +20,15 @@ export function CardFace({ card }: Props) {
   const rotation = useRef((-1.5 + Math.random() * 3).toFixed(2)).current;
   const bandColor = Colors.cardBand[card.card_band_color] ?? Colors.cardBand.steel_blue;
   const typeLabel = TYPE_LABELS[card.type] ?? card.type.toUpperCase();
+  const subject = card.topics?.[0] || card.type;
 
   return (
     <View style={[styles.card, { transform: [{ rotate: `${rotation}deg` }] }]}>
       {/* Top band */}
       <View style={[styles.band, { backgroundColor: bandColor }]} />
+
+      {/* Pixel-art background by card subject with 100 deterministic variants */}
+      <PixelArtBackground subject={subject} bandColor={bandColor} seed={card.id} />
 
       {/* Card inner */}
       <View style={styles.inner}>
@@ -73,7 +78,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.cardSurface,
     borderRadius: Layout.cardBorderRadius,
     overflow: "hidden",
-    boxShadow: "0 12px 24px rgba(0, 0, 0, 0.6)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.6,
+    shadowRadius: 24,
     elevation: 16,
     borderWidth: 1,
     borderColor: Colors.cardBorder,
@@ -85,6 +93,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     justifyContent: "space-between",
+    zIndex: 2,
   },
   metaRow: {
     flexDirection: "row",
