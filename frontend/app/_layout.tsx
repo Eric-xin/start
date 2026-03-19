@@ -6,7 +6,7 @@ import { StatusBar } from "expo-status-bar";
 import { useAppFonts } from "../hooks/useFont";
 import { useAuthStore } from "../store/authStore";
 import { StyleSheet, View, ActivityIndicator } from "react-native";
-import { Colors } from "../constants/colors";
+import { Colors, useColors } from "../constants/colors";
 import "../i18n";
 import { hydrateLanguage } from "../i18n";
 
@@ -15,6 +15,7 @@ export default function RootLayout() {
   const router = useRouter();
   const segments = useSegments();
   const { token, isHydrated, skipInvestingIntro, hydrate } = useAuthStore();
+  const colors = useColors();
 
   useEffect(() => {
     hydrate();
@@ -41,7 +42,7 @@ export default function RootLayout() {
   const showSpinner = !isReady || redirectPending;
 
   return (
-    <SafeAreaView style={styles.root} edges={["top"]}>
+    <SafeAreaView style={[styles.root, { backgroundColor: colors.bgPanel }]} edges={["top"]}>
       <GestureHandlerRootView style={styles.root}>
         <StatusBar style="light" />
         {/* Slot must always render so the navigator mounts */}
