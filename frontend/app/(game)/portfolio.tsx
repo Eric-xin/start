@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
-  ActivityIndicator, Alert, useWindowDimensions, Animated,
+  ActivityIndicator, Alert, useWindowDimensions, Animated, PanResponder,
 } from "react-native";
 import { useRouter } from "expo-router";
-import Svg, { Polyline, Polygon, Defs, LinearGradient as SvgGradient, Stop } from "react-native-svg";
+import Svg, { Polyline, Polygon, Defs, LinearGradient as SvgGradient, Stop, Circle } from "react-native-svg";
 import { usePortfolioStore } from "../../store/portfolioStore";
 import {
   getPortfolio, claimDailyIncome, getNetWorthHistory, getRecentPlays,
@@ -24,6 +24,11 @@ const BAND_COLORS: Record<string, string> = {
 
 function Sparkline({ data, width, height }: { data: NetWorthPoint[]; width: number; height: number }) {
   const colors = useColors();
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [tooltipX, setTooltipX] = useState(0);
+  const svgRef = useRef<any>(null);
+  const containerRef = useRef<any>(null);
+
   if (data.length < 2) {
     return (
       <View style={{ width, height, alignItems: "center", justifyContent: "center" }}>
@@ -43,9 +48,10 @@ function Sparkline({ data, width, height }: { data: NetWorthPoint[]; width: numb
   const pts = values.map((v, i) => {
     const x = pad + (i / (values.length - 1)) * (width - pad * 2);
     const y = pad + (1 - (v - min) / range) * (height - pad * 2);
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
+    return { x, y, idx: i };
   });
-  const polyPoints = pts.join(" ");
+
+  const polyPoints = pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
   const firstX = pad;
   const lastX = pad + (width - pad * 2);
   const bottom = height - pad + 2;
@@ -54,17 +60,83 @@ function Sparkline({ data, width, height }: { data: NetWorthPoint[]; width: numb
   const isUp = values[values.length - 1] >= values[0];
   const lineColor = isUp ? colors.green : colors.red;
 
+  const handleMove = (e: any) => {
+    if (!svgRef.current) return;
+
+    try {
+      const nativeEvent = e.nativeEvent;
+      let x = nativeEvent.pageX || nativeEvent.clientX || 0;
+
+      if (containerRef.current) {
+        containerRef.current.measure((_fx: number, _fy: number, _w: number, _h: number, px: number) => {
+          const relativeX = x - px;
+          if (relativeX >= 0 && relativeX <= width) {
+            const adjustedX = relativeX - pad;
+            const dataRange = width - pad * 2;
+            const ratio = Math.max(0, Math.min(1, adjustedX / dataRange));
+            const idx = Math.round(ratio * (data.length - 1));
+            setTooltipX(relativeX);
+            setHoveredIndex(Math.min(idx, data.length - 1));
+          }
+        });
+      }
+    } catch (err) {
+      // Silently handle measure errors
+    }
+  };
+
+  const handleLeave = () => {
+    setHoveredIndex(null);
+  };
+
+  const hoveredData = hoveredIndex !== null ? data[hoveredIndex] : null;
+  const hoveredPoint = hoveredIndex !== null ? pts[hoveredIndex] : null;
+
   return (
-    <Svg width={width} height={height}>
-      <Defs>
-        <SvgGradient id="fill" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={lineColor} stopOpacity="0.2" />
-          <Stop offset="1" stopColor={lineColor} stopOpacity="0" />
-        </SvgGradient>
-      </Defs>
-      <Polygon points={fillPoints} fill="url(#fill)" />
-      <Polyline points={polyPoints} stroke={lineColor} strokeWidth={1.5} fill="none" />
-    </Svg>
+    <View
+      ref={containerRef}
+      onMouseMove={handleMove}
+      onMouseLeave={handleLeave}
+      style={{ position: "relative" }}
+    >
+      <Svg ref={svgRef} width={width} height={height}>
+        <Defs>
+          <SvgGradient id="fill" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={lineColor} stopOpacity="0.2" />
+            <Stop offset="1" stopColor={lineColor} stopOpacity="0" />
+          </SvgGradient>
+        </Defs>
+        <Polygon points={fillPoints} fill="url(#fill)" />
+        <Polyline points={polyPoints} stroke={lineColor} strokeWidth={1.5} fill="none" />
+        {hoveredPoint && (
+          <>
+            <Circle cx={hoveredPoint.x} cy={hoveredPoint.y} r={4} fill={lineColor} opacity={0.8} />
+            <Circle cx={hoveredPoint.x} cy={hoveredPoint.y} r={2} fill={colors.bg} />
+          </>
+        )}
+      </Svg>
+
+      {hoveredData && hoveredPoint && (
+        <View
+          style={[
+            styles.tooltip,
+            {
+              backgroundColor: colors.bgPanel,
+              borderColor: lineColor,
+              left: Math.max(10, Math.min(tooltipX - 50, width - 110)),
+              top: hoveredPoint.y - 60,
+            },
+          ]}
+        >
+          <Text style={[styles.tooltipValue, { color: lineColor }]}>
+            ${hoveredData.net_worth.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+          </Text>
+          <Text style={[styles.tooltipLabel, { color: colors.textMuted }]}>
+            Card {hoveredIndex + 1}
+          </Text>
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -466,6 +538,29 @@ const styles = StyleSheet.create({
   },
   chartFooter: { flexDirection: "row", justifyContent: "space-between", marginTop: 8 },
   chartFooterText: { fontSize: 8, fontFamily: Fonts.mono, color: Colors.textMuted, letterSpacing: 1 },
+
+  tooltip: {
+    position: "absolute",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    zIndex: 100,
+    minWidth: 100,
+    alignItems: "center",
+  },
+  tooltipValue: {
+    fontSize: 12,
+    fontFamily: Fonts.mono,
+    fontWeight: "600",
+    letterSpacing: 0.5,
+  },
+  tooltipLabel: {
+    fontSize: 8,
+    fontFamily: Fonts.mono,
+    letterSpacing: 1,
+    marginTop: 2,
+  },
 
   rowCards: { width: "100%", maxWidth: 720, gap: 14 },
 
