@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import WebSocket
 
@@ -131,7 +132,7 @@ async def create_room(
     )
     db.add(player)
     await db.commit()
-    await db.refresh(room)
+    await db.refresh(room, ["players"])
     return room
 
 
@@ -174,7 +175,9 @@ async def join_room(db: AsyncSession, room: ArenaRoom, user: User) -> ArenaPlaye
 
 async def get_room_by_code(db: AsyncSession, code: str) -> ArenaRoom | None:
     result = await db.execute(
-        select(ArenaRoom).where(ArenaRoom.code == code.upper())
+        select(ArenaRoom)
+        .where(ArenaRoom.code == code.upper())
+        .options(selectinload(ArenaRoom.players))
     )
     return result.scalar_one_or_none()
 
@@ -207,7 +210,7 @@ async def start_game(db: AsyncSession, room: ArenaRoom, user: User) -> ArenaRoom
     room.current_round = 1
     room.started_at = datetime.now(timezone.utc)
     await db.commit()
-    await db.refresh(room)
+    await db.refresh(room, ["players"])
     return room
 
 

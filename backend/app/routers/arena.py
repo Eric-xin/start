@@ -62,7 +62,7 @@ async def join_room(
     if not room:
         raise HTTPException(status_code=404, detail="Room not found")
     await svc.join_room(db, room, user)
-    await db.refresh(room)
+    await db.refresh(room, ["players"])
 
     # Notify all players in the room
     await svc.broadcast_room_state(db, room)
