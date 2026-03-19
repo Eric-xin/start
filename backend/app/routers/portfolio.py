@@ -1,4 +1,5 @@
 """Portfolio router — continuous gameplay, daily income, net worth tracking."""
+
 import uuid
 from datetime import date
 
@@ -16,8 +17,12 @@ from app.models.portfolio import UserPortfolio, NetWorthSnapshot, CardPlay
 from app.models.user import User
 from app.schemas.card import CardOut
 from app.schemas.portfolio import (
-    PortfolioOut, ClaimIncomeResponse, PlayCardRequest, PlayCardResponse,
-    NetWorthSnapshotOut, CardPlayOut,
+    PortfolioOut,
+    ClaimIncomeResponse,
+    PlayCardRequest,
+    PlayCardResponse,
+    NetWorthSnapshotOut,
+    CardPlayOut,
 )
 from app.services import portfolio_service as svc
 from app.services import achievement_service as ach_svc
@@ -30,9 +35,15 @@ router = APIRouter(prefix="/api/portfolio", tags=["portfolio"])
 
 def _achievement_out(a) -> AchievementOut:
     return AchievementOut(
-        id=str(a.id), key=a.key, category=a.category, title=a.title,
-        description=a.description, emoji=a.emoji, tier=a.tier,
-        condition_type=a.condition_type, condition_value=a.condition_value,
+        id=str(a.id),
+        key=a.key,
+        category=a.category,
+        title=a.title,
+        description=a.description,
+        emoji=a.emoji,
+        tier=a.tier,
+        condition_type=a.condition_type,
+        condition_value=a.condition_value,
         unlocked=True,
     )
 
@@ -80,10 +91,14 @@ async def claim_income(
     portfolio = await svc.get_or_create_portfolio(db, current_user.id)
     amount = await svc.claim_daily_income(db, portfolio)
     if amount is None:
-        raise HTTPException(status_code=400, detail="Daily income already claimed today.")
+        raise HTTPException(
+            status_code=400, detail="Daily income already claimed today."
+        )
 
     progress = await svc.get_or_create_progress(db, current_user.id)
-    newly_unlocked = await ach_svc.check_and_unlock(db, current_user.id, portfolio, progress)
+    newly_unlocked = await ach_svc.check_and_unlock(
+        db, current_user.id, portfolio, progress
+    )
     if newly_unlocked:
         await db.commit()
 
@@ -123,13 +138,16 @@ async def play_card(
     play_result = await svc.play_card(db, portfolio, card, body.action, redis)
 
     progress = await svc.get_or_create_progress(db, current_user.id)
-    newly_unlocked = await ach_svc.check_and_unlock(db, current_user.id, portfolio, progress)
+    newly_unlocked = await ach_svc.check_and_unlock(
+        db, current_user.id, portfolio, progress
+    )
     if newly_unlocked:
         await db.commit()
 
     return PlayCardResponse(
         lesson=play_result["lesson"],
         reward=play_result["reward"],
+        is_correct=play_result["is_correct"],
         capital_before=play_result["capital_before"],
         capital_after=play_result["capital_after"],
         net_worth=play_result["net_worth"],
@@ -148,7 +166,9 @@ async def get_next_card(
     portfolio = await svc.get_or_create_portfolio(db, current_user.id)
     progress = await svc.get_or_create_progress(db, current_user.id)
     card = await recommend_next_card(
-        db, portfolio, redis,
+        db,
+        portfolio,
+        redis,
         enabled_strategies=progress.enabled_strategies,
         enabled_decks=progress.enabled_decks,
     )

@@ -43,6 +43,7 @@ export interface CardData {
 export interface PlayResult {
   lesson: string;
   reward: number;
+  is_correct: boolean;
   capital_before: number;
   capital_after: number;
   net_worth: number;

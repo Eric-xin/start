@@ -1,4 +1,5 @@
 """Seed script — run directly or called from app startup."""
+
 import asyncio
 import sys
 import os
@@ -15,19 +16,37 @@ from app.seeds.cards import SEED_CARDS
 from app.seeds.achievements import SEED_ACHIEVEMENTS
 
 SMTP_CONFIGS = [
-    {"key": "smtp_host",      "value": "smtp.mailtrap.io",   "description": "SMTP server hostname"},
-    {"key": "smtp_port",      "value": 587,                  "description": "SMTP server port"},
-    {"key": "smtp_user",      "value": "",                   "description": "SMTP username / API key"},
-    {"key": "smtp_password",  "value": "",                   "description": "SMTP password"},
-    {"key": "smtp_from",      "value": "noreply@cardecon.app", "description": "From email address"},
-    {"key": "smtp_from_name", "value": "CardEcon",           "description": "From display name"},
-    {"key": "email_backend",  "value": "console",            "description": "Email backend: 'console' (logs only) or 'smtp' (sends real email)"},
+    {
+        "key": "smtp_host",
+        "value": "smtp.mailtrap.io",
+        "description": "SMTP server hostname",
+    },
+    {"key": "smtp_port", "value": 587, "description": "SMTP server port"},
+    {"key": "smtp_user", "value": "", "description": "SMTP username / API key"},
+    {"key": "smtp_password", "value": "", "description": "SMTP password"},
+    {
+        "key": "smtp_from",
+        "value": "noreply@cardecon.app",
+        "description": "From email address",
+    },
+    {"key": "smtp_from_name", "value": "CardEcon", "description": "From display name"},
+    {
+        "key": "email_backend",
+        "value": "console",
+        "description": "Email backend: 'console' (logs only) or 'smtp' (sends real email)",
+    },
 ]
 
 DEFAULT_CONFIGS = [
     {
         "key": "persona_update_rates",
-        "value": {"decay": 0.98, "event": 0.06, "action": 0.08, "state": 0.04, "reward": 0.02},
+        "value": {
+            "decay": 0.98,
+            "event": 0.06,
+            "action": 0.08,
+            "state": 0.04,
+            "reward": 0.02,
+        },
         "description": "Weights for persona vector update equation",
     },
     {
@@ -56,23 +75,34 @@ DEFAULT_CONFIGS = [
 ]
 
 
-async def seed_cards(db: AsyncSession) -> int:
-    result = await db.execute(select(Card).limit(1))
-    if result.scalar_one_or_none():
-        return 0  # already seeded
+async def seed_cards(db: AsyncSession) -> tuple[int, int]:
+    """Insert missing cards and refresh existing seed cards by card_id."""
+    result = await db.execute(select(Card))
+    existing_cards = {card.card_id: card for card in result.scalars().all()}
 
-    seeded = 0
+    inserted = 0
+    updated = 0
+
     for card_data in SEED_CARDS:
-        card = Card(**card_data)
-        db.add(card)
-        seeded += 1
-    return seeded
+        existing = existing_cards.get(card_data["card_id"])
+        if existing is None:
+            db.add(Card(**card_data))
+            inserted += 1
+            continue
+
+        for field, value in card_data.items():
+            setattr(existing, field, value)
+        updated += 1
+
+    return inserted, updated
 
 
 async def seed_configs(db: AsyncSession) -> int:
     seeded = 0
     for cfg_data in DEFAULT_CONFIGS + SMTP_CONFIGS:
-        result = await db.execute(select(GameConfig).where(GameConfig.key == cfg_data["key"]))
+        result = await db.execute(
+            select(GameConfig).where(GameConfig.key == cfg_data["key"])
+        )
         if not result.scalar_one_or_none():
             config = GameConfig(**cfg_data)
             db.add(config)
@@ -93,11 +123,14 @@ async def seed_achievements(db: AsyncSession) -> int:
 
 async def run_seeds():
     async with AsyncSessionLocal() as db:
-        cards_seeded = await seed_cards(db)
+        cards_inserted, cards_updated = await seed_cards(db)
         configs_seeded = await seed_configs(db)
         achievements_seeded = await seed_achievements(db)
         await db.commit()
-        print(f"Seeded {cards_seeded} cards, {configs_seeded} configs, {achievements_seeded} achievements.")
+        print(
+            f"Cards inserted: {cards_inserted}, cards updated: {cards_updated}, "
+            f"configs seeded: {configs_seeded}, achievements seeded: {achievements_seeded}."
+        )
 
 
 if __name__ == "__main__":

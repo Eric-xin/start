@@ -8,6 +8,7 @@ import { getSession, getSessionHistory, SessionData, GameEventData } from "../..
 import { useGameStore } from "../../../store/gameStore";
 import { Colors } from "../../../constants/colors";
 import { Fonts } from "../../../constants/fonts";
+import { MarkdownText } from "../../../components/MarkdownText";
 
 const TYPE_COLOR: Record<string, string> = {
   education: Colors.blue,
@@ -111,7 +112,11 @@ function EventCard({ event, index }: { event: GameEventData; index: number }) {
             {lesson && (
               <View style={styles.lessonBlock}>
                 <Text style={styles.lessonLabel}>LESSON</Text>
-                <Text style={styles.lessonText}>{lesson}</Text>
+                <MarkdownText
+                  text={lesson}
+                  style={styles.lessonText}
+                  boldStyle={styles.lessonTextBold}
+                />
               </View>
             )}
 
@@ -341,6 +346,7 @@ const styles = StyleSheet.create({
   },
   lessonLabel: { fontSize: 7, fontFamily: Fonts.sansBold, color: Colors.textMuted, letterSpacing: 2 },
   lessonText: { fontSize: 12, fontFamily: Fonts.serifItalic, color: Colors.textPrimary, lineHeight: 18 },
+  lessonTextBold: { fontFamily: Fonts.serif },
 
   detailMeta: {
     flexDirection: "row", justifyContent: "space-between",

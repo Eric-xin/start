@@ -7,23 +7,25 @@ import Animated, {
 import { Colors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { Layout } from "../../constants/layout";
+import { MarkdownText } from "../MarkdownText";
 
 interface Props {
   text: string;
   direction: "left" | "right";
   reward: number;
+  isCorrect: boolean;
   onDismiss: () => void;
 }
 
 const AUTO_DISMISS_MS = 2600;
 
-export function LessonOverlay({ text, direction, reward, onDismiss }: Props) {
+export function LessonOverlay({ text, direction, reward, isCorrect, onDismiss }: Props) {
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(20);
 
   const accepted = direction === "right";
-  const accentColor = accepted ? Colors.green : Colors.red;
-  const label = accepted ? "ACCEPTED" : "DECLINED";
+  const accentColor = isCorrect ? Colors.green : Colors.red;
+  const label = isCorrect ? "CORRECT" : "INCORRECT";
   const arrow = accepted ? "→" : "←";
   const rewardSign = reward >= 0 ? "+" : "";
 
@@ -58,7 +60,11 @@ export function LessonOverlay({ text, direction, reward, onDismiss }: Props) {
           <View style={[styles.divider, { backgroundColor: accentColor + "33" }]} />
 
           {/* Lesson text */}
-          <Text style={styles.lessonText}>{text}</Text>
+          <MarkdownText
+            text={text}
+            style={styles.lessonText}
+            boldStyle={styles.lessonTextBold}
+          />
 
           {/* Reward + dismiss hint */}
           <View style={styles.footer}>
@@ -128,6 +134,9 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.serifItalic,
     color: Colors.textBright,
     lineHeight: 24,
+  },
+  lessonTextBold: {
+    fontFamily: Fonts.serif,
   },
   footer: {
     flexDirection: "row",

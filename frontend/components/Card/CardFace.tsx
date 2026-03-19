@@ -4,6 +4,7 @@ import { Colors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { Layout } from "../../constants/layout";
 import type { CardData } from "../../services/game";
+import { MarkdownText } from "../MarkdownText";
 
 const TYPE_LABELS: Record<string, string> = {
   education: "EDU",
@@ -13,12 +14,15 @@ const TYPE_LABELS: Record<string, string> = {
 
 interface Props {
   card: CardData;
+  isChoiceFlipped?: boolean;
 }
 
-export function CardFace({ card }: Props) {
+export function CardFace({ card, isChoiceFlipped = false }: Props) {
   const rotation = useRef((-1.5 + Math.random() * 3).toFixed(2)).current;
   const bandColor = Colors.cardBand[card.card_band_color] ?? Colors.cardBand.steel_blue;
   const typeLabel = TYPE_LABELS[card.type] ?? card.type.toUpperCase();
+  const leftChoice = isChoiceFlipped ? card.right_choice : card.left_choice;
+  const rightChoice = isChoiceFlipped ? card.left_choice : card.right_choice;
 
   return (
     <View style={[styles.card, { transform: [{ rotate: `${rotation}deg` }] }]}>
@@ -47,18 +51,23 @@ export function CardFace({ card }: Props) {
         <View style={[styles.divider, { backgroundColor: bandColor + "44" }]} />
 
         {/* Body */}
-        <Text style={styles.body}>{card.body}</Text>
+        <MarkdownText
+          text={card.body}
+          style={styles.body}
+          boldStyle={styles.bodyBold}
+          italicStyle={styles.bodyItalic}
+        />
 
         {/* Choices */}
         <View style={styles.choicesRow}>
           <View style={styles.choice}>
-            <Text style={[styles.arrow, { color: Colors.red }]}>←</Text>
-            <Text style={styles.choiceText} numberOfLines={2}>{card.left_choice}</Text>
+            <Text style={styles.arrow}>←</Text>
+            <Text style={styles.choiceText} numberOfLines={2}>{leftChoice}</Text>
           </View>
           <View style={[styles.choiceDivider, { backgroundColor: bandColor + "55" }]} />
           <View style={[styles.choice, styles.choiceRight]}>
-            <Text style={styles.choiceText} numberOfLines={2}>{card.right_choice}</Text>
-            <Text style={[styles.arrow, { color: Colors.green }]}>→</Text>
+            <Text style={styles.choiceText} numberOfLines={2}>{rightChoice}</Text>
+            <Text style={styles.arrow}>→</Text>
           </View>
         </View>
       </View>
@@ -136,6 +145,12 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     flex: 1,
   },
+  bodyBold: {
+    fontFamily: Fonts.sansBold,
+  },
+  bodyItalic: {
+    fontFamily: Fonts.serifItalic,
+  },
   choicesRow: {
     flexDirection: "row",
     marginTop: 12,
@@ -162,6 +177,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: Fonts.sansBold,
     lineHeight: 18,
+    color: Colors.textMuted,
   },
   choiceText: {
     flex: 1,

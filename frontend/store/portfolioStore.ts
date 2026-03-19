@@ -5,6 +5,7 @@ interface LessonState {
   text: string;
   direction: "left" | "right";
   reward: number;
+  isCorrect: boolean;
 }
 
 interface PortfolioState {
