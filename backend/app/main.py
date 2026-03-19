@@ -79,56 +79,55 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    # Dev-only: safely add new columns to existing tables
-    if settings.environment == "development":
-        async with engine.begin() as conn:
-            try:
-                await conn.execute(text("""
-                    DO $$
+    # Safely add new columns to existing tables (idempotent; runs in all environments)
+    async with engine.begin() as conn:
+        try:
+            await conn.execute(text("""
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_name='game_sessions' AND column_name='persona_id'
+                    ) THEN
+                        ALTER TABLE game_sessions
+                            ADD COLUMN persona_id UUID REFERENCES personas(id) ON DELETE SET NULL;
+                    END IF;
                     BEGIN
-                        IF NOT EXISTS (
-                            SELECT 1 FROM information_schema.columns
-                            WHERE table_name='game_sessions' AND column_name='persona_id'
-                        ) THEN
-                            ALTER TABLE game_sessions
-                                ADD COLUMN persona_id UUID REFERENCES personas(id) ON DELETE SET NULL;
-                        END IF;
-                        BEGIN
-                            ALTER TABLE game_sessions ALTER COLUMN persona_vector DROP NOT NULL;
-                        EXCEPTION WHEN OTHERS THEN NULL;
-                        END;
-                        IF NOT EXISTS (
-                            SELECT 1 FROM information_schema.columns
-                            WHERE table_name='user_progress' AND column_name='unlocked_decks'
-                        ) THEN
-                            ALTER TABLE user_progress ADD COLUMN unlocked_decks JSONB;
-                            ALTER TABLE user_progress ADD COLUMN enabled_decks JSONB;
-                        END IF;
-                        IF NOT EXISTS (
-                            SELECT 1 FROM information_schema.columns
-                            WHERE table_name='user_progress' AND column_name='streak_count'
-                        ) THEN
-                            ALTER TABLE user_progress ADD COLUMN streak_count INTEGER DEFAULT 0 NOT NULL;
-                            ALTER TABLE user_progress ADD COLUMN last_streak_date DATE;
-                        END IF;
-                        IF NOT EXISTS (
-                            SELECT 1 FROM information_schema.columns
-                            WHERE table_name='game_sessions' AND column_name='is_daily'
-                        ) THEN
-                            ALTER TABLE game_sessions ADD COLUMN is_daily BOOLEAN DEFAULT FALSE NOT NULL;
-                            ALTER TABLE game_sessions ADD COLUMN daily_date DATE;
-                            ALTER TABLE game_sessions ADD COLUMN daily_cards_played INTEGER DEFAULT 0 NOT NULL;
-                            ALTER TABLE game_sessions ADD COLUMN daily_target INTEGER DEFAULT 10 NOT NULL;
-                            ALTER TABLE game_sessions ADD COLUMN daily_completed BOOLEAN DEFAULT FALSE NOT NULL;
-                            ALTER TABLE game_sessions ADD COLUMN streak_bonus_awarded DOUBLE PRECISION DEFAULT 0.0 NOT NULL;
-                        END IF;
-                    END $$;
-                """))
-            except Exception:
-                pass  # ignore if not postgres or already applied
+                        ALTER TABLE game_sessions ALTER COLUMN persona_vector DROP NOT NULL;
+                    EXCEPTION WHEN OTHERS THEN NULL;
+                    END;
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_name='user_progress' AND column_name='unlocked_decks'
+                    ) THEN
+                        ALTER TABLE user_progress ADD COLUMN unlocked_decks JSONB;
+                        ALTER TABLE user_progress ADD COLUMN enabled_decks JSONB;
+                    END IF;
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_name='user_progress' AND column_name='streak_count'
+                    ) THEN
+                        ALTER TABLE user_progress ADD COLUMN streak_count INTEGER DEFAULT 0 NOT NULL;
+                        ALTER TABLE user_progress ADD COLUMN last_streak_date DATE;
+                    END IF;
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_name='game_sessions' AND column_name='is_daily'
+                    ) THEN
+                        ALTER TABLE game_sessions ADD COLUMN is_daily BOOLEAN DEFAULT FALSE NOT NULL;
+                        ALTER TABLE game_sessions ADD COLUMN daily_date DATE;
+                        ALTER TABLE game_sessions ADD COLUMN daily_cards_played INTEGER DEFAULT 0 NOT NULL;
+                        ALTER TABLE game_sessions ADD COLUMN daily_target INTEGER DEFAULT 10 NOT NULL;
+                        ALTER TABLE game_sessions ADD COLUMN daily_completed BOOLEAN DEFAULT FALSE NOT NULL;
+                        ALTER TABLE game_sessions ADD COLUMN streak_bonus_awarded DOUBLE PRECISION DEFAULT 0.0 NOT NULL;
+                    END IF;
+                END $$;
+            """))
+        except Exception:
+            pass  # ignore if not postgres or already applied
 
-        await _ensure_sqlite_card_columns()
-        await _ensure_sqlite_daily_streak_columns()
+    await _ensure_sqlite_card_columns()
+    await _ensure_sqlite_daily_streak_columns()
 
     # Seed data in development
     if settings.environment == "development":
