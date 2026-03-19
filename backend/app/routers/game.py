@@ -11,6 +11,7 @@ from app.models.game import GameEvent
 from app.schemas.game import GameSessionOut, SwipeRequest, SwipeResponse, GameEventOut
 from app.schemas.card import CardOut
 from app.services import game_service
+from app.services.game_service import resolve_card
 from app.services.card_recommender import recommend_next_card
 from app.core.dependencies import get_current_active_user
 from app.core.redis_client import get_redis
@@ -109,7 +110,7 @@ async def get_session_history(
             card_id=event.card_id,
             action=event.action.value if hasattr(event.action, "value") else event.action,
             reward=event.reward,
-            card=CardOut.model_validate(card) if card else None,
+            card=resolve_card(card) if card else None,
             created_at=event.created_at,
         ))
     return out

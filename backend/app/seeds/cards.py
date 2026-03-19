@@ -3,6 +3,11 @@
 Card ID format: {TYPE}_{STAGE}_{NUM}  e.g. EDU_1_001, EVT_3_002, ACT_5_001
 Event and action cards include value_min/max/step for dynamic value generation.
 The body text uses {value} as a placeholder the game engine replaces at runtime.
+
+alpha: simulation weight — how much this card's outcome impacts capital / persona.
+  Education cards  ~0.3       (knowledge, no direct market impact)
+  Action cards     0.4–1.5    (scaled by financial consequence)
+  Event cards      0.5–1.8    (scaled by real-world severity; rate cuts > dips > noise)
 """
 
 SEED_CARDS = [
@@ -29,6 +34,7 @@ SEED_CARDS = [
         "left_lesson": "A typical savings account pays 0.5% while inflation runs 3%. That's a guaranteed -2.5% real return every year — slow financial erosion.",
         "right_lesson": "Beating inflation requires investing in assets that grow faster than prices. Stocks historically return 7-10% annually — well above inflation.",
         "card_band_color": "amber",
+        "alpha": 0.3,
     },
     {
         "card_id": "EDU_1_002",
@@ -46,6 +52,7 @@ SEED_CARDS = [
         "left_lesson": "Feeling secure is valuable. But at 0.5% savings vs 7% index fund return, you give up $9,600 over 10 years on just $10,000.",
         "right_lesson": "Opportunity cost isn't about regret — it's a decision framework. Always ask: what am I giving up by choosing this?",
         "card_band_color": "steel_blue",
+        "alpha": 0.3,
     },
     {
         "card_id": "EDU_1_003",
@@ -63,6 +70,7 @@ SEED_CARDS = [
         "left_lesson": "Pure saving protects short-term needs but guarantees long-term erosion. 100% cash is not a neutral position — it's a losing one over decades.",
         "right_lesson": "The ideal setup: 3-6 months of expenses in savings, everything above that invested. Safety and growth can coexist with clear goals.",
         "card_band_color": "green",
+        "alpha": 0.3,
     },
     {
         "card_id": "EDU_1_004",
@@ -80,6 +88,7 @@ SEED_CARDS = [
         "left_lesson": "Zero risk means guaranteed inflation loss. 'Safe' choices still carry risk — just a different, quieter kind.",
         "right_lesson": "Understanding your risk tolerance is the starting point. Not all risk is equal: time horizon and goal clarity make risk manageable.",
         "card_band_color": "amber",
+        "alpha": 0.3,
     },
     {
         "card_id": "EVT_1_001",
@@ -98,6 +107,7 @@ SEED_CARDS = [
         "right_lesson": "TIPS, equities, and real estate historically outpace inflation. Moving even a portion of idle cash to these is a sound response.",
         "card_band_color": "red",
         "value_min": 4.0, "value_max": 10.0, "value_step": 1.0,
+        "alpha": 1.0,
     },
     {
         "card_id": "EVT_1_002",
@@ -116,6 +126,7 @@ SEED_CARDS = [
         "right_lesson": "Automating a fixed amount to a savings account every month is the most effective way to rebuild. Small and consistent beats large and sporadic.",
         "card_band_color": "amber",
         "value_min": 1.0, "value_max": 4.0, "value_step": 1.0,
+        "alpha": 1.2,
     },
     {
         "card_id": "ACT_1_001",
@@ -134,6 +145,7 @@ SEED_CARDS = [
         "right_lesson": "An emergency fund isn't optional — it's what lets your investments compound without interruption. Build it before you invest.",
         "card_band_color": "green",
         "value_min": 3.0, "value_max": 12.0, "value_step": 3.0,
+        "alpha": 0.6,
     },
     {
         "card_id": "ACT_1_002",
@@ -152,6 +164,7 @@ SEED_CARDS = [
         "right_lesson": "High-yield savings accounts (HYSAs) offer near-zero risk with rates that track the Fed funds rate. It's the lowest-effort financial upgrade available.",
         "card_band_color": "green",
         "value_min": 3.0, "value_max": 6.0, "value_step": 1.0,
+        "alpha": 0.4,
     },
 
     # ══════════════════════════════════════════════════════════════════════════
@@ -176,6 +189,7 @@ SEED_CARDS = [
         "left_lesson": "Gambling is zero-sum: someone wins what another loses. Stocks are positive-sum: companies create real value that grows your stake over time.",
         "right_lesson": "Owning Apple stock means you own a tiny piece of every iPhone sold. As the company profits, so do you — through price appreciation and dividends.",
         "card_band_color": "steel_blue",
+        "alpha": 0.3,
     },
     {
         "card_id": "EDU_2_002",
@@ -193,6 +207,7 @@ SEED_CARDS = [
         "left_lesson": "Boring assets serve a purpose: during the 2008 crash, government bonds rose in value while stocks fell 50%. Boring saved portfolios.",
         "right_lesson": "Bonds provide predictable cash flow and reduce overall portfolio volatility. In retirement especially, that stability becomes priceless.",
         "card_band_color": "steel_blue",
+        "alpha": 0.3,
     },
     {
         "card_id": "EDU_2_003",
@@ -210,6 +225,7 @@ SEED_CARDS = [
         "left_lesson": "Individual stock picking requires skill, time, and information. 80%+ of professional stock pickers underperform index ETFs over 15 years.",
         "right_lesson": "Vanguard's S&P 500 ETF charges 0.03%/year and tracks 500 of the largest US companies. Most investors are better served by this than any stock.",
         "card_band_color": "green",
+        "alpha": 0.3,
     },
     {
         "card_id": "EDU_2_004",
@@ -227,6 +243,7 @@ SEED_CARDS = [
         "left_lesson": "Past performance isn't guaranteed. But the forces behind market growth — productivity, innovation, population — are structural, not cyclical.",
         "right_lesson": "The S&P 500 has delivered positive 10-year returns in every decade since 1930, including two world wars, oil shocks, and multiple financial crises.",
         "card_band_color": "green",
+        "alpha": 0.3,
     },
     {
         "card_id": "EVT_2_001",
@@ -245,6 +262,7 @@ SEED_CARDS = [
         "right_lesson": "Short-term dips are the normal cost of long-term stock returns. Investors who held through every dip since 1950 still earned ~10% annually.",
         "card_band_color": "red",
         "value_min": 5.0, "value_max": 20.0, "value_step": 5.0,
+        "alpha": 1.0,
     },
     {
         "card_id": "EVT_2_002",
@@ -263,6 +281,7 @@ SEED_CARDS = [
         "right_lesson": "Rising rates hurt bond holders short term but benefit bond buyers long term. New bonds at higher yields generate more income going forward.",
         "card_band_color": "amber",
         "value_min": 3.0, "value_max": 7.0, "value_step": 1.0,
+        "alpha": 1.4,
     },
     {
         "card_id": "ACT_2_001",
@@ -281,6 +300,7 @@ SEED_CARDS = [
         "right_lesson": "The best investment is the one you actually make. Starting with $100 teaches more about markets than any book. Doing is learning.",
         "card_band_color": "green",
         "value_min": 100.0, "value_max": 1000.0, "value_step": 100.0,
+        "alpha": 0.8,
     },
     {
         "card_id": "ACT_2_002",
@@ -299,6 +319,7 @@ SEED_CARDS = [
         "right_lesson": "A common rule: subtract your age from 110 to get your stock allocation. At 30 that's 80% stocks — appropriate for long time horizons.",
         "card_band_color": "steel_blue",
         "value_min": 40.0, "value_max": 100.0, "value_step": 10.0,
+        "alpha": 1.0,
     },
 
     # ══════════════════════════════════════════════════════════════════════════
@@ -323,6 +344,7 @@ SEED_CARDS = [
         "left_lesson": "The psychological pain of watching a portfolio drop is real, but it's not a financial loss yet. Reacting to feelings creates actual losses.",
         "right_lesson": "Amazon fell 90% between 1999-2001. Investors who held recovered and went on to 100x returns. Volatility and loss are fundamentally different things.",
         "card_band_color": "amber",
+        "alpha": 0.3,
     },
     {
         "card_id": "EDU_3_002",
@@ -340,6 +362,7 @@ SEED_CARDS = [
         "left_lesson": "Small percentages become enormous over time. Even 1% extra annual return on $100,000 over 30 years is worth an extra $74,000.",
         "right_lesson": "The key insight: compounding requires time. Starting at 25 vs 35 can double the outcome by 65. Every year you wait costs more than the last.",
         "card_band_color": "green",
+        "alpha": 0.3,
     },
     {
         "card_id": "EDU_3_003",
@@ -357,6 +380,7 @@ SEED_CARDS = [
         "left_lesson": "Using a short-term money allocation for long-term goals — or vice versa — is one of the most common and costly investment mistakes.",
         "right_lesson": "Emergency fund: cash. Goal in 2 years: bonds. Retirement in 30 years: mostly stocks. Matching assets to timelines is risk management.",
         "card_band_color": "steel_blue",
+        "alpha": 0.3,
     },
     {
         "card_id": "EDU_3_004",
@@ -374,6 +398,7 @@ SEED_CARDS = [
         "left_lesson": "Professional fund managers with full-time research teams fail to time the market consistently. Retail investors succeed at timing even less often.",
         "right_lesson": "Time in the market beats timing the market. A $10,000 investment held 30 years outperforms 99% of tactical trading strategies, net of taxes and fees.",
         "card_band_color": "amber",
+        "alpha": 0.4,
     },
     {
         "card_id": "EVT_3_001",
@@ -392,6 +417,7 @@ SEED_CARDS = [
         "right_lesson": "Every bear market in history has been followed by a recovery to new highs. Holding through a large drop is the price of long-term returns.",
         "card_band_color": "red",
         "value_min": 10.0, "value_max": 35.0, "value_step": 5.0,
+        "alpha": 1.5,
     },
     {
         "card_id": "EVT_3_002",
@@ -410,6 +436,7 @@ SEED_CARDS = [
         "right_lesson": "Returning to the market — even after missing a rally — produces better long-term results than remaining in cash indefinitely.",
         "card_band_color": "amber",
         "value_min": 10.0, "value_max": 40.0, "value_step": 5.0,
+        "alpha": 1.2,
     },
     {
         "card_id": "ACT_3_001",
@@ -428,6 +455,7 @@ SEED_CARDS = [
         "right_lesson": "Pre-committing to holding rules before a crash is the most effective way to avoid panic selling. The plan you follow matters more than the plan itself.",
         "card_band_color": "red",
         "value_min": 10.0, "value_max": 30.0, "value_step": 5.0,
+        "alpha": 1.4,
     },
     {
         "card_id": "ACT_3_002",
@@ -446,6 +474,7 @@ SEED_CARDS = [
         "right_lesson": "Even 2 extra years at 7% on $50,000 adds over $7,000. Adding time to a compounding investment dramatically changes the outcome.",
         "card_band_color": "green",
         "value_min": 2.0, "value_max": 10.0, "value_step": 2.0,
+        "alpha": 0.6,
     },
 
     # ══════════════════════════════════════════════════════════════════════════
@@ -470,6 +499,7 @@ SEED_CARDS = [
         "left_lesson": "Concentration works — until it doesn't. Enron, Lehman Brothers, and WorldCom were all 'sure things' before they went to zero.",
         "right_lesson": "Diversification doesn't eliminate risk — it reduces the impact of any single failure. A globally diversified ETF holds 4,000+ companies.",
         "card_band_color": "steel_blue",
+        "alpha": 0.3,
     },
     {
         "card_id": "EDU_4_002",
@@ -487,6 +517,7 @@ SEED_CARDS = [
         "left_lesson": "Research shows asset allocation explains ~90% of portfolio performance variation. Asset selection (which stocks) explains less than 5%.",
         "right_lesson": "A clear allocation — e.g. 80% global stocks, 15% bonds, 5% cash — gives you a decision rule for every market condition. Structure beats intuition.",
         "card_band_color": "steel_blue",
+        "alpha": 0.4,
     },
     {
         "card_id": "EDU_4_003",
@@ -504,6 +535,7 @@ SEED_CARDS = [
         "left_lesson": "Without rebalancing, a 60/40 portfolio can drift to 80/20 during a bull market — exposing you to far more risk than you signed up for.",
         "right_lesson": "Annual or threshold-based rebalancing (e.g. when any asset drifts >5%) consistently improves risk-adjusted returns over doing nothing.",
         "card_band_color": "amber",
+        "alpha": 0.3,
     },
     {
         "card_id": "EDU_4_004",
@@ -521,6 +553,7 @@ SEED_CARDS = [
         "left_lesson": "Perfect entry timing is impossible even for professionals. Waiting for 'the right time' has a documented history of costing retail investors dearly.",
         "right_lesson": "DCA investors who contributed monthly through 2008-2009 recovered faster than lump-sum investors who timed out. Consistency compounds.",
         "card_band_color": "green",
+        "alpha": 0.3,
     },
     {
         "card_id": "EVT_4_001",
@@ -539,6 +572,7 @@ SEED_CARDS = [
         "right_lesson": "Rebalancing back to your target locks in equity gains and reduces downside exposure. It's systematic risk management, not market timing.",
         "card_band_color": "amber",
         "value_min": 75.0, "value_max": 90.0, "value_step": 5.0,
+        "alpha": 0.8,
     },
     {
         "card_id": "EVT_4_002",
@@ -557,6 +591,7 @@ SEED_CARDS = [
         "right_lesson": "A correction means your monthly contribution buys more shares than last month. DCA turns corrections into systematic opportunities.",
         "card_band_color": "red",
         "value_min": 10.0, "value_max": 25.0, "value_step": 5.0,
+        "alpha": 1.3,
     },
     {
         "card_id": "ACT_4_001",
@@ -575,6 +610,7 @@ SEED_CARDS = [
         "right_lesson": "Tax-loss harvesting and rebalancing inside tax-advantaged accounts (401k, IRA) can eliminate the tax concern entirely. Structure matters.",
         "card_band_color": "steel_blue",
         "value_min": 5000.0, "value_max": 50000.0, "value_step": 5000.0,
+        "alpha": 0.9,
     },
     {
         "card_id": "ACT_4_002",
@@ -593,6 +629,7 @@ SEED_CARDS = [
         "right_lesson": "Automated investing removes psychology from the equation. $200/month at 7% for 30 years grows to $242,000. The habit beats the amount.",
         "card_band_color": "green",
         "value_min": 50.0, "value_max": 500.0, "value_step": 50.0,
+        "alpha": 0.7,
     },
 
     # ══════════════════════════════════════════════════════════════════════════
@@ -617,6 +654,7 @@ SEED_CARDS = [
         "left_lesson": "Selling is rational when your financial situation changes fundamentally — not when markets are moving. Those are very different triggers.",
         "right_lesson": "Dalbar's 20-year study shows the average equity investor earned 4.7% vs the S&P's 9.5% — almost entirely due to panic selling at market lows.",
         "card_band_color": "red",
+        "alpha": 0.4,
     },
     {
         "card_id": "EDU_5_002",
@@ -634,6 +672,7 @@ SEED_CARDS = [
         "left_lesson": "FOMO feels like insight but it's actually lagging information. Assets that 'everyone is buying' are already priced for that enthusiasm.",
         "right_lesson": "Systematic diversified investing provides exposure to the next big thing before it's obvious. FOMO-driven investing gets the last 20% and the full downside.",
         "card_band_color": "purple",
+        "alpha": 0.4,
     },
     {
         "card_id": "EDU_5_003",
@@ -651,6 +690,7 @@ SEED_CARDS = [
         "left_lesson": "Each trade costs not just the fee, but the opportunity cost of capital in transit and tax drag from gains. Friction compounds against you.",
         "right_lesson": "Studies show that investor accounts that are forgotten or inactive often outperform actively managed ones. Doing less, consistently, beats doing more.",
         "card_band_color": "amber",
+        "alpha": 0.3,
     },
     {
         "card_id": "EDU_5_004",
@@ -668,6 +708,7 @@ SEED_CARDS = [
         "left_lesson": "Financial media is designed to provoke reaction. An investor who checks prices daily makes 4x more decisions — and 4x more mistakes.",
         "right_lesson": "Setting a quarterly review schedule and automating contributions turns volatility from a threat into irrelevance. Structure is your protection from noise.",
         "card_band_color": "steel_blue",
+        "alpha": 0.3,
     },
     {
         "card_id": "EVT_5_001",
@@ -686,6 +727,7 @@ SEED_CARDS = [
         "right_lesson": "Investors who held through the 2008-2009 -55% crash earned back their losses by 2013 and went on to 400%+ total returns by 2024.",
         "card_band_color": "red",
         "value_min": 20.0, "value_max": 50.0, "value_step": 10.0,
+        "alpha": 1.8,
     },
     {
         "card_id": "EVT_5_002",
@@ -704,6 +746,7 @@ SEED_CARDS = [
         "right_lesson": "Viral stocks often retrace their entire move within weeks. Your existing diversified allocation already beats chasing individual names over time.",
         "card_band_color": "purple",
         "value_min": 30.0, "value_max": 120.0, "value_step": 10.0,
+        "alpha": 0.5,
     },
     {
         "card_id": "ACT_5_001",
@@ -722,6 +765,7 @@ SEED_CARDS = [
         "right_lesson": "Pre-committing to rules before downturns is the most evidence-backed technique in behavioral finance. Your plan is smarter than your current emotion.",
         "card_band_color": "red",
         "value_min": 15.0, "value_max": 35.0, "value_step": 5.0,
+        "alpha": 1.5,
     },
     {
         "card_id": "ACT_5_002",
@@ -740,5 +784,6 @@ SEED_CARDS = [
         "right_lesson": "Studies show investors with self-imposed trading freezes outperform those with full flexibility. Removing the option to panic is more valuable than it sounds.",
         "card_band_color": "steel_blue",
         "value_min": 3.0, "value_max": 24.0, "value_step": 3.0,
+        "alpha": 0.6,
     },
 ]

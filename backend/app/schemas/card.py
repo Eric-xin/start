@@ -25,7 +25,7 @@ class CardOut(BaseModel):
     value_min: float | None = None
     value_max: float | None = None
     value_step: float | None = None
-    rendered_body: str = ""
+    alpha: float = 1.0
 
 
 class CardCreate(BaseModel):
@@ -50,6 +50,7 @@ class CardCreate(BaseModel):
     value_min: float | None = None
     value_max: float | None = None
     value_step: float | None = None
+    alpha: float = 1.0
 
 
 class CardUpdate(BaseModel):
@@ -75,3 +76,4 @@ class CardUpdate(BaseModel):
     value_min: float | None = None
     value_max: float | None = None
     value_step: float | None = None
+    alpha: float | None = None

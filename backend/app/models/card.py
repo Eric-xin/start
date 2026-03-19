@@ -47,3 +47,6 @@ class Card(Base):
     value_min: Mapped[float | None] = mapped_column(Float, nullable=True)
     value_max: Mapped[float | None] = mapped_column(Float, nullable=True)
     value_step: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # Simulation weight — higher alpha means the card's outcome has a bigger
+    # impact on capital / persona updates (e.g. a rate cut matters more than trivia)
+    alpha: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)

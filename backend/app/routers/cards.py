@@ -6,6 +6,7 @@ from app.models.card import Card, CardType
 from app.models.user import User
 from app.schemas.card import CardOut
 from app.core.dependencies import get_current_active_user
+from app.services.game_service import resolve_card
 
 router = APIRouter(prefix="/api/cards", tags=["cards"])
 
@@ -25,4 +26,4 @@ async def get_cards(
         query = query.where(Card.type == type)
     query = query.limit(limit)
     result = await db.execute(query)
-    return result.scalars().all()
+    return [resolve_card(card) for card in result.scalars().all()]

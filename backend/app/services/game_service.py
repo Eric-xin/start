@@ -23,9 +23,7 @@ def resolve_card(card: Card) -> CardOut:
         steps = round((card.value_max - card.value_min) / step)
         value = card.value_min + random.randint(0, steps) * step
         display = str(int(value)) if value == int(value) else str(value)
-        out.rendered_body = card.body.replace("{value}", display)
-    else:
-        out.rendered_body = card.body
+        out.body = card.body.replace("{value}", display)
     return out
 
 
@@ -259,8 +257,9 @@ async def process_swipe(
     _check_strategy_unlocks(progress)
     progress.updated_at = datetime.now(timezone.utc)
 
-    # Update capital
-    capital_delta = reward * 200
+    # Update capital (alpha scales the impact — e.g. rate cuts hit harder than trivia)
+    alpha = getattr(card, "alpha", 1.0)
+    capital_delta = reward * 200 * alpha
     session.capital += capital_delta
     if session.capital > session.peak_capital:
         session.peak_capital = session.capital
