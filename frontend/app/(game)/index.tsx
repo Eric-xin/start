@@ -102,6 +102,9 @@ export default function GameIndexScreen() {
           <TouchableOpacity style={styles.topBtn} onPress={() => router.push("/(profile)/decks")}>
             <Text style={styles.topBtnText}>DECKS</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={styles.topBtn} onPress={() => router.push("/(game)/achievements")}>
+            <Text style={styles.topBtnText}>ACHIEVEMENTS</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
             <Text style={styles.logoutText}>LOGOUT</Text>
           </TouchableOpacity>
