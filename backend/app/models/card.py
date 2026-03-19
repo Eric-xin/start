@@ -22,6 +22,7 @@ class Card(Base):
     __tablename__ = "cards"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    card_id: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
     type: Mapped[CardType] = mapped_column(SAEnum(CardType), nullable=False)
     title: Mapped[str] = mapped_column(String(120), nullable=False)
     body: Mapped[str] = mapped_column(String(280), nullable=False)
@@ -42,3 +43,7 @@ class Card(Base):
         SAEnum(CardBandColor), default=CardBandColor.steel_blue, nullable=False
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    # Numerical value range for event and action cards — None for education cards
+    value_min: Mapped[float | None] = mapped_column(Float, nullable=True)
+    value_max: Mapped[float | None] = mapped_column(Float, nullable=True)
+    value_step: Mapped[float | None] = mapped_column(Float, nullable=True)
