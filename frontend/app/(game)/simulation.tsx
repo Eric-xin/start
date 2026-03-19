@@ -37,6 +37,7 @@ import {
   type EventAnnotation,
   type TradeRecord,
 } from "../../services/simulation";
+import { api } from "../../services/api";
 
 // ─── Asset config ────────────────────────────────────────────────────────────
 
@@ -895,6 +896,16 @@ function SectionLabel({ text }: { text: string }) {
 
 const DEFAULT_TRAITS: number[] = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
 
+// Map backend trait keys (in order) to TRAIT_NAMES indices
+const TRAIT_KEYS = [
+  "risk_appetite",
+  "loss_aversion",
+  "fomo_sensitivity",
+  "overconfidence",
+  "diversification_bias",
+  "patience",
+];
+
 // ─── Main Simulation Screen ───────────────────────────────────────────────────
 
 export default function SimulationScreen() {
@@ -904,6 +915,16 @@ export default function SimulationScreen() {
   const { portfolio } = usePortfolioStore();
   const personaVector: number[] =
     (portfolio as any)?.persona_vector ?? DEFAULT_TRAITS;
+
+  const [traitMap, setTraitMap] = useState<Record<string, number> | null>(null);
+  const [traitInterpretation, setTraitInterpretation] = useState<string>("");
+
+  useEffect(() => {
+    api.get("/api/hud/traits").then((r) => {
+      setTraitMap(r.data.traits);
+      setTraitInterpretation(r.data.interpretation ?? "");
+    }).catch(() => {});
+  }, []);
 
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<SimulationResponse | null>(null);
@@ -958,7 +979,8 @@ export default function SimulationScreen() {
 
   // ── Persona traits display ──────────────────────────────────────────────────
 
-  const traitValues = TRAIT_NAMES.map((_, i) => personaVector[i] ?? 0.5);
+  // Use backend-computed trait scores [0-1]; fall back to neutral until loaded
+  const traitValues = TRAIT_KEYS.map((key) => traitMap?.[key] ?? 0.5);
   const inferredPersona = result?.persona_type ?? inferPersonaType(personaVector);
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -995,6 +1017,10 @@ export default function SimulationScreen() {
           <TraitBar key={name} label={name} value={traitValues[i]} />
         ))}
       </View>
+
+      {traitInterpretation ? (
+        <Text style={styles.traitInterpretation}>{traitInterpretation}</Text>
+      ) : null}
 
       <Divider />
 
@@ -1380,6 +1406,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     alignSelf: "flex-start",
+  },
+  traitInterpretation: {
+    fontSize: 9,
+    fontFamily: Fonts.sans,
+    color: Colors.textDim,
+    lineHeight: 14,
+    marginTop: 8,
+    fontStyle: "italic",
   },
   personaTypeText: {
     fontSize: 10,

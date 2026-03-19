@@ -16,6 +16,8 @@ from app.services.market_synthesizer import (
     ASSET_BY_TICKER,
 )
 from app.services.news_service import generate_news_feed
+import app.services.persona_engine as pe
+import numpy as np
 
 router = APIRouter(prefix="/api/hud", tags=["hud"])
 
@@ -97,3 +99,37 @@ async def get_news_feed(
 
     news = generate_news_feed(fake_events, count=8)
     return {"items": news, "market_state": ms}
+
+
+@router.get("/traits")
+async def get_traits(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Computed persona trait scores [0-1] for the current portfolio.
+    Uses persona_engine.compute_traits on the stored persona_vector.
+    Falls back to neutral (0.5) values if no vector is set.
+    """
+    portfolio = await _get_portfolio(current_user, db)
+    raw_vector = portfolio.persona_vector  # list[float] | None
+
+    NEUTRAL = {
+        "risk_appetite": 0.5,
+        "fomo_sensitivity": 0.5,
+        "loss_aversion": 0.5,
+        "patience": 0.5,
+        "diversification_bias": 0.5,
+        "overconfidence": 0.5,
+    }
+
+    if not raw_vector or len(raw_vector) < pe.DIM_P:
+        return {"traits": NEUTRAL, "has_persona": False, "interpretation": "No active persona — neutral defaults shown."}
+
+    p = np.array(raw_vector, dtype=np.float32)
+    traits_0_100: dict = pe.compute_traits(p)
+    # Normalise [0, 100] → [0, 1] for frontend
+    traits_01 = {k: round(v / 100.0, 3) for k, v in traits_0_100.items()}
+    interpretation = pe.interpret_persona(traits_0_100)
+
+    return {"traits": traits_01, "has_persona": True, "interpretation": interpretation}
