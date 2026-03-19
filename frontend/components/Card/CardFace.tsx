@@ -1,10 +1,9 @@
 import React, { useRef } from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { Layout } from "../../constants/layout";
-import type { CardData } from "../../services/game";
+import type { CardData } from "../../services/portfolio";
 import { MarkdownText } from "../MarkdownText";
 
 const TYPE_LABELS: Record<string, string> = {
@@ -26,28 +25,18 @@ export function CardFace({ card, isChoiceFlipped = false }: Props) {
   const rightChoice = isChoiceFlipped ? card.left_choice : card.right_choice;
 
   return (
-    <View style={[styles.card, {
-      transform: [{ rotate: `${rotation}deg` }],
-      backgroundColor: theme.cardSurface,
-      borderColor: theme.cardBorder,
-    }]}>
+    <View style={[styles.card, { transform: [{ rotate: `${rotation}deg` }] }]}>
       {/* Top band */}
       <View style={[styles.band, { backgroundColor: bandColor }]} />
-
-      {/* Pixel-art background by card subject with 100 deterministic variants */}
-      {showPixelBackground && (
-        <PixelArtBackground subject={subject} bandColor={bandColor} seed={card.id} material={material} />
-      )}
-      <MaterialOverlay material={material} />
 
       {/* Card inner */}
       <View style={styles.inner}>
         {/* Header row: type + difficulty */}
         <View style={styles.metaRow}>
-          <View style={[styles.typePill, { borderColor: bandColor, backgroundColor: theme.typeBg }]}>
+          <View style={[styles.typePill, { borderColor: bandColor }]}>
             <Text style={[styles.typeText, { color: bandColor }]}>{typeLabel}</Text>
           </View>
-          <Text style={[styles.diffLabel, { color: theme.diffText }]}>
+          <Text style={styles.diffLabel}>
             DIFF {(card.difficulty * 10).toFixed(0)}/10
           </Text>
         </View>
@@ -56,7 +45,7 @@ export function CardFace({ card, isChoiceFlipped = false }: Props) {
         <Text style={styles.emoji}>{card.emoji}</Text>
 
         {/* Title */}
-        <Text style={[styles.title, { color: theme.cardText }]} numberOfLines={2}>{card.title}</Text>
+        <Text style={styles.title} numberOfLines={2}>{card.title}</Text>
 
         {/* Divider */}
         <View style={[styles.divider, { backgroundColor: bandColor + "44" }]} />
@@ -70,7 +59,7 @@ export function CardFace({ card, isChoiceFlipped = false }: Props) {
         />
 
         {/* Choices */}
-        <View style={[styles.choicesRow, { borderTopColor: theme.choiceBorder }]}>
+        <View style={styles.choicesRow}>
           <View style={styles.choice}>
             <Text style={styles.arrow}>←</Text>
             <Text style={styles.choiceText} numberOfLines={2}>{leftChoice}</Text>
@@ -108,22 +97,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     justifyContent: "space-between",
-    zIndex: 2,
-  },
-  materialFill: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  glassEdge: {
-    ...StyleSheet.absoluteFillObject,
-    borderWidth: 1,
-    borderColor: "rgba(235, 248, 255, 0.8)",
-    borderRadius: Layout.cardBorderRadius,
-  },
-  oldVignette: {
-    ...StyleSheet.absoluteFillObject,
-    borderWidth: 1,
-    borderColor: "rgba(101, 68, 32, 0.35)",
-    borderRadius: Layout.cardBorderRadius,
   },
   metaRow: {
     flexDirection: "row",
@@ -183,7 +156,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: "#c6b89f",
+    borderTopColor: "#d0c8b8",
     gap: 4,
   },
   choice: {

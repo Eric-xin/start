@@ -11,7 +11,7 @@ import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { CardFace } from "./CardFace";
 import { CardGlow } from "./CardGlow";
 import { Layout } from "../../constants/layout";
-import type { CardData } from "../../services/game";
+import type { CardData } from "../../services/portfolio";
 
 interface Props {
   card: CardData;

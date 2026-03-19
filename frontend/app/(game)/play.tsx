@@ -245,6 +245,7 @@ export default function PlayScreen() {
 
   const [initializing, setInitializing] = React.useState(true);
   const [achievementQueue, setAchievementQueue] = useState<AchievementData[]>([]);
+  const [activePanel, setActivePanel] = useState<PanelType>(null);
   const [isChoiceFlipped, setIsChoiceFlipped] = useState<boolean>(Math.random() < 0.5);
   const mounted = useRef(false);
 
