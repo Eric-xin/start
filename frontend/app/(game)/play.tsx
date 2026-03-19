@@ -13,7 +13,6 @@ import { AchievementToast } from "../../components/AchievementToast";
 import { StatsPanel } from "../../components/HUD/StatsPanel";
 import { MarketContextPill } from "../../components/HUD/MarketContextPill";
 import { SidebarPanel } from "../../components/HUD/SidebarPanel";
-import { PortfolioDonut } from "../../components/HUD/PortfolioDonut";
 import { Colors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { Layout } from "../../constants/layout";
@@ -244,13 +243,11 @@ export default function PlayScreen() {
     ? { ...portfolio, progress: (portfolio.total_cards_played % 20) / 20, market_state: portfolio.market_state ?? {} }
     : { capital: 0, stage: 1, investor_rank: 1, progress: 0, portfolio_weights: {}, market_state: {} };
   const showSidebar = isWide || (isMedium && rank >= 3);
-  const showDonut = rank >= 4 && isWide;
   const showMarketPill = rank >= 2;
 
   // Card area: subtract sidebar if visible
   const sidebarW = showSidebar ? Layout.sidebarWidth : 0;
-  const donutW = showDonut ? 140 : 0;
-  const cardAreaW = width - sidebarW - donutW;
+  const cardAreaW = width - sidebarW;
   const cardAreaH = height - Layout.headerHeight - Layout.statsPanelHeight;
 
   return (
@@ -331,13 +328,6 @@ export default function PlayScreen() {
           )}
         </View>
 
-        {/* Right panel — portfolio donut (Rank 4+, wide) */}
-        {showDonut && (
-          <View style={[styles.sidePanel, { width: donutW, alignItems: "center", paddingTop: 24 }]}>
-            <Text style={styles.panelLabelText}>PORTFOLIO</Text>
-            <PortfolioDonut weights={sessionProxy.portfolio_weights} size={100} />
-          </View>
-        )}
       </View>
 
       {/* Bottom stats panel */}
