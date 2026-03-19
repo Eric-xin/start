@@ -103,6 +103,14 @@ async def lifespan(app: FastAPI):
                         ) THEN
                             ALTER TABLE user_portfolios ADD COLUMN market_state JSONB NOT NULL DEFAULT '{}';
                         END IF;
+                        IF NOT EXISTS (
+                            SELECT 1 FROM pg_constraint
+                            WHERE conname = 'uq_user_achievement'
+                        ) THEN
+                            ALTER TABLE user_achievements
+                                ADD CONSTRAINT uq_user_achievement
+                                UNIQUE (user_id, achievement_id);
+                        END IF;
                     END $$;
                 """))
             except Exception:
