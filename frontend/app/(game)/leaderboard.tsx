@@ -13,7 +13,7 @@ import { Fonts } from "../../constants/fonts";
 import { usePortfolioStore } from "../../store/portfolioStore";
 import { useThemeStore } from "../../store/themeStore";
 import { ThemeModeToggle } from "../../components/theme/ThemeModeToggle";
-import { LanguageSwitcher } from "../../components/navigation/LanguageSwitcher";
+import { AppTopBar } from "../../components/navigation/AppTopBar";
 import { LEADERBOARD_SEED } from "../../seeds/leaderboard";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -203,25 +203,10 @@ export default function LeaderboardScreen() {
   return (
     <View style={[styles.screen, isNormal && { backgroundColor: colors.bg }]}>
 
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <View
-        style={[
-          styles.header,
-          isNormal && { backgroundColor: colors.bgPanel, borderBottomColor: colors.borderDim },
-        ]}
-      >
-        <View style={styles.headerLeft}>
-          <Text style={styles.headerBrand}>CARDECON</Text>
-          <View style={[styles.headerSep, { backgroundColor: colors.borderDim }]} />
-          <Text style={[styles.headerTitle, { color: colors.textDim }]}>
-            {isNormal ? t("leaderboard.topBar") : t("leaderboard.topBarPro")}
-          </Text>
-        </View>
-        <View style={styles.headerRight}>
-          <LanguageSwitcher />
-          <ThemeModeToggle compact />
-        </View>
-      </View>
+      <AppTopBar
+        label={isNormal ? t("leaderboard.topBar") : t("leaderboard.topBarPro")}
+        rightContent={<ThemeModeToggle compact />}
+      />
 
       {/* ── Your rank banner ───────────────────────────────────────────────── */}
       <View
@@ -296,45 +281,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bg,
   },
 
-  // Header
-  header: {
-    height: 44,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderFaint,
-    backgroundColor: Colors.bgPanel,
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  headerBrand: {
-    fontSize: 13,
-    fontFamily: Fonts.mono,
-    color: Colors.blue,
-    letterSpacing: 2,
-    fontWeight: "700",
-  },
-  headerSep: {
-    width: 1,
-    height: 16,
-    backgroundColor: Colors.borderFaint,
-  },
-  headerTitle: {
-    fontSize: 11,
-    fontFamily: Fonts.mono,
-  },
-  headerRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    color: Colors.textDim,
-    letterSpacing: 1.5,
-  },
 
   // Banner
   banner: {

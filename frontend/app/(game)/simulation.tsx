@@ -43,6 +43,7 @@ import { api } from "../../services/api";
 import { useRouter } from "expo-router";
 import { useThemeStore } from "../../store/themeStore";
 import { ThemeModeToggle } from "../../components/theme/ThemeModeToggle";
+import { AppTopBar } from "../../components/navigation/AppTopBar";
 
 // ─── Asset config ────────────────────────────────────────────────────────────
 
@@ -1726,22 +1727,17 @@ export default function SimulationScreen() {
 
   return (
     <View style={[styles.screen, isNormal && { backgroundColor: colors.bg }]}>
-      {/* Header */}
-      <View style={[styles.header, isNormal && { backgroundColor: colors.bgPanel, borderBottomColor: colors.borderDim }]}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.headerBrand}>CARDECON</Text>
-          <View style={styles.headerSeparator} />
-          <Text style={styles.headerTitle}>{isNormal ? t("simulation.header.title") : t("simulation.header.titlePro")}</Text>
-        </View>
-        <View style={styles.headerRight}>
-          <ThemeModeToggle compact />
-          <View style={[styles.statusDot, { backgroundColor: Colors.green }]} />
-          <LiveClock />
-          <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
-            <Text style={[styles.backBtnText, { color: colors.textDim }]}>BACK</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      <AppTopBar
+        label={isNormal ? t("simulation.header.title") : t("simulation.header.titlePro")}
+        onBack={handleBack}
+        rightContent={
+          <>
+            <ThemeModeToggle compact />
+            <View style={[styles.statusDot, { backgroundColor: Colors.green }]} />
+            <LiveClock />
+          </>
+        }
+      />
 
       {/* Body */}
       {isWide ? (
@@ -1786,61 +1782,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bg,
   },
 
-  // Header
-  header: {
-    height: 44,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderDim ?? Colors.borderFaint,
-    backgroundColor: Colors.bgPanel,
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  headerBrand: {
-    fontSize: 13,
-    fontFamily: Fonts.mono,
-    color: Colors.blue,
-    letterSpacing: 2,
-    fontWeight: "700",
-  },
-  headerSeparator: {
-    width: 1,
-    height: 16,
-    backgroundColor: Colors.borderDim ?? Colors.borderFaint,
-  },
-  headerTitle: {
-    fontSize: 11,
-    fontFamily: Fonts.mono,
-    color: Colors.textDim,
-    letterSpacing: 2,
-  },
-  headerRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
   statusDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-  },
-  backBtn: {
-    borderWidth: 1,
-    borderColor: Colors.borderDim,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 2,
-  },
-  backBtnText: {
-    fontSize: 10,
-    fontFamily: Fonts.sansBold,
-    letterSpacing: 1.2,
   },
 
   // Layout

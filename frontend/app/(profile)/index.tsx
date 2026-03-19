@@ -14,7 +14,7 @@ import { useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { useThemeStore } from "../../store/themeStore";
 import { ThemeModeToggle } from "../../components/theme/ThemeModeToggle";
-import { LanguageSwitcher } from "../../components/navigation/LanguageSwitcher";
+import { AppTopBar } from "../../components/navigation/AppTopBar";
 
 const TRAIT_LABELS: Record<string, string> = {
   risk_appetite: "Risk Appetite",
@@ -34,17 +34,6 @@ function getStyles(colors: ReturnType<typeof useColors>) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.bg },
     loading: { flex: 1, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center" },
-
-    topBar: {
-      height: 40, backgroundColor: colors.bgPanel,
-      borderBottomWidth: 1, borderBottomColor: colors.borderPrimary,
-      flexDirection: "row", alignItems: "center", paddingHorizontal: 16, gap: 10,
-    },
-    backBtn: { paddingRight: 4 },
-    backText: { fontSize: 9, fontFamily: Fonts.sansBold, color: colors.textDim, letterSpacing: 1.5 },
-    logo: { fontSize: 13, fontFamily: Fonts.mono, color: colors.blue, letterSpacing: 3 },
-    barSep: { width: 1, height: 14, backgroundColor: colors.borderDim },
-    topLabel: { fontSize: 9, fontFamily: Fonts.sansBold, color: colors.textDim, letterSpacing: 2 },
 
     scroll: { padding: 20 },
     scrollWide: { padding: 24 },
@@ -623,18 +612,11 @@ export default function ProfileScreen() {
 
   return (
     <View style={[s.container, { backgroundColor: colors.bg }]}>
-      {/* Top bar */}
-      <View style={[s.topBar, { backgroundColor: colors.bgPanel, borderBottomColor: colors.borderPrimary }]}>
-        <Text style={[s.logo, { color: colors.blue }]}>CARDECON</Text>
-        <View style={[s.barSep, { backgroundColor: colors.borderDim }]} />
-        <Text style={[s.topLabel, { color: colors.textDim }]}>{isNormal ? t("profileHome.topLabel") : t("profileHome.topLabelPro")}</Text>
-        <View style={{ flex: 1 }} />
-        <LanguageSwitcher />
-        <ThemeModeToggle compact />
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <Text style={[s.backText, { color: colors.textDim }]}>{t("profileHome.back")}</Text>
-        </TouchableOpacity>
-      </View>
+      <AppTopBar
+        label={isNormal ? t("profileHome.topLabel") : t("profileHome.topLabelPro")}
+        onBack={() => router.back()}
+        rightContent={<ThemeModeToggle compact />}
+      />
 
       <ScrollView contentContainerStyle={[s.scroll, isWide && s.scrollWide]}>
         {isWide ? (
