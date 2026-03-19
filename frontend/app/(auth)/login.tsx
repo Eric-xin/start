@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, Alert, useWindowDimensions,
+  KeyboardAvoidingView, Platform, useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { login, getMe } from "../../services/auth";
@@ -23,26 +23,38 @@ function GridBg() {
   );
 }
 
+function parseError(e: any): string {
+  const detail = e?.response?.data?.detail;
+  if (!detail) return "Unable to connect. Check your network.";
+  if (Array.isArray(detail)) return detail[0]?.msg ?? "Invalid input.";
+  const status = e?.response?.status;
+  if (status === 401) return "Incorrect credentials. Check your email/username and password.";
+  if (status === 403) return "Account not verified. Check your email for the verification link.";
+  return String(detail);
+}
+
 export default function LoginScreen() {
   const router = useRouter();
   const setAuth = useAuthStore((s) => s.setAuth);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleLogin = async () => {
-    if (!identifier || !password) {
-      Alert.alert("Input Required", "Enter your credentials.");
+    setError(null);
+    if (!identifier.trim() || !password) {
+      setError("Enter your email/username and password.");
       return;
     }
     setLoading(true);
     try {
-      const tokens = await login(identifier, password);
+      const tokens = await login(identifier.trim(), password);
       const user = await getMe(tokens.access_token);
+      // setAuth updates the store; the root layout guard handles navigation
       await setAuth(tokens.access_token, tokens.refresh_token, user);
-      router.replace("/(game)/index");
     } catch (e: any) {
-      Alert.alert("AUTH FAILED", e?.response?.data?.detail ?? "Invalid credentials.");
+      setError(parseError(e));
     } finally {
       setLoading(false);
     }
@@ -55,44 +67,58 @@ export default function LoginScreen() {
     >
       <GridBg />
 
-      {/* Top bar */}
       <View style={styles.topBar}>
         <Text style={styles.logo}>CARDECON</Text>
         <Text style={styles.topBarSub}>FINANCIAL INTELLIGENCE PLATFORM</Text>
       </View>
 
-      {/* Center form */}
       <View style={styles.center}>
         <View style={styles.panel}>
-          {/* Panel header */}
           <View style={styles.panelHeader}>
             <View style={styles.blueDot} />
             <Text style={styles.panelTitle}>AUTHENTICATION REQUIRED</Text>
           </View>
 
+          {error && (
+            <View style={styles.errorBanner}>
+              <Text style={styles.errorIcon}>⚠</Text>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
+
           <Text style={styles.fieldLabel}>IDENTIFIER</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, error && styles.inputError]}
             value={identifier}
-            onChangeText={setIdentifier}
+            onChangeText={(v) => { setIdentifier(v); setError(null); }}
             autoCapitalize="none"
             autoCorrect={false}
             keyboardType="email-address"
             placeholderTextColor={Colors.textMuted}
             placeholder="email or username"
             selectionColor={Colors.blue}
+            returnKeyType="next"
           />
 
           <Text style={styles.fieldLabel}>PASSWORD</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, error && styles.inputError]}
             value={password}
-            onChangeText={setPassword}
+            onChangeText={(v) => { setPassword(v); setError(null); }}
             secureTextEntry
             placeholderTextColor={Colors.textMuted}
             placeholder="••••••••"
             selectionColor={Colors.blue}
+            returnKeyType="done"
+            onSubmitEditing={handleLogin}
           />
+
+          <TouchableOpacity
+            style={styles.forgotBtn}
+            onPress={() => router.push("/(auth)/forgot-password")}
+          >
+            <Text style={styles.forgotText}>FORGOT PASSWORD →</Text>
+          </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.submitBtn, loading && { opacity: 0.5 }]}
@@ -112,7 +138,6 @@ export default function LoginScreen() {
         </View>
       </View>
 
-      {/* Bottom bar */}
       <View style={styles.bottomBar}>
         <Text style={styles.bottomText}>SECURE SESSION · TLS 1.3 · JWT AUTHENTICATION</Text>
       </View>
@@ -151,13 +176,27 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginBottom: 24,
+    marginBottom: 20,
     borderBottomWidth: 1,
     borderBottomColor: Colors.borderFaint,
     paddingBottom: 10,
   },
   blueDot: { width: 6, height: 6, borderRadius: 1, backgroundColor: Colors.blue },
   panelTitle: { fontSize: 9, fontFamily: Fonts.sansBold, color: Colors.blue, letterSpacing: 2 },
+
+  errorBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    backgroundColor: "#3a0a0a",
+    borderWidth: 1,
+    borderColor: "#8b1a1a",
+    borderRadius: 2,
+    padding: 10,
+    marginBottom: 8,
+  },
+  errorIcon: { fontSize: 12, color: "#e05555", marginTop: 1 },
+  errorText: { flex: 1, fontSize: 11, fontFamily: Fonts.sans, color: "#e05555", lineHeight: 16 },
 
   fieldLabel: {
     fontSize: 8,
@@ -177,13 +216,19 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.mono,
     fontSize: 13,
   },
+  inputError: {
+    borderColor: "#8b1a1a",
+  },
+
+  forgotBtn: { alignSelf: "flex-end", marginTop: 8, padding: 2 },
+  forgotText: { fontSize: 8, fontFamily: Fonts.sansBold, color: Colors.textMuted, letterSpacing: 1.5 },
 
   submitBtn: {
     backgroundColor: Colors.blue,
     padding: 14,
     borderRadius: 2,
     alignItems: "center",
-    marginTop: 22,
+    marginTop: 16,
   },
   submitText: { fontSize: 12, fontFamily: Fonts.sansBold, color: Colors.bg, letterSpacing: 2 },
 

@@ -4,7 +4,7 @@ import {
   KeyboardAvoidingView, Platform, useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { register } from "../../services/auth";
+import { forgotPassword } from "../../services/auth";
 import { Colors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 
@@ -22,48 +22,26 @@ function GridBg() {
   );
 }
 
-function parseError(e: any): string {
-  const detail = e?.response?.data?.detail;
-  if (!detail) return "Unable to connect. Check your network.";
-  if (Array.isArray(detail)) {
-    const msg = detail[0]?.msg ?? "";
-    if (msg.toLowerCase().includes("email")) return "Enter a valid email address.";
-    if (msg.toLowerCase().includes("password")) return "Password must be at least 8 characters.";
-    return msg;
-  }
-  const s = String(detail).toLowerCase();
-  if (s.includes("email") && s.includes("exist")) return "That email is already registered. Try logging in.";
-  if (s.includes("username") && s.includes("exist")) return "That username is already taken. Choose a different one.";
-  if (s.includes("email")) return "That email is already registered. Try logging in.";
-  if (s.includes("username")) return "That username is already taken. Choose a different one.";
-  return String(detail);
-}
-
-export default function RegisterScreen() {
+export default function ForgotPasswordScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [sent, setSent] = useState(false);
 
-  const handleRegister = async () => {
+  const handleSubmit = async () => {
     setError(null);
-    if (!email.trim() || !username.trim() || !password) {
-      setError("All fields are required.");
-      return;
-    }
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+    if (!email.trim()) {
+      setError("Enter your email address.");
       return;
     }
     setLoading(true);
     try {
-      await register(email.trim(), username.trim(), password);
-      setSuccess(true);
+      await forgotPassword(email.trim());
+      setSent(true);
     } catch (e: any) {
-      setError(parseError(e));
+      // Always show success to avoid email enumeration — backend should behave the same
+      setSent(true);
     } finally {
       setLoading(false);
     }
@@ -78,33 +56,37 @@ export default function RegisterScreen() {
 
       <View style={styles.topBar}>
         <Text style={styles.logo}>CARDECON</Text>
-        <Text style={styles.topBarSub}>NEW INVESTOR REGISTRATION</Text>
+        <Text style={styles.topBarSub}>ACCOUNT RECOVERY</Text>
       </View>
 
       <View style={styles.center}>
         <View style={styles.panel}>
           <View style={styles.panelHeader}>
             <View style={styles.blueDot} />
-            <Text style={styles.panelTitle}>CREATE INVESTOR PROFILE</Text>
+            <Text style={styles.panelTitle}>PASSWORD RESET</Text>
           </View>
 
-          {success ? (
+          {sent ? (
             <View style={styles.successBlock}>
-              <Text style={styles.successIcon}>✓</Text>
-              <Text style={styles.successTitle}>ACCOUNT CREATED</Text>
+              <Text style={styles.successIcon}>✉</Text>
+              <Text style={styles.successTitle}>RESET LINK SENT</Text>
               <Text style={styles.successBody}>
-                Your investor profile has been created.{"\n"}
-                Check your email to verify your account, then log in to begin.
+                If that email is associated with an account, you'll receive a password reset link shortly.
+                Check your inbox and spam folder.
               </Text>
               <TouchableOpacity
                 style={styles.submitBtn}
                 onPress={() => router.replace("/(auth)/login")}
               >
-                <Text style={styles.submitText}>▶  PROCEED TO LOGIN</Text>
+                <Text style={styles.submitText}>← RETURN TO LOGIN</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <>
+              <Text style={styles.description}>
+                Enter the email address associated with your account. We'll send you a link to reset your password.
+              </Text>
+
               {error && (
                 <View style={styles.errorBanner}>
                   <Text style={styles.errorIcon}>⚠</Text>
@@ -123,42 +105,17 @@ export default function RegisterScreen() {
                 placeholderTextColor={Colors.textMuted}
                 placeholder="your@email.com"
                 selectionColor={Colors.blue}
-                returnKeyType="next"
-              />
-
-              <Text style={styles.fieldLabel}>USERNAME</Text>
-              <TextInput
-                style={[styles.input, error && styles.inputError]}
-                value={username}
-                onChangeText={(v) => { setUsername(v); setError(null); }}
-                autoCapitalize="none"
-                autoCorrect={false}
-                placeholderTextColor={Colors.textMuted}
-                placeholder="investor_handle"
-                selectionColor={Colors.blue}
-                returnKeyType="next"
-              />
-
-              <Text style={styles.fieldLabel}>PASSWORD</Text>
-              <TextInput
-                style={[styles.input, error && styles.inputError]}
-                value={password}
-                onChangeText={(v) => { setPassword(v); setError(null); }}
-                secureTextEntry
-                placeholderTextColor={Colors.textMuted}
-                placeholder="min 8 characters"
-                selectionColor={Colors.blue}
                 returnKeyType="done"
-                onSubmitEditing={handleRegister}
+                onSubmitEditing={handleSubmit}
               />
 
               <TouchableOpacity
                 style={[styles.submitBtn, loading && { opacity: 0.5 }]}
-                onPress={handleRegister}
+                onPress={handleSubmit}
                 disabled={loading}
               >
                 <Text style={styles.submitText}>
-                  {loading ? "REGISTERING..." : "▶  CREATE ACCOUNT"}
+                  {loading ? "SENDING..." : "▶  SEND RESET LINK"}
                 </Text>
               </TouchableOpacity>
             </>
@@ -173,7 +130,7 @@ export default function RegisterScreen() {
       </View>
 
       <View style={styles.bottomBar}>
-        <Text style={styles.bottomText}>SECURE REGISTRATION · DATA ENCRYPTED AT REST</Text>
+        <Text style={styles.bottomText}>SECURE TOKEN · EXPIRES IN 1 HOUR</Text>
       </View>
     </KeyboardAvoidingView>
   );
@@ -207,13 +164,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginBottom: 20,
+    marginBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: Colors.borderFaint,
     paddingBottom: 10,
   },
   blueDot: { width: 6, height: 6, borderRadius: 1, backgroundColor: Colors.blue },
   panelTitle: { fontSize: 9, fontFamily: Fonts.sansBold, color: Colors.blue, letterSpacing: 2 },
+
+  description: {
+    fontSize: 12,
+    fontFamily: Fonts.sans,
+    color: Colors.textDim,
+    lineHeight: 18,
+    marginBottom: 16,
+  },
 
   errorBanner: {
     flexDirection: "row",
@@ -229,9 +194,9 @@ const styles = StyleSheet.create({
   errorIcon: { fontSize: 12, color: "#e05555", marginTop: 1 },
   errorText: { flex: 1, fontSize: 11, fontFamily: Fonts.sans, color: "#e05555", lineHeight: 16 },
 
-  successBlock: { alignItems: "center", paddingVertical: 12, gap: 12 },
-  successIcon: { fontSize: 36, color: Colors.green },
-  successTitle: { fontSize: 11, fontFamily: Fonts.sansBold, color: Colors.green, letterSpacing: 2 },
+  successBlock: { alignItems: "center", paddingVertical: 8, gap: 12 },
+  successIcon: { fontSize: 36, color: Colors.blue },
+  successTitle: { fontSize: 11, fontFamily: Fonts.sansBold, color: Colors.blue, letterSpacing: 2 },
   successBody: { fontSize: 12, fontFamily: Fonts.sans, color: Colors.textDim, lineHeight: 18, textAlign: "center" },
 
   fieldLabel: {
@@ -259,7 +224,7 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 2,
     alignItems: "center",
-    marginTop: 22,
+    marginTop: 20,
   },
   submitText: { fontSize: 12, fontFamily: Fonts.sansBold, color: Colors.bg, letterSpacing: 2 },
 

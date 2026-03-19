@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StatusBar } from "expo-status-bar";
@@ -12,7 +12,6 @@ export default function RootLayout() {
   const router = useRouter();
   const segments = useSegments();
   const { token, isHydrated, hydrate } = useAuthStore();
-  const navigationReady = useRef(false);
 
   useEffect(() => {
     hydrate();
@@ -20,12 +19,6 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (!isHydrated || !fontsLoaded) return;
-    // Mark navigation as ready after first render with Slot mounted
-    navigationReady.current = true;
-  }, [isHydrated, fontsLoaded]);
-
-  useEffect(() => {
-    if (!isHydrated || !fontsLoaded || !navigationReady.current) return;
 
     const inAuth = segments[0] === "(auth)";
     if (!token && !inAuth) {
@@ -52,10 +45,7 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: Colors.bg,
-  },
+  root: { flex: 1, backgroundColor: Colors.bg },
   loading: {
     flex: 1,
     backgroundColor: Colors.bg,
