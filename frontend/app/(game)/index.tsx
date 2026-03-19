@@ -20,6 +20,7 @@ import { CompanionSelector } from "../../components/companion/CompanionSelector"
 import { COMPANIONS, type CompanionId } from "../../constants/companions";
 import { CompanionVisual } from "../../components/companion/CompanionVisual";
 import { useCompanionStore } from "../../store/companionStore";
+import { ThemeModeToggle } from "../../components/theme/ThemeModeToggle";
 
 const RANK_LABELS = ["—", "ANALYST I", "ASSOCIATE II", "DIRECTOR III", "MD IV"];
 
@@ -141,6 +142,7 @@ export default function GameIndexScreen() {
           <Text style={styles.topBarLabel}>{isNormal ? "Home" : "INDEX"}</Text>
         </View>
         <View style={styles.topRight}>
+          <ThemeModeToggle compact />
           <TouchableOpacity style={styles.topBtn} onPress={() => router.push("/(profile)")}>
             <Text style={styles.topBtnText}>PROFILE</Text>
           </TouchableOpacity>
@@ -170,6 +172,19 @@ export default function GameIndexScreen() {
       >
         <View style={styles.card}>
           <View style={styles.cardHeader}>
+            <View style={[styles.blueDot, { backgroundColor: colors.amber }]} />
+            <Text style={styles.cardHeaderText}>{isNormal ? "🎨 Viewing Style" : "VIEW MODE"}</Text>
+          </View>
+          <Text style={styles.sessionDesc}>
+            {isNormal
+              ? "Normal mode turns the app into a friendlier learning view with softer language, more spacing, and easier summaries."
+              : "Pro mode keeps the denser terminal layout for faster scanning and full market detail."}
+          </Text>
+          <ThemeModeToggle />
+        </View>
+
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
             <View style={styles.blueDot} />
             <Text style={styles.cardHeaderText}>{isNormal ? "👤 Investor Profile" : "INVESTOR PROFILE"}</Text>
           </View>
@@ -184,9 +199,9 @@ export default function GameIndexScreen() {
             />
             <View style={styles.dataSep} />
             <DataBlock
-              label={isNormal ? "📚 Stage / Rank" : "STAGE / RANK"}
-              value={loadingData ? "..." : `S${portfolio?.stage ?? 1} / R${portfolio?.investor_rank ?? 1}`}
-              sub={portfolio ? RANK_LABELS[portfolio.investor_rank] : undefined}
+              label={isNormal ? "🧠 Investor Style" : "STAGE / RANK"}
+              value={loadingData ? "..." : isNormal ? (activePersona?.name ?? "Explorer") : `S${portfolio?.stage ?? 1} / R${portfolio?.investor_rank ?? 1}`}
+              sub={isNormal ? "Your active guide for decisions" : portfolio ? RANK_LABELS[portfolio.investor_rank] : undefined}
               accent={colors.teal}
             />
             <View style={styles.dataSep} />
@@ -263,11 +278,11 @@ export default function GameIndexScreen() {
             <Text style={styles.cardHeaderText}>{isNormal ? "✅ System Status" : "SYSTEM STATUS"}</Text>
           </View>
           <View style={styles.dataRow}>
-            <DataBlock label="PERSONA ENGINE" value="ONLINE" accent={colors.green} />
+            <DataBlock label={isNormal ? "Guide system" : "PERSONA ENGINE"} value="ONLINE" accent={colors.green} />
             <View style={styles.dataSep} />
-            <DataBlock label="CARD PIPELINE" value="READY" accent={colors.green} />
+            <DataBlock label={isNormal ? "Card flow" : "CARD PIPELINE"} value="READY" accent={colors.green} />
             <View style={styles.dataSep} />
-            <DataBlock label="VERSION" value="1.0.0" />
+            <DataBlock label={isNormal ? "Build" : "VERSION"} value="1.0.0" />
           </View>
         </View>
       </ScrollView>

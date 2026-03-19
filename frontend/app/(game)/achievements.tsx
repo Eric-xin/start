@@ -5,8 +5,10 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { getAchievements, AchievementData } from "../../services/achievements";
-import { Colors } from "../../constants/colors";
+import { Colors, useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
+import { useThemeStore } from "../../store/themeStore";
+import { ThemeModeToggle } from "../../components/theme/ThemeModeToggle";
 
 const TIER_COLORS: Record<string, string> = {
   bronze: "#cd7f32",
@@ -27,24 +29,25 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 function AchievementCard({ achievement }: { achievement: AchievementData }) {
-  const accent = TIER_COLORS[achievement.tier] ?? Colors.blue;
+  const colors = useColors();
+  const accent = TIER_COLORS[achievement.tier] ?? colors.blue;
   const locked = !achievement.unlocked;
 
   return (
-    <View style={[s.achCard, locked && s.achLocked, { borderColor: locked ? Colors.borderDim : accent }]}>
-      <View style={[s.achBand, { backgroundColor: locked ? Colors.borderDim : accent }]} />
+    <View style={[s.achCard, locked && s.achLocked, { backgroundColor: colors.bgPanel, borderColor: locked ? colors.borderDim : accent }]}>
+      <View style={[s.achBand, { backgroundColor: locked ? colors.borderDim : accent }]} />
       <Text style={[s.achEmoji, locked && { opacity: 0.3 }]}>{achievement.emoji}</Text>
       <View style={s.achContent}>
-        <Text style={[s.achTitle, locked && { color: Colors.textDim }]}>{achievement.title}</Text>
-        <Text style={[s.achDesc, locked && { color: Colors.textMuted }]}>{achievement.description}</Text>
+        <Text style={[s.achTitle, { color: locked ? colors.textDim : colors.textBright }]}>{achievement.title}</Text>
+        <Text style={[s.achDesc, { color: locked ? colors.textMuted : colors.textDim }]}>{achievement.description}</Text>
         {achievement.unlocked && achievement.unlocked_at && (
-          <Text style={s.achDate}>
+          <Text style={[s.achDate, { color: colors.textMuted }]}>
             {new Date(achievement.unlocked_at).toLocaleDateString()}
           </Text>
         )}
       </View>
-      <View style={[s.tierBadge, { borderColor: locked ? Colors.borderDim : accent }]}>
-        <Text style={[s.tierText, { color: locked ? Colors.textMuted : accent }]}>
+      <View style={[s.tierBadge, { borderColor: locked ? colors.borderDim : accent }]}>
+        <Text style={[s.tierText, { color: locked ? colors.textMuted : accent }]}>
           {achievement.tier.toUpperCase()}
         </Text>
       </View>
@@ -54,6 +57,8 @@ function AchievementCard({ achievement }: { achievement: AchievementData }) {
 
 export default function AchievementsScreen() {
   const router = useRouter();
+  const colors = useColors();
+  const isNormal = useThemeStore((state) => state.mode === "normal");
   const { width } = useWindowDimensions();
   const [achievements, setAchievements] = useState<AchievementData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,37 +83,52 @@ export default function AchievementsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={Colors.blue} size="large" />
-        <Text style={styles.loadingText}>LOADING ACHIEVEMENTS</Text>
+      <View style={[styles.loading, { backgroundColor: colors.bg }]}>
+        <ActivityIndicator color={colors.blue} size="large" />
+        <Text style={[styles.loadingText, { color: colors.textDim }]}>
+          {isNormal ? "Loading your wins..." : "LOADING ACHIEVEMENTS"}
+        </Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
       {/* Top bar */}
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { backgroundColor: colors.bgPanel, borderBottomColor: colors.borderPrimary }]}>
         <View style={styles.topLeft}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.backBtn}>← BACK</Text>
+            <Text style={[styles.backBtn, { color: colors.blue }]}>← BACK</Text>
           </TouchableOpacity>
-          <View style={styles.barSep} />
-          <Text style={styles.topBarLabel}>ACHIEVEMENTS</Text>
+          <View style={[styles.barSep, { backgroundColor: colors.borderDim }]} />
+          <Text style={[styles.topBarLabel, { color: colors.textDim }]}>
+            {isNormal ? "🏆 Achievements" : "ACHIEVEMENTS"}
+          </Text>
         </View>
         <View style={styles.topRight}>
-          <Text style={styles.counter}>
-            {unlocked}/{total} UNLOCKED
+          <ThemeModeToggle compact />
+          <Text style={[styles.counter, { color: colors.blue }]}>
+            {isNormal ? `${unlocked}/${total} earned` : `${unlocked}/${total} UNLOCKED`}
           </Text>
         </View>
       </View>
 
       {/* Progress bar */}
-      <View style={styles.progressBar}>
-        <View style={[styles.progressFill, { width: total > 0 ? `${(unlocked / total) * 100}%` : "0%" }]} />
+      <View style={[styles.progressBar, { backgroundColor: colors.borderDim }]}>
+        <View style={[styles.progressFill, { backgroundColor: colors.blue, width: total > 0 ? `${(unlocked / total) * 100}%` : "0%" }]} />
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+        {isNormal ? (
+          <View style={[styles.section, { backgroundColor: colors.bgPanel, borderWidth: 1, borderColor: colors.borderDim, borderRadius: 18, padding: 16 }]}>
+            <Text style={{ fontSize: 15, fontFamily: Fonts.sansBold, color: colors.textBright, marginBottom: 6 }}>
+              Collect milestones as you learn
+            </Text>
+            <Text style={{ fontSize: 12, fontFamily: Fonts.sans, color: colors.textPrimary, lineHeight: 18 }}>
+              Each badge marks progress in money habits, market lessons, and decision-making. Locked badges show what you can grow into next.
+            </Text>
+          </View>
+        ) : null}
         {categoryOrder.map((cat) => {
           const items = grouped[cat];
           if (!items?.length) return null;
@@ -116,10 +136,12 @@ export default function AchievementsScreen() {
 
           return (
             <View key={cat} style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <View style={styles.blueDot} />
-                <Text style={styles.sectionTitle}>{CATEGORY_LABELS[cat] ?? cat.toUpperCase()}</Text>
-                <Text style={styles.sectionCount}>{catUnlocked}/{items.length}</Text>
+              <View style={[styles.sectionHeader, { borderBottomColor: colors.borderFaint }]}>
+                <View style={[styles.blueDot, { backgroundColor: colors.blue }]} />
+                <Text style={[styles.sectionTitle, { color: colors.blue }]}>
+                  {isNormal ? (CATEGORY_LABELS[cat] ?? cat).replace("MONEY & PERFORMANCE", "Money & progress").replace("INVESTOR RANK", "Investor growth").replace("LEARNING MASTERY", "Learning wins").replace("DECISION QUALITY", "Decision quality").replace("STRATEGY & DECKS", "Strategies & decks").replace("STAGES", "Journey steps").replace("STREAKS", "Streaks") : CATEGORY_LABELS[cat] ?? cat.toUpperCase()}
+                </Text>
+                <Text style={[styles.sectionCount, { color: colors.textDim }]}>{catUnlocked}/{items.length}</Text>
               </View>
               <View style={[styles.grid, { maxWidth: width > 800 ? 800 : "100%" }]}>
                 {items.map((a) => (

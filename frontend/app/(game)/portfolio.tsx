@@ -10,8 +10,10 @@ import {
   getPortfolio, claimDailyIncome, getNetWorthHistory, getRecentPlays,
   getNextCard, PortfolioData, NetWorthPoint, CardPlayData,
 } from "../../services/portfolio";
-import { Colors } from "../../constants/colors";
+import { Colors, useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
+import { useThemeStore } from "../../store/themeStore";
+import { ThemeModeToggle } from "../../components/theme/ThemeModeToggle";
 
 const RANK_LABELS = ["", "ANALYST", "ASSOCIATE", "VP", "MD"];
 const BAND_COLORS: Record<string, string> = {
@@ -80,6 +82,8 @@ const sh = StyleSheet.create({
 
 export default function PortfolioScreen() {
   const router = useRouter();
+  const colors = useColors();
+  const isNormal = useThemeStore((state) => state.mode === "normal");
   const { setPortfolio, setCurrentCard } = usePortfolioStore();
   const { width } = useWindowDimensions();
 
@@ -153,9 +157,11 @@ export default function PortfolioScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={Colors.blue} size="large" />
-        <Text style={styles.loadingText}>LOADING PORTFOLIO</Text>
+      <View style={[styles.loading, { backgroundColor: colors.bg }]}>
+        <ActivityIndicator color={colors.blue} size="large" />
+        <Text style={[styles.loadingText, { color: colors.textDim }]}>
+          {isNormal ? "Loading your money picture..." : "LOADING PORTFOLIO"}
+        </Text>
       </View>
     );
   }
@@ -171,22 +177,33 @@ export default function PortfolioScreen() {
   const isWide = width >= 760;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
       {/* Top bar */}
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { backgroundColor: colors.bgPanel, borderBottomColor: colors.borderPrimary }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backText}>← BACK</Text>
+          <Text style={[styles.backText, { color: colors.textDim }]}>← BACK</Text>
         </TouchableOpacity>
-        <Text style={styles.logo}>CARDECON</Text>
-        <View style={styles.barSep} />
-        <Text style={styles.topLabel}>PORTFOLIO</Text>
+        <Text style={[styles.logo, { color: colors.blue }]}>CARDECON</Text>
+        <View style={[styles.barSep, { backgroundColor: colors.borderDim }]} />
+        <Text style={[styles.topLabel, { color: colors.textDim }]}>{isNormal ? "💼 Portfolio" : "PORTFOLIO"}</Text>
         <View style={{ flex: 1 }} />
-        <TouchableOpacity style={styles.playBtnSmall} onPress={handlePlay}>
-          <Text style={styles.playBtnSmallText}>▶ PLAY CARDS</Text>
+        <ThemeModeToggle compact />
+        <TouchableOpacity style={[styles.playBtnSmall, { backgroundColor: colors.blue, borderRadius: isNormal ? 999 : 2 }]} onPress={handlePlay}>
+          <Text style={[styles.playBtnSmallText, { color: colors.bg }]}>{isNormal ? "▶ Keep Learning" : "▶ PLAY CARDS"}</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
+        {isNormal ? (
+          <View style={[styles.card, { backgroundColor: colors.bgPanel, borderColor: colors.borderDim, borderRadius: 18 }]}>
+            <Text style={{ fontSize: 15, fontFamily: Fonts.sansBold, color: colors.textBright, marginBottom: 6 }}>
+              Your money story at a glance
+            </Text>
+            <Text style={{ fontSize: 12, fontFamily: Fonts.sans, color: colors.textPrimary, lineHeight: 18 }}>
+              Focus on three things here: how much you have now, whether you are growing over time, and what kinds of decisions are helping or hurting.
+            </Text>
+          </View>
+        ) : null}
 
         {/* ── Net worth strip ── */}
         <View style={styles.worthStrip}>

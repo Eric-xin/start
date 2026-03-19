@@ -29,6 +29,7 @@ import { useCompanionStore } from "../../store/companionStore";
 import { pickPhrase, type CompanionId } from "../../constants/companions";
 import { CompanionPresence } from "../../components/companion/CompanionPresence";
 import { CompanionChatDrawer } from "../../components/companion/CompanionChatDrawer";
+import { ThemeModeToggle } from "../../components/theme/ThemeModeToggle";
 
 type PanelType = "market" | "news" | "portfolio" | null;
 
@@ -82,8 +83,6 @@ function TopStatusBar({
 }) {
   const colors = useColors();
   const isNormal = useThemeStore((state) => state.mode === "normal");
-  const mode = useThemeStore((state) => state.mode);
-  const setMode = useThemeStore((state) => state.setMode);
   const styles = createTopBarStyles(colors, isNormal);
   const now = new Date();
   const timeStr = now.toLocaleTimeString("en-US", {
@@ -141,20 +140,7 @@ function TopStatusBar({
         <View style={styles.liveIndicator} />
         <Text style={styles.time}>{timeStr}</Text>
 
-        <View style={styles.modeToggle}>
-          <TouchableOpacity
-            style={[styles.modeChip, mode === "normal" && styles.modeChipActive]}
-            onPress={() => setMode("normal")}
-          >
-            <Text style={[styles.modeText, mode === "normal" && styles.modeTextActive]}>NORMAL</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.modeChip, mode === "pro" && styles.modeChipActive]}
-            onPress={() => setMode("pro")}
-          >
-            <Text style={[styles.modeText, mode === "pro" && styles.modeTextActive]}>PRO</Text>
-          </TouchableOpacity>
-        </View>
+        <ThemeModeToggle />
 
         <TouchableOpacity style={styles.exitBtn} onPress={onExit}>
           <Text style={styles.exitBtnText}>EXIT</Text>
@@ -320,9 +306,9 @@ export default function PlayScreen() {
         market_state: portfolio.market_state ?? {},
       }
     : { capital: 0, stage: 1, investor_rank: 1, progress: 0, portfolio_weights: {}, market_state: {} };
-  const showSidebar = isWide || (isMedium && rank >= 3);
+  const showSidebar = isWide || (isMedium && (isNormal || rank >= 3));
   const showMarketPill = rank >= 2;
-  const sidebarW = showSidebar ? Layout.sidebarWidth : 0;
+  const sidebarW = showSidebar ? (isNormal ? Math.min(Math.max(width * 0.34, 320), 420) : Layout.sidebarWidth) : 0;
   const cardAreaW = width - sidebarW;
   const cardAreaH = height - Layout.headerHeight - Layout.statsPanelHeight;
 
@@ -349,7 +335,7 @@ export default function PlayScreen() {
 
       <View style={styles.body}>
         {showSidebar && (
-          <View style={[styles.sidePanel, { width: Layout.sidebarWidth }]}>
+          <View style={[styles.sidePanel, { width: sidebarW }]}>
             <SidebarPanel session={sessionProxy} />
           </View>
         )}
@@ -522,29 +508,6 @@ const createTopBarStyles = (colors: ReturnType<typeof useColors>, isNormal: bool
       letterSpacing: isNormal ? 0.4 : 1.5,
     },
     panelBtnTextActive: {
-      color: colors.blue,
-    },
-    modeToggle: {
-      flexDirection: "row",
-      borderWidth: 1,
-      borderColor: colors.borderDim,
-      borderRadius: 999,
-      overflow: "hidden",
-      backgroundColor: colors.bg,
-    },
-    modeChip: {
-      paddingHorizontal: 10,
-      paddingVertical: 4,
-    },
-    modeChipActive: {
-      backgroundColor: colors.blueDim,
-    },
-    modeText: {
-      fontSize: 9,
-      fontFamily: Fonts.sansBold,
-      color: colors.textDim,
-    },
-    modeTextActive: {
       color: colors.blue,
     },
     exitBtn: {

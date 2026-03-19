@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   View, Text, ScrollView, StyleSheet,
-  ActivityIndicator, Alert, TouchableOpacity, Switch,
+  ActivityIndicator, Alert, TouchableOpacity, Switch, useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 import {
@@ -9,9 +9,10 @@ import {
   ProgressData, StrategyInfo, DeckInfo,
 } from "../../services/progress";
 import { getPortfolio } from "../../services/portfolio";
-import { Colors } from "../../constants/colors";
+import { Colors, useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { useThemeStore } from "../../store/themeStore";
+import { ThemeModeToggle } from "../../components/theme/ThemeModeToggle";
 
 const STRATEGY_ICONS: Record<string, string> = {
   savings: "💵",
@@ -43,7 +44,10 @@ const DECK_ICONS: Record<string, string> = {
 
 export default function DecksScreen() {
   const router = useRouter();
+  const colors = useColors();
   const isNormal = useThemeStore((state) => state.mode === "normal");
+  const { width } = useWindowDimensions();
+  const isWide = width >= 1100;
   const [progress, setProgress] = useState<ProgressData | null>(null);
   const [capital, setCapital] = useState<number>(0);
   const [loading, setLoading] = useState(true);
@@ -135,8 +139,8 @@ export default function DecksScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={Colors.blue} size="large" />
+      <View style={[styles.loading, { backgroundColor: colors.bg }]}>
+        <ActivityIndicator color={colors.blue} size="large" />
       </View>
     );
   }
@@ -155,20 +159,31 @@ export default function DecksScreen() {
   const totalDecks = progress?.decks.length ?? 0;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.topBar}>
-        <Text style={styles.logo}>CARDECON</Text>
-        <View style={styles.barSep} />
-        <Text style={styles.topLabel}>{isNormal ? "LEARNING DECKS" : "INVESTMENT DECKS"}</Text>
-        {saving && <ActivityIndicator color={Colors.blue} size="small" style={{ marginLeft: "auto" }} />}
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
+      <View style={[styles.topBar, { backgroundColor: colors.bgPanel, borderBottomColor: colors.borderPrimary }]}>
+        <Text style={[styles.logo, { color: colors.blue }]}>CARDECON</Text>
+        <View style={[styles.barSep, { backgroundColor: colors.borderDim }]} />
+        <Text style={[styles.topLabel, { color: colors.textDim }]}>{isNormal ? "LEARNING DECKS" : "INVESTMENT DECKS"}</Text>
+        <ThemeModeToggle compact />
+        {saving && <ActivityIndicator color={colors.blue} size="small" style={{ marginLeft: "auto" }} />}
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backText}>BACK →</Text>
+          <Text style={[styles.backText, { color: colors.textDim }]}>BACK →</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
+        {isNormal ? (
+          <View style={[styles.infoCard, { backgroundColor: colors.bgPanel, borderColor: colors.borderDim, borderLeftColor: colors.amber, borderRadius: 18 }]}>
+            <Text style={{ fontSize: 15, fontFamily: Fonts.sansBold, color: colors.textBright, marginBottom: 6 }}>
+              Build your lesson menu
+            </Text>
+            <Text style={{ fontSize: 12, fontFamily: Fonts.sans, color: colors.textPrimary, lineHeight: 18 }}>
+              Turn themes on to see more of them while you play. Start simple, then unlock more advanced packs when you feel ready.
+            </Text>
+          </View>
+        ) : null}
         {/* Stats strip */}
-        <View style={styles.statsRow}>
+        <View style={[styles.statsRow, { backgroundColor: colors.bgPanel, borderColor: colors.borderDim, borderRadius: isNormal ? 18 : 2 }]}>
           <View style={styles.statBlock}>
             <Text style={styles.statLabel}>TOTAL CARDS</Text>
             <Text style={styles.statValue}>{totalCards}</Text>
@@ -192,7 +207,7 @@ export default function DecksScreen() {
         </View>
 
         {/* Info banner */}
-        <View style={styles.infoCard}>
+        <View style={[styles.infoCard, { backgroundColor: colors.bgPanel, borderColor: colors.borderFaint, borderLeftColor: colors.blue, borderRadius: isNormal ? 18 : 2 }]}>
           <Text style={styles.infoText}>
             {isNormal
               ? "Big themes live at the top, and each one contains smaller card packs underneath. Turn packs on or off to choose what you want to learn next."
@@ -201,16 +216,26 @@ export default function DecksScreen() {
         </View>
 
         {/* Strategies with nested decks */}
-        {progress?.strategies.map((strat) => {
-          const decks = decksByStrategy[strat.key] ?? [];
-          const icon = STRATEGY_ICONS[strat.key] ?? "•";
-          const desc = STRATEGY_DESCRIPTIONS[strat.key] ?? "";
+        <View style={[styles.strategyGrid, isWide && styles.strategyGridWide]}>
+          {progress?.strategies.map((strat) => {
+            const decks = decksByStrategy[strat.key] ?? [];
+            const icon = STRATEGY_ICONS[strat.key] ?? "•";
+            const desc = STRATEGY_DESCRIPTIONS[strat.key] ?? "";
 
-          return (
-            <View
-              key={strat.key}
-              style={[styles.strategyBlock, !strat.is_unlocked && styles.lockedBlock]}
-            >
+            return (
+              <View
+                key={strat.key}
+                style={[
+                  styles.strategyBlock,
+                  isWide && styles.strategyBlockWide,
+                  {
+                    backgroundColor: colors.bgPanel,
+                    borderColor: colors.borderDim,
+                    borderRadius: isNormal ? 18 : 2,
+                  },
+                  !strat.is_unlocked && styles.lockedBlock,
+                ]}
+              >
               {/* Strategy header */}
               <View style={styles.strategyHeader}>
                 <View style={styles.strategyLeft}>
@@ -263,7 +288,7 @@ export default function DecksScreen() {
 
               {/* Decks within this strategy */}
               {decks.length > 0 && (
-                <View style={styles.decksContainer}>
+                <View style={[styles.decksContainer, { backgroundColor: isNormal ? colors.bgSurface : Colors.bg + "80", borderTopColor: colors.borderDim }]}>
                   <Text style={styles.decksLabel}>{isNormal ? "CARD PACKS" : "CARD DECKS"}</Text>
                   {decks.map((deck, idx) => {
                     const deckIcon = DECK_ICONS[deck.key] ?? "📁";
@@ -272,6 +297,7 @@ export default function DecksScreen() {
                         key={deck.key}
                         style={[
                           styles.deckRow,
+                          { backgroundColor: isNormal ? colors.bgPanel : "transparent" },
                           idx < decks.length - 1 && styles.deckRowBorder,
                           !deck.is_unlocked && styles.deckLocked,
                         ]}
@@ -331,9 +357,10 @@ export default function DecksScreen() {
                   })}
                 </View>
               )}
-            </View>
-          );
-        })}
+              </View>
+            );
+          })}
+        </View>
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -379,6 +406,21 @@ const styles = StyleSheet.create({
     width: "100%", maxWidth: 620,
     backgroundColor: Colors.bgPanel, borderWidth: 1, borderColor: Colors.borderDim,
     borderRadius: 2, overflow: "hidden",
+  },
+  strategyGrid: {
+    width: "100%",
+    maxWidth: 1100,
+    gap: 14,
+  },
+  strategyGridWide: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  strategyBlockWide: {
+    width: "48.5%",
+    maxWidth: undefined,
   },
   lockedBlock: { opacity: 0.65 },
 

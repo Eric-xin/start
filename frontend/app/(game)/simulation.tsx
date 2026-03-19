@@ -39,6 +39,7 @@ import {
 } from "../../services/simulation";
 import { api } from "../../services/api";
 import { useThemeStore } from "../../store/themeStore";
+import { ThemeModeToggle } from "../../components/theme/ThemeModeToggle";
 
 // ─── Asset config ────────────────────────────────────────────────────────────
 
@@ -137,6 +138,7 @@ function buildAreaPath(
 }
 
 function LineChart({ data, benchmarkData, events, width, height }: LineChartProps) {
+  const colors = useColors();
   const PAD_LEFT = 56;
   const PAD_RIGHT = 16;
   const PAD_TOP = 12;
@@ -214,10 +216,10 @@ function LineChart({ data, benchmarkData, events, width, height }: LineChartProp
       x: scaleX(ev.date),
       color:
         ev.impact === "positive"
-          ? Colors.green
+          ? colors.green
           : ev.impact === "negative"
-          ? Colors.red
-          : Colors.amber,
+          ? colors.red
+          : colors.amber,
     }));
 
   // Last point tip
@@ -230,8 +232,8 @@ function LineChart({ data, benchmarkData, events, width, height }: LineChartProp
     <Svg width={width} height={height}>
       <Defs>
         <LinearGradient id="portfolioGrad" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#0a6cf5" stopOpacity="0.25" />
-          <Stop offset="1" stopColor="#0a6cf5" stopOpacity="0.02" />
+          <Stop offset="0" stopColor={colors.blue} stopOpacity="0.25" />
+          <Stop offset="1" stopColor={colors.blue} stopOpacity="0.02" />
         </LinearGradient>
       </Defs>
 
@@ -241,7 +243,7 @@ function LineChart({ data, benchmarkData, events, width, height }: LineChartProp
         y={PAD_TOP}
         width={chartW}
         height={chartH}
-        fill={Colors.bgPanel}
+        fill={colors.bgPanel}
         rx={2}
       />
 
@@ -253,7 +255,7 @@ function LineChart({ data, benchmarkData, events, width, height }: LineChartProp
             y1={gl.y}
             x2={PAD_LEFT + chartW}
             y2={gl.y}
-            stroke={Colors.borderFaint}
+            stroke={colors.borderFaint}
             strokeWidth={1}
             strokeDasharray={i === 0 ? undefined : "3,4"}
           />
@@ -262,7 +264,7 @@ function LineChart({ data, benchmarkData, events, width, height }: LineChartProp
             y={gl.y + 4}
             fontSize={8}
             fontFamily={Fonts.mono}
-            fill={Colors.textDim}
+            fill={colors.textDim}
             textAnchor="end"
           >
             {fmtCurrency(gl.val)}
@@ -295,7 +297,7 @@ function LineChart({ data, benchmarkData, events, width, height }: LineChartProp
           y={PAD_TOP + chartH + 16}
           fontSize={9}
           fontFamily={Fonts.mono}
-          fill={Colors.textDim}
+          fill={colors.textDim}
           textAnchor="middle"
         >
           {yr.year}
@@ -306,7 +308,7 @@ function LineChart({ data, benchmarkData, events, width, height }: LineChartProp
       {benchmarkPoints.length > 1 && (
         <Path
           d={buildAreaPath(benchmarkPoints, chartBottom)}
-          fill={Colors.textMuted}
+          fill={colors.textMuted}
           fillOpacity={0.05}
         />
       )}
@@ -323,7 +325,7 @@ function LineChart({ data, benchmarkData, events, width, height }: LineChartProp
       {benchmarkPoints.length > 1 && (
         <Path
           d={buildPath(benchmarkPoints)}
-          stroke={Colors.textDim}
+          stroke={colors.textDim}
           strokeWidth={1.5}
           fill="none"
           strokeDasharray="4,3"
@@ -335,7 +337,7 @@ function LineChart({ data, benchmarkData, events, width, height }: LineChartProp
       {portfolioPoints.length > 0 && (
         <Path
           d={buildPath(portfolioPoints)}
-          stroke="#0a6cf5"
+          stroke={colors.blue}
           strokeWidth={2}
           fill="none"
           strokeLinecap="round"
@@ -346,13 +348,13 @@ function LineChart({ data, benchmarkData, events, width, height }: LineChartProp
       {/* Rightmost value tip */}
       {lastPt && lastVal !== undefined && (
         <G>
-          <Circle cx={lastPt.x} cy={lastPt.y} r={3.5} fill="#0a6cf5" />
+          <Circle cx={lastPt.x} cy={lastPt.y} r={3.5} fill={colors.blue} />
           <Rect
             x={lastPt.x - 2}
             y={lastPt.y - 18}
             width={60}
             height={14}
-            fill={Colors.bgCard ?? Colors.bgPanel}
+            fill={colors.bgCard ?? colors.bgPanel}
             rx={2}
             opacity={0.9}
           />
@@ -361,7 +363,7 @@ function LineChart({ data, benchmarkData, events, width, height }: LineChartProp
             y={lastPt.y - 7}
             fontSize={9}
             fontFamily={Fonts.mono}
-            fill={Colors.textBright}
+            fill={colors.textBright}
             textAnchor="middle"
           >
             {fmtCurrency(lastVal)}
@@ -371,13 +373,13 @@ function LineChart({ data, benchmarkData, events, width, height }: LineChartProp
 
       {/* Legend */}
       <G>
-        <Rect x={PAD_LEFT + 8} y={PAD_TOP + 6} width={20} height={2} fill="#0a6cf5" rx={1} />
+        <Rect x={PAD_LEFT + 8} y={PAD_TOP + 6} width={20} height={2} fill={colors.blue} rx={1} />
         <SvgText
           x={PAD_LEFT + 32}
           y={PAD_TOP + 9}
           fontSize={8}
           fontFamily={Fonts.mono}
-          fill={Colors.textBright}
+          fill={colors.textBright}
         >
           PORTFOLIO
         </SvgText>
@@ -386,7 +388,7 @@ function LineChart({ data, benchmarkData, events, width, height }: LineChartProp
           y={PAD_TOP + 6}
           width={20}
           height={1.5}
-          fill={Colors.textDim}
+          fill={colors.textDim}
           rx={1}
           opacity={0.6}
         />
@@ -412,6 +414,7 @@ interface TraitBarProps {
 }
 
 function TraitBar({ label, value }: TraitBarProps) {
+  const colors = useColors();
   const fill = useSharedValue(0);
 
   useEffect(() => {
@@ -427,17 +430,17 @@ function TraitBar({ label, value }: TraitBarProps) {
 
   // Color: interpolate from dim blue to bright blue based on value
   const barColor =
-    value >= 0.7 ? Colors.blue : value >= 0.4 ? Colors.blueLight : Colors.blueDim;
+    value >= 0.7 ? colors.blue : value >= 0.4 ? colors.blueLight : colors.blueDim;
 
   return (
     <View style={traitStyles.row}>
-      <Text style={traitStyles.label}>{label.toUpperCase()}</Text>
-      <View style={traitStyles.track}>
+      <Text style={[traitStyles.label, { color: colors.textDim }]}>{label.toUpperCase()}</Text>
+      <View style={[traitStyles.track, { backgroundColor: colors.bgCard ?? colors.bgPanel, borderColor: colors.borderFaint }]}>
         <Animated.View
           style={[traitStyles.fill, fillStyle, { backgroundColor: barColor }]}
         />
       </View>
-      <Text style={traitStyles.value}>{Math.round(value * 100)}</Text>
+      <Text style={[traitStyles.value, { color: colors.textBright }]}>{Math.round(value * 100)}</Text>
     </View>
   );
 }
@@ -486,6 +489,7 @@ interface AllocationDonutProps {
 }
 
 function AllocationDonut({ allocation, size = 120 }: AllocationDonutProps) {
+  const colors = useColors();
   const cx = size / 2;
   const cy = size / 2;
   const r = size * 0.36;
@@ -502,7 +506,7 @@ function AllocationDonut({ allocation, size = 120 }: AllocationDonutProps) {
     const offset = -cumulativeAngle * circumference;
     cumulativeAngle += fraction;
     const color =
-      ASSET_COLORS[key as AssetClass] ?? Colors.blue;
+      ASSET_COLORS[key as AssetClass] ?? colors.blue;
     return { key, fraction, dashArray, offset, color, pct: Math.round(fraction * 100) };
   });
 
@@ -514,7 +518,7 @@ function AllocationDonut({ allocation, size = 120 }: AllocationDonutProps) {
           cx={cx}
           cy={cy}
           r={r}
-          stroke={Colors.borderFaint}
+          stroke={colors.borderFaint}
           strokeWidth={strokeWidth}
           fill="none"
         />
@@ -534,13 +538,13 @@ function AllocationDonut({ allocation, size = 120 }: AllocationDonutProps) {
           />
         ))}
         {/* Donut hole */}
-        <Circle cx={cx} cy={cy} r={r * 0.52} fill={Colors.bgPanel} />
+        <Circle cx={cx} cy={cy} r={r * 0.52} fill={colors.bgPanel} />
         <SvgText
           x={cx}
           y={cy - 4}
           fontSize={9}
           fontFamily={Fonts.mono}
-          fill={Colors.textDim}
+          fill={colors.textDim}
           textAnchor="middle"
         >
           ALLOC
@@ -550,7 +554,7 @@ function AllocationDonut({ allocation, size = 120 }: AllocationDonutProps) {
           y={cy + 10}
           fontSize={8}
           fontFamily={Fonts.mono}
-          fill={Colors.textDim}
+          fill={colors.textDim}
           textAnchor="middle"
         >
           {entries.length} assets
@@ -560,7 +564,7 @@ function AllocationDonut({ allocation, size = 120 }: AllocationDonutProps) {
         {segments.map((seg) => (
           <View key={seg.key} style={donutStyles.legendItem}>
             <View style={[donutStyles.dot, { backgroundColor: seg.color }]} />
-            <Text style={donutStyles.legendText}>
+            <Text style={[donutStyles.legendText, { color: colors.textDim }]}>
               {ASSET_LABELS[seg.key as AssetClass] ?? seg.key.toUpperCase()} {seg.pct}%
             </Text>
           </View>
@@ -608,37 +612,38 @@ interface TradeLogItemProps {
 }
 
 function TradeLogItem({ trade, capital }: TradeLogItemProps) {
+  const colors = useColors();
   const isBuy = trade.action.toLowerCase().includes("buy");
-  const actionColor = isBuy ? Colors.green : Colors.red;
+  const actionColor = isBuy ? colors.green : colors.red;
   const actionLabel = isBuy ? "▲ BUY" : "▼ SELL";
   const weightDelta = trade.new_weight - trade.old_weight;
 
   return (
-    <View style={tradeStyles.container}>
+    <View style={[tradeStyles.container, { backgroundColor: colors.bgPanel, borderColor: colors.borderFaint }]}>
       <View style={tradeStyles.header}>
-        <Text style={tradeStyles.date}>{trade.date}</Text>
+        <Text style={[tradeStyles.date, { color: colors.textDim }]}>{trade.date}</Text>
         <View style={[tradeStyles.actionBadge, { borderColor: actionColor }]}>
           <Text style={[tradeStyles.actionText, { color: actionColor }]}>
             {actionLabel}
           </Text>
         </View>
-        <Text style={tradeStyles.asset}>
+        <Text style={[tradeStyles.asset, { color: colors.textBright }]}>
           {ASSET_LABELS[trade.asset as AssetClass] ?? trade.asset.toUpperCase()}
         </Text>
       </View>
-      <Text style={tradeStyles.reason}>{trade.reason}</Text>
+      <Text style={[tradeStyles.reason, { color: colors.textBright }]}>{trade.reason}</Text>
       <View style={tradeStyles.footer}>
-        <View style={tradeStyles.traitPill}>
-          <Text style={tradeStyles.traitText}>
+        <View style={[tradeStyles.traitPill, { backgroundColor: colors.bgCard ?? colors.bgPanel, borderColor: colors.borderDim ?? colors.borderFaint }]}>
+          <Text style={[tradeStyles.traitText, { color: colors.blue }]}>
             {trade.trigger_trait} · {(trade.trait_value * 100).toFixed(0)}
           </Text>
         </View>
         {capital !== undefined && (
-          <Text style={tradeStyles.capital}>
+          <Text style={[tradeStyles.capital, { color: colors.textDim }]}>
             {fmtCurrency(capital)}{" "}
             <Text
               style={{
-                color: weightDelta >= 0 ? Colors.green : Colors.red,
+                color: weightDelta >= 0 ? colors.green : colors.red,
               }}
             >
               ({weightDelta >= 0 ? "+" : ""}
@@ -731,10 +736,11 @@ interface MetricCardProps {
 }
 
 function MetricCard({ label, value, color }: MetricCardProps) {
+  const colors = useColors();
   return (
-    <View style={metricStyles.card}>
-      <Text style={metricStyles.label}>{label}</Text>
-      <Text style={[metricStyles.value, { color: color ?? Colors.textBright }]}>
+    <View style={[metricStyles.card, { backgroundColor: colors.bgPanel, borderColor: colors.borderFaint }]}>
+      <Text style={[metricStyles.label, { color: colors.textDim }]}>{label}</Text>
+      <Text style={[metricStyles.value, { color: color ?? colors.textBright }]}>
         {value}
       </Text>
     </View>
@@ -1158,6 +1164,14 @@ export default function SimulationScreen() {
       {result && !running && (
         <>
           {isNormal ? (
+            <View style={[styles.normalHelperCard, { backgroundColor: colors.bgPanel, borderColor: colors.borderDim }]}>
+              <Text style={[styles.normalHelperTitle, { color: colors.textBright }]}>How to read this</Text>
+              <Text style={[styles.normalHelperBody, { color: colors.textPrimary }]}>
+                We keep the numbers, but the key story is simple: did the money grow, how rough was the ride, and where did the investor end up putting cash?
+              </Text>
+            </View>
+          ) : null}
+          {isNormal ? (
             <View style={[styles.metricsStrip, { marginBottom: 6 }]}>
               <MetricCard
                 label="What happened"
@@ -1321,6 +1335,7 @@ export default function SimulationScreen() {
           <Text style={styles.headerTitle}>{isNormal ? "🧪 Try a Simulation" : "SIMULATION ENGINE"}</Text>
         </View>
         <View style={styles.headerRight}>
+          <ThemeModeToggle compact />
           <View style={[styles.statusDot, { backgroundColor: Colors.green }]} />
           <LiveClock />
         </View>
@@ -1591,6 +1606,22 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 6,
     flexWrap: "wrap",
+  },
+  normalHelperCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 12,
+  },
+  normalHelperTitle: {
+    fontSize: 14,
+    fontFamily: Fonts.sansBold,
+    marginBottom: 6,
+  },
+  normalHelperBody: {
+    fontSize: 12,
+    fontFamily: Fonts.sans,
+    lineHeight: 18,
   },
 
   // Chart

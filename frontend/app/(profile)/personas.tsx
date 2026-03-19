@@ -7,11 +7,15 @@ import { useRouter } from "expo-router";
 import {
   listPersonas, createPersona, deletePersona, updatePersona, PersonaData,
 } from "../../services/persona";
-import { Colors } from "../../constants/colors";
+import { Colors, useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
+import { useThemeStore } from "../../store/themeStore";
+import { ThemeModeToggle } from "../../components/theme/ThemeModeToggle";
 
 export default function PersonasScreen() {
   const router = useRouter();
+  const colors = useColors();
+  const isNormal = useThemeStore((state) => state.mode === "normal");
   const [personas, setPersonas] = useState<PersonaData[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -83,58 +87,69 @@ export default function PersonasScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={Colors.blue} size="large" />
+      <View style={[styles.loading, { backgroundColor: colors.bg }]}>
+        <ActivityIndicator color={colors.blue} size="large" />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
       {/* Top bar */}
-      <View style={styles.topBar}>
-        <Text style={styles.logo}>CARDECON</Text>
-        <View style={styles.barSep} />
-        <Text style={styles.topLabel}>PERSONAS</Text>
+      <View style={[styles.topBar, { backgroundColor: colors.bgPanel, borderBottomColor: colors.borderPrimary }]}>
+        <Text style={[styles.logo, { color: colors.blue }]}>CARDECON</Text>
+        <View style={[styles.barSep, { backgroundColor: colors.borderDim }]} />
+        <Text style={[styles.topLabel, { color: colors.textDim }]}>{isNormal ? "🧠 Personas" : "PERSONAS"}</Text>
+        <ThemeModeToggle compact />
         <TouchableOpacity
-          style={styles.createBtn}
+          style={[styles.createBtn, { borderColor: colors.blue + "88" }]}
           onPress={() => setShowCreate(!showCreate)}
         >
-          <Text style={styles.createBtnText}>+ NEW</Text>
+          <Text style={[styles.createBtnText, { color: colors.blue }]}>{isNormal ? "+ New" : "+ NEW"}</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backText}>BACK →</Text>
+          <Text style={[styles.backText, { color: colors.textDim }]}>BACK →</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
+        {isNormal ? (
+          <View style={[styles.card, { backgroundColor: colors.bgPanel, borderColor: colors.borderDim, borderRadius: 18 }]}>
+            <Text style={{ fontSize: 15, fontFamily: Fonts.sansBold, color: colors.textBright, marginBottom: 6 }}>
+              Pick the kind of investor you want to practice as
+            </Text>
+            <Text style={{ fontSize: 12, fontFamily: Fonts.sans, color: colors.textPrimary, lineHeight: 18 }}>
+              Personas let you try different habits and risk styles. Activate one to shape how the game explains choices and tracks progress.
+            </Text>
+          </View>
+        ) : null}
         {/* Create form */}
         {showCreate && (
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <View style={styles.blueDot} />
-              <Text style={styles.cardHeaderText}>CREATE PERSONA</Text>
+          <View style={[styles.card, { backgroundColor: colors.bgPanel, borderColor: colors.borderDim, borderRadius: isNormal ? 18 : 2 }]}>
+            <View style={[styles.cardHeader, { borderBottomColor: colors.borderFaint }]}>
+              <View style={[styles.blueDot, { backgroundColor: colors.blue }]} />
+              <Text style={[styles.cardHeaderText, { color: colors.blue }]}>{isNormal ? "Create a New Persona" : "CREATE PERSONA"}</Text>
             </View>
-            <Text style={styles.fieldLabel}>PERSONA NAME</Text>
+            <Text style={[styles.fieldLabel, { color: colors.textDim }]}>{isNormal ? "Persona name" : "PERSONA NAME"}</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.bgCard, borderColor: colors.borderDim, color: colors.textBright, borderRadius: isNormal ? 14 : 2 }]}
               value={newName}
               onChangeText={setNewName}
               placeholder="e.g. Risk Taker, Conservative..."
-              placeholderTextColor={Colors.textMuted}
-              selectionColor={Colors.blue}
+              placeholderTextColor={colors.textMuted}
+              selectionColor={colors.blue}
               autoFocus
             />
             <View style={styles.formActions}>
               <TouchableOpacity
-                style={[styles.ctaBtn, creating && { opacity: 0.5 }]}
+                style={[styles.ctaBtn, { backgroundColor: colors.blue, borderRadius: isNormal ? 999 : 2 }, creating && { opacity: 0.5 }]}
                 onPress={handleCreate}
                 disabled={creating}
               >
                 <Text style={styles.ctaBtnText}>{creating ? "CREATING..." : "▶ CREATE"}</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setShowCreate(false)}>
-                <Text style={styles.cancelText}>CANCEL</Text>
+                <Text style={[styles.cancelText, { color: colors.textDim }]}>CANCEL</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -142,20 +157,22 @@ export default function PersonasScreen() {
 
         {/* Persona list */}
         {personas.map((persona) => (
-          <View key={persona.id} style={[styles.card, persona.is_active && styles.activeCard]}>
+          <View key={persona.id} style={[styles.card, { backgroundColor: colors.bgPanel, borderColor: persona.is_active ? colors.blue + "66" : colors.borderDim, borderRadius: isNormal ? 18 : 2 }, persona.is_active && styles.activeCard]}>
             <View style={styles.personaTop}>
               <View style={styles.personaLeft}>
                 <View style={styles.nameRow}>
-                  <View style={[styles.activeDot, { backgroundColor: persona.is_active ? Colors.green : Colors.borderDim }]} />
-                  <Text style={styles.personaName}>{persona.name}</Text>
+                  <View style={[styles.activeDot, { backgroundColor: persona.is_active ? colors.green : colors.borderDim }]} />
+                  <Text style={[styles.personaName, { color: colors.textBright, fontFamily: isNormal ? Fonts.sansBold : Fonts.mono }]}>{persona.name}</Text>
                   {persona.is_active && (
-                    <View style={styles.activeBadge}>
+                    <View style={[styles.activeBadge, { backgroundColor: colors.green + "22", borderColor: colors.green + "55" }]}>
                       <Text style={styles.activeBadgeText}>ACTIVE</Text>
                     </View>
                   )}
                 </View>
-                <Text style={styles.personaMeta}>
-                  {persona.cards_played} cards played · Created {new Date(persona.created_at).toLocaleDateString()}
+                <Text style={[styles.personaMeta, { color: colors.textDim }]}>
+                  {isNormal
+                    ? `${persona.cards_played} learning choices made · Created ${new Date(persona.created_at).toLocaleDateString()}`
+                    : `${persona.cards_played} cards played · Created ${new Date(persona.created_at).toLocaleDateString()}`}
                 </Text>
               </View>
               <View style={styles.personaActions}>
