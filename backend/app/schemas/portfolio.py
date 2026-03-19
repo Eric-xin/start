@@ -6,6 +6,7 @@ from typing import Optional, Any
 from pydantic import BaseModel
 
 from app.schemas.card import CardOut
+from app.schemas.achievement import AchievementOut
 
 
 class PortfolioOut(BaseModel):
@@ -34,6 +35,7 @@ class ClaimIncomeResponse(BaseModel):
     new_net_worth: float
     streak: int
     message: str
+    newly_unlocked_achievements: list[AchievementOut] = []
 
 
 class PlayCardRequest(BaseModel):
@@ -49,6 +51,7 @@ class PlayCardResponse(BaseModel):
     net_worth: float
     next_card: Optional[CardOut]
     portfolio: PortfolioOut
+    newly_unlocked_achievements: list[AchievementOut] = []
 
 
 class NetWorthSnapshotOut(BaseModel):

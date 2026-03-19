@@ -10,7 +10,9 @@ from sqlalchemy import select
 from app.database import AsyncSessionLocal, engine, Base
 from app.models.card import Card
 from app.models.game import GameConfig
+from app.models.achievement import Achievement
 from app.seeds.cards import SEED_CARDS
+from app.seeds.achievements import SEED_ACHIEVEMENTS
 
 SMTP_CONFIGS = [
     {"key": "smtp_host",      "value": "smtp.mailtrap.io",   "description": "SMTP server hostname"},
@@ -78,12 +80,24 @@ async def seed_configs(db: AsyncSession) -> int:
     return seeded
 
 
+async def seed_achievements(db: AsyncSession) -> int:
+    result = await db.execute(select(Achievement).limit(1))
+    if result.scalar_one_or_none():
+        return 0
+    seeded = 0
+    for ach_data in SEED_ACHIEVEMENTS:
+        db.add(Achievement(**ach_data))
+        seeded += 1
+    return seeded
+
+
 async def run_seeds():
     async with AsyncSessionLocal() as db:
         cards_seeded = await seed_cards(db)
         configs_seeded = await seed_configs(db)
+        achievements_seeded = await seed_achievements(db)
         await db.commit()
-        print(f"Seeded {cards_seeded} cards, {configs_seeded} config entries.")
+        print(f"Seeded {cards_seeded} cards, {configs_seeded} configs, {achievements_seeded} achievements.")
 
 
 if __name__ == "__main__":

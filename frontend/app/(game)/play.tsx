@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useRef } from "react";
+import React, { useEffect, useCallback, useRef, useState } from "react";
 import {
   View, Text, StyleSheet, ActivityIndicator,
   Alert, useWindowDimensions, Platform,
@@ -6,8 +6,10 @@ import {
 import { useRouter } from "expo-router";
 import { usePortfolioStore } from "../../store/portfolioStore";
 import { playCard, getNextCard } from "../../services/portfolio";
+import type { AchievementData } from "../../services/achievements";
 import { CardContainer } from "../../components/Card/CardContainer";
 import { LessonOverlay } from "../../components/Card/LessonOverlay";
+import { AchievementToast } from "../../components/AchievementToast";
 import { StatsPanel } from "../../components/HUD/StatsPanel";
 import { MarketContextPill } from "../../components/HUD/MarketContextPill";
 import { SidebarPanel } from "../../components/HUD/SidebarPanel";
@@ -163,6 +165,7 @@ export default function PlayScreen() {
   } = usePortfolioStore();
 
   const [initializing, setInitializing] = React.useState(true);
+  const [achievementQueue, setAchievementQueue] = useState<AchievementData[]>([]);
   const mounted = useRef(false);
 
   useEffect(() => {
@@ -192,6 +195,9 @@ export default function PlayScreen() {
       setPortfolio(result.portfolio);
       setNextCard(result.next_card ?? null);
       setLesson({ text: result.lesson, direction, reward: result.reward });
+      if (result.newly_unlocked_achievements?.length) {
+        setAchievementQueue((q) => [...q, ...result.newly_unlocked_achievements]);
+      }
     } catch {
       setSwipeLocked(false);
       setCurrentCard(currentCard);
@@ -233,6 +239,17 @@ export default function PlayScreen() {
   return (
     <View style={styles.container}>
       <TerminalGrid />
+
+      {/* Achievement toast */}
+      {achievementQueue.length > 0 && (
+        <AchievementToast
+          key={achievementQueue[0].key}
+          emoji={achievementQueue[0].emoji}
+          title={achievementQueue[0].title}
+          tier={achievementQueue[0].tier}
+          onDone={() => setAchievementQueue((q) => q.slice(1))}
+        />
+      )}
 
       {/* Top status bar */}
       <TopStatusBar session={sessionProxy} />

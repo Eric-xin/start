@@ -1,4 +1,5 @@
 import { api } from "./api";
+import type { AchievementData } from "./achievements";
 
 export interface PortfolioData {
   id: string;
@@ -46,6 +47,7 @@ export interface PlayResult {
   net_worth: number;
   next_card: CardData | null;
   portfolio: PortfolioData;
+  newly_unlocked_achievements: AchievementData[];
 }
 
 export interface ClaimIncomeResult {
@@ -54,6 +56,7 @@ export interface ClaimIncomeResult {
   new_net_worth: number;
   streak: number;
   message: string;
+  newly_unlocked_achievements: AchievementData[];
 }
 
 export interface NetWorthPoint {

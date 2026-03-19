@@ -1,4 +1,5 @@
-import uuid
+from uuid import UUID
+
 from pydantic import BaseModel, field_serializer
 from app.models.card import CardType, CardBandColor
 
@@ -6,10 +7,10 @@ from app.models.card import CardType, CardBandColor
 class CardOut(BaseModel):
     model_config = {"from_attributes": True}
 
-    id: uuid.UUID
+    id: UUID | str
 
     @field_serializer("id")
-    def serialize_id(self, v: uuid.UUID) -> str:
+    def serialize_id(self, v: UUID | str) -> str:
         return str(v)
     card_id: str
     type: CardType

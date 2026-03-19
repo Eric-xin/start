@@ -20,10 +20,21 @@ from app.schemas.portfolio import (
     NetWorthSnapshotOut, CardPlayOut,
 )
 from app.services import portfolio_service as svc
+from app.services import achievement_service as ach_svc
 from app.services.portfolio_service import compute_daily_income, resolve_card
 from app.services.card_recommender import recommend_next_card
+from app.schemas.achievement import AchievementOut
 
 router = APIRouter(prefix="/api/portfolio", tags=["portfolio"])
+
+
+def _achievement_out(a) -> AchievementOut:
+    return AchievementOut(
+        id=str(a.id), key=a.key, category=a.category, title=a.title,
+        description=a.description, emoji=a.emoji, tier=a.tier,
+        condition_type=a.condition_type, condition_value=a.condition_value,
+        unlocked=True,
+    )
 
 
 def _portfolio_out(portfolio: UserPortfolio) -> PortfolioOut:
@@ -69,12 +80,19 @@ async def claim_income(
     amount = await svc.claim_daily_income(db, portfolio)
     if amount is None:
         raise HTTPException(status_code=400, detail="Daily income already claimed today.")
+
+    progress = await svc.get_or_create_progress(db, current_user.id)
+    newly_unlocked = await ach_svc.check_and_unlock(db, current_user.id, portfolio, progress)
+    if newly_unlocked:
+        await db.commit()
+
     return ClaimIncomeResponse(
         amount=amount,
         new_capital=portfolio.capital,
         new_net_worth=portfolio.net_worth,
         streak=portfolio.income_streak,
         message=f"Daily income received: ${amount:,.0f}",
+        newly_unlocked_achievements=[_achievement_out(a) for a in newly_unlocked],
     )
 
 
@@ -103,6 +121,11 @@ async def play_card(
 
     play_result = await svc.play_card(db, portfolio, card, body.action, redis)
 
+    progress = await svc.get_or_create_progress(db, current_user.id)
+    newly_unlocked = await ach_svc.check_and_unlock(db, current_user.id, portfolio, progress)
+    if newly_unlocked:
+        await db.commit()
+
     return PlayCardResponse(
         lesson=play_result["lesson"],
         reward=play_result["reward"],
@@ -111,6 +134,7 @@ async def play_card(
         net_worth=play_result["net_worth"],
         next_card=play_result["next_card"],
         portfolio=_portfolio_out(play_result["portfolio"]),
+        newly_unlocked_achievements=[_achievement_out(a) for a in newly_unlocked],
     )
 
 
