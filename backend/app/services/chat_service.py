@@ -96,6 +96,29 @@ BLOCKED_PATTERNS = [
     "launder",
 ]
 
+HARDCODED_ANSWERS: dict[str, str] = {
+    "what is inflation in simple words?": (
+        "Inflation means prices go up over time, so your money buys less than before.\n\n"
+        "Simple example: if lunch cost $10 last year and now costs $11, that is inflation.\n\n"
+        "Why it matters: if your savings grow slower than inflation, your real purchasing power shrinks."
+    ),
+    "i am new. what is a stock?": (
+        "A stock is a tiny ownership piece of a company.\n\n"
+        "If the company grows profits over time, that ownership can become more valuable.\n\n"
+        "Simple example: owning stock is like owning a very small slice of a business, not just a random number on a screen."
+    ),
+    "what does diversification mean?": (
+        "Diversification means not putting all your money in one place.\n\n"
+        "You spread across different assets so one bad result hurts less overall.\n\n"
+        "Simple example: instead of one stock, you hold a broad fund with many companies."
+    ),
+    "what is risk in investing?": (
+        "Risk in investing means outcomes can differ from what you expect, including losing money or facing big ups and downs.\n\n"
+        "Simple example: a stock can rise 20% or fall 20% in a year.\n\n"
+        "Important point: risk is not just loss, it is uncertainty."
+    ),
+}
+
 
 class ChatServiceError(Exception):
     pass
@@ -115,6 +138,11 @@ def find_glossary_term(question: str) -> str | None:
         if _safe_contains(q, term):
             return term
     return None
+
+
+def _is_card_explanation(question: str) -> bool:
+    q = _normalize(question)
+    return q.startswith("explain this card:")
 
 
 def _entry_to_answer(term: str, entry: GlossaryEntry) -> str:
@@ -202,6 +230,14 @@ async def explain_term(question: str, stage: int | None = None, topics: list[str
         if blocked in q:
             raise ChatServiceError("This assistant can only help with educational financial explanations.")
 
+    if q in HARDCODED_ANSWERS:
+        return {
+            "answer": HARDCODED_ANSWERS[q],
+            "source": "hardcoded",
+            "term_matched": None,
+            "suggestions": glossary_suggestions(question, topics),
+        }
+
     term = find_glossary_term(question)
     if term:
         entry = GLOSSARY[term]
@@ -212,14 +248,15 @@ async def explain_term(question: str, stage: int | None = None, topics: list[str
             "suggestions": glossary_suggestions(question, topics),
         }
 
-    llm_answer = await _llm_fallback(question, stage, topics or [])
-    if llm_answer:
-        return {
-            "answer": llm_answer,
-            "source": "llm",
-            "term_matched": None,
-            "suggestions": glossary_suggestions(question, topics),
-        }
+    if _is_card_explanation(question):
+        llm_answer = await _llm_fallback(question, stage, topics or [])
+        if llm_answer:
+            return {
+                "answer": llm_answer,
+                "source": "llm",
+                "term_matched": None,
+                "suggestions": glossary_suggestions(question, topics),
+            }
 
     suggestions = glossary_suggestions(question, topics)
     if suggestions:

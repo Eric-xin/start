@@ -108,6 +108,7 @@ export function LuckyGuideChat() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const fabFloat = useRef(new Animated.Value(0)).current;
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
@@ -125,6 +126,28 @@ export function LuckyGuideChat() {
     const candidate = (gameCard?.stage_min ?? portfolioCard?.stage_min) || 1;
     return Math.max(1, Math.min(5, candidate));
   }, [gameCard?.stage_min, portfolioCard?.stage_min]);
+
+  useEffect(() => {
+    const floatLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(fabFloat, {
+          toValue: -4,
+          duration: 1600,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(fabFloat, {
+          toValue: 4,
+          duration: 1600,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    floatLoop.start();
+    return () => floatLoop.stop();
+  }, [fabFloat]);
 
   const submit = async (rawText: string) => {
     const question = rawText.trim();
@@ -173,7 +196,11 @@ export function LuckyGuideChat() {
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 40);
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
-      const fallbackText = typeof detail === "string" ? detail : "I could not answer right now. Please try again.";
+      const status = err?.response?.status;
+      const isAuthError = status === 401 || (typeof detail === "string" && detail.toLowerCase().includes("not authenticated"));
+      const fallbackText = isAuthError
+        ? "Your session is not active right now. Please log in again, then ask me your question."
+        : (typeof detail === "string" ? detail : "I could not answer right now. Please try again.");
       setMessages((prev) => [
         ...prev,
         {
@@ -260,10 +287,12 @@ export function LuckyGuideChat() {
         </View>
       )}
 
-      <TouchableOpacity style={styles.fab} onPress={() => setOpen((v) => !v)}>
-        <Text style={styles.fabIcon}>🍀</Text>
-        <Text style={styles.fabText}>Lucky</Text>
-      </TouchableOpacity>
+      <Animated.View style={[styles.fabFloatWrap, { transform: [{ translateY: fabFloat }] }]}>
+        <TouchableOpacity style={styles.fab} onPress={() => setOpen((v) => !v)}>
+          <Text style={styles.fabIcon}>🍀</Text>
+          <Text style={styles.fabText}>Lucky</Text>
+        </TouchableOpacity>
+      </Animated.View>
     </View>
   );
 }
@@ -271,16 +300,16 @@ export function LuckyGuideChat() {
 const styles = StyleSheet.create({
   root: {
     ...StyleSheet.absoluteFillObject,
-    justifyContent: "flex-end",
+    justifyContent: "flex-start",
     alignItems: "flex-end",
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    justifyContent: "flex-end",
-    alignItems: "center",
+    justifyContent: "flex-start",
+    alignItems: "flex-end",
     backgroundColor: "rgba(5,10,20,0.45)",
     paddingHorizontal: 12,
-    paddingBottom: 90,
+    paddingTop: 92,
   },
   panel: {
     width: "100%",
@@ -513,10 +542,12 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 1,
   },
-  fab: {
+  fabFloatWrap: {
     position: "absolute",
     right: 14,
-    bottom: 18,
+    top: 48,
+  },
+  fab: {
     borderWidth: 1,
     borderColor: "#2fbf71",
     backgroundColor: "#123523",

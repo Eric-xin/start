@@ -1,5 +1,6 @@
 import axios from "axios";
 import { getItem, deleteItem } from "./storage";
+import { useAuthStore } from "../store/authStore";
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -11,7 +12,8 @@ export const api = axios.create({
 
 // Attach JWT to every request
 api.interceptors.request.use(async (config) => {
-  const token = await getItem("access_token");
+  const memoryToken = useAuthStore.getState().token;
+  const token = memoryToken ?? (await getItem("access_token"));
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
