@@ -20,7 +20,7 @@ export default function InvestingIntroScreen() {
 
   return (
     <View style={styles.container}>
-      <AppTopBar label="Why Investing Matters" />
+      <AppTopBar label="Why Investing Matters" onBack={() => router.back()} />
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <View style={styles.quoteCard}>

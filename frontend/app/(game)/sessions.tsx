@@ -6,13 +6,15 @@ import {
 import { useRouter } from "expo-router";
 import { getSessions, SessionData } from "../../services/game";
 import { useGameStore } from "../../store/gameStore";
-import { Colors } from "../../constants/colors";
+import { Colors, useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
+import { AppTopBar } from "../../components/navigation/AppTopBar";
 
 const RANK_LABELS = ["—", "ANALYST I", "ASSOCIATE II", "DIRECTOR III", "MD IV"];
 
 export default function SessionsScreen() {
   const router = useRouter();
+  const colors = useColors();
   const { setSession } = useGameStore();
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,15 +33,10 @@ export default function SessionsScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.topBar}>
-        <Text style={styles.logo}>CARDECON</Text>
-        <View style={styles.barSep} />
-        <Text style={styles.topLabel}>SESSION HISTORY</Text>
-        <Text style={styles.sessionCount}>{sessions.length} SESSIONS</Text>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backText}>BACK →</Text>
-        </TouchableOpacity>
-      </View>
+      <AppTopBar
+        label={`SESSION HISTORY (${sessions.length})`}
+        onBack={() => router.back()}
+      />
 
       {loading ? (
         <View style={styles.loading}>

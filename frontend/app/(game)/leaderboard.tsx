@@ -6,7 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from "react-native";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 import { Colors, useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { usePortfolioStore } from "../../store/portfolioStore";
@@ -165,6 +165,7 @@ function LeaderRow({ player, maxValue }: { player: RankedPlayer; maxValue: numbe
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function LeaderboardScreen() {
+  const router = useRouter();
   const colors = useColors();
   const isNormal = useThemeStore((s) => s.mode === "normal");
   const portfolio = usePortfolioStore((s) => s.portfolio);
@@ -204,7 +205,12 @@ export default function LeaderboardScreen() {
             {isNormal ? "🏆 Leaderboard" : "LEADERBOARD"}
           </Text>
         </View>
-        <ThemeModeToggle compact />
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <ThemeModeToggle compact />
+          <TouchableOpacity onPress={() => router.back()}>
+            <Text style={[styles.headerTitle, { color: colors.textDim }]}>BACK</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* ── Your rank banner ───────────────────────────────────────────────── */}

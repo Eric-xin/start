@@ -5,6 +5,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { getAchievements, AchievementData } from "../../services/achievements";
+import { AppTopBar } from "../../components/navigation/AppTopBar";
 import { Colors, useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { useThemeStore } from "../../store/themeStore";

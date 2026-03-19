@@ -194,6 +194,7 @@ export default function GameIndexScreen() {
 
       <AppTopBar
         label={isNormal ? "Home Base" : "INDEX"}
+        onBack={() => router.back()}
         rightContent={
           <>
             <ThemeModeToggle navSized />

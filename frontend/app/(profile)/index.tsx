@@ -13,6 +13,7 @@ import { Colors, useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { useThemeStore } from "../../store/themeStore";
 import { ThemeModeToggle } from "../../components/theme/ThemeModeToggle";
+import { AppTopBar } from "../../components/navigation/AppTopBar";
 
 const TRAIT_LABELS: Record<string, string> = {
   risk_appetite: "Risk Appetite",
@@ -512,17 +513,11 @@ export default function ProfileScreen() {
 
   return (
     <View style={[s.container, { backgroundColor: colors.bg }]}>
-      {/* Top bar */}
-      <View style={[s.topBar, { backgroundColor: colors.bgPanel, borderBottomColor: colors.borderPrimary }]}>
-        <Text style={[s.logo, { color: colors.blue }]}>CARDECON</Text>
-        <View style={[s.barSep, { backgroundColor: colors.borderDim }]} />
-        <Text style={[s.topLabel, { color: colors.textDim }]}>{isNormal ? "👤 Profile" : "PROFILE"}</Text>
-        <View style={{ flex: 1 }} />
-        <ThemeModeToggle compact />
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <Text style={[s.backText, { color: colors.textDim }]}>BACK →</Text>
-        </TouchableOpacity>
-      </View>
+      <AppTopBar
+        label={isNormal ? "👤 Profile" : "PROFILE"}
+        onBack={() => router.back()}
+        rightContent={<ThemeModeToggle compact />}
+      />
 
       <ScrollView contentContainerStyle={[s.scroll, isWide && s.scrollWide]}>
         {isWide ? (

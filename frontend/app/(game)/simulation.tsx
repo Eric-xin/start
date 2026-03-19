@@ -39,6 +39,7 @@ import {
   type TradeRecord,
 } from "../../services/simulation";
 import { api } from "../../services/api";
+import { useRouter } from "expo-router";
 import { useThemeStore } from "../../store/themeStore";
 import { ThemeModeToggle } from "../../components/theme/ThemeModeToggle";
 
@@ -1268,6 +1269,7 @@ const TRAIT_KEYS = [
 // ─── Main Simulation Screen ───────────────────────────────────────────────────
 
 export default function SimulationScreen() {
+  const router = useRouter();
   const colors = useColors();
   const isNormal = useThemeStore((state) => state.mode === "normal");
   const { width } = useWindowDimensions();
@@ -1722,6 +1724,9 @@ export default function SimulationScreen() {
           <ThemeModeToggle compact />
           <View style={[styles.statusDot, { backgroundColor: Colors.green }]} />
           <LiveClock />
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <Text style={[styles.backBtnText, { color: colors.textDim }]}>BACK</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -1811,6 +1816,18 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
+  },
+  backBtn: {
+    borderWidth: 1,
+    borderColor: Colors.borderDim,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 2,
+  },
+  backBtnText: {
+    fontSize: 10,
+    fontFamily: Fonts.sansBold,
+    letterSpacing: 1.2,
   },
 
   // Layout

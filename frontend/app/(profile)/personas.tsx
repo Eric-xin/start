@@ -11,6 +11,7 @@ import { Colors, useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { useThemeStore } from "../../store/themeStore";
 import { ThemeModeToggle } from "../../components/theme/ThemeModeToggle";
+import { AppTopBar } from "../../components/navigation/AppTopBar";
 
 export default function PersonasScreen() {
   const router = useRouter();
@@ -95,22 +96,21 @@ export default function PersonasScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
-      {/* Top bar */}
-      <View style={[styles.topBar, { backgroundColor: colors.bgPanel, borderBottomColor: colors.borderPrimary }]}>
-        <Text style={[styles.logo, { color: colors.blue }]}>CARDECON</Text>
-        <View style={[styles.barSep, { backgroundColor: colors.borderDim }]} />
-        <Text style={[styles.topLabel, { color: colors.textDim }]}>{isNormal ? "🧠 Personas" : "PERSONAS"}</Text>
-        <ThemeModeToggle compact />
-        <TouchableOpacity
-          style={[styles.createBtn, { borderColor: colors.blue + "88" }]}
-          onPress={() => setShowCreate(!showCreate)}
-        >
-          <Text style={[styles.createBtnText, { color: colors.blue }]}>{isNormal ? "+ New" : "+ NEW"}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={[styles.backText, { color: colors.textDim }]}>BACK →</Text>
-        </TouchableOpacity>
-      </View>
+      <AppTopBar
+        label={isNormal ? "🧠 Personas" : "PERSONAS"}
+        onBack={() => router.back()}
+        rightContent={
+          <>
+            <ThemeModeToggle compact />
+            <TouchableOpacity
+              style={[styles.createBtn, { borderColor: colors.blue + "88" }]}
+              onPress={() => setShowCreate(!showCreate)}
+            >
+              <Text style={[styles.createBtnText, { color: colors.blue }]}>{isNormal ? "+ New" : "+ NEW"}</Text>
+            </TouchableOpacity>
+          </>
+        }
+      />
 
       <ScrollView contentContainerStyle={styles.scroll}>
         {isNormal ? (
