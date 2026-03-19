@@ -102,6 +102,9 @@ export default function GameIndexScreen() {
           <TouchableOpacity style={styles.topBtn} onPress={() => router.push("/(game)/simulation")}>
             <Text style={styles.topBtnText}>SIMULATION</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={styles.topBtn} onPress={() => router.push("/(game)/leaderboard")}>
+            <Text style={styles.topBtnText}>LEADERBOARD</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={styles.topBtn} onPress={() => router.push("/(profile)/decks")}>
             <Text style={styles.topBtnText}>DECKS</Text>
           </TouchableOpacity>

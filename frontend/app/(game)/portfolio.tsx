@@ -181,6 +181,9 @@ export default function PortfolioScreen() {
         <View style={styles.barSep} />
         <Text style={styles.topLabel}>PORTFOLIO</Text>
         <View style={{ flex: 1 }} />
+        <TouchableOpacity style={styles.topBtn} onPress={() => router.push("/(game)/leaderboard")}>
+          <Text style={styles.topBtnText}>LEADERBOARD</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.playBtnSmall} onPress={handlePlay}>
           <Text style={styles.playBtnSmallText}>▶ PLAY CARDS</Text>
         </TouchableOpacity>
@@ -394,6 +397,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.blue, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 2,
   },
   playBtnSmallText: { fontSize: 9, fontFamily: Fonts.sansBold, color: Colors.bg, letterSpacing: 1.5 },
+
+  topBtn: {
+    backgroundColor: Colors.borderDim, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 2,
+  },
+  topBtnText: { fontSize: 8, fontFamily: Fonts.sansBold, color: Colors.textDim, letterSpacing: 1.5 },
 
   scroll: { padding: 20, gap: 14, alignItems: "center" },
 
