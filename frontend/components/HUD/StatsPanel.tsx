@@ -4,10 +4,14 @@ import { StatBar } from "./StatBar";
 import { Colors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { Layout } from "../../constants/layout";
-import type { SessionData } from "../../services/game";
 
 interface Props {
-  session: SessionData;
+  session: {
+    capital: number;
+    stage: number;
+    progress: number;
+    investor_rank: number;
+  };
 }
 
 export function StatsPanel({ session }: Props) {

@@ -12,6 +12,7 @@ export interface PortfolioData {
   total_cards_played: number;
   topic_mastery: Record<string, number>;
   portfolio_weights: Record<string, number>;
+  market_state: Record<string, number>;
   last_income_date: string | null;
   income_streak: number;
   persona_id: string | null;

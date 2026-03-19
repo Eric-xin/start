@@ -41,6 +41,8 @@ async def _ensure_sqlite_card_columns() -> None:
                 await conn.execute(text("ALTER TABLE cards ADD COLUMN value_step FLOAT"))
             if "alpha" not in existing:
                 await conn.execute(text("ALTER TABLE cards ADD COLUMN alpha FLOAT DEFAULT 1.0 NOT NULL"))
+            if "weights" not in existing:
+                await conn.execute(text("ALTER TABLE cards ADD COLUMN weights JSON DEFAULT '{}'"))
         except Exception:
             # Non-fatal in dev: startup should continue even if schema patch fails.
             pass
@@ -88,6 +90,18 @@ async def lifespan(app: FastAPI):
                         ) THEN
                             ALTER TABLE user_progress ADD COLUMN unlocked_decks JSONB;
                             ALTER TABLE user_progress ADD COLUMN enabled_decks JSONB;
+                        END IF;
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name='cards' AND column_name='weights'
+                        ) THEN
+                            ALTER TABLE cards ADD COLUMN weights JSONB NOT NULL DEFAULT '{}';
+                        END IF;
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name='user_portfolios' AND column_name='market_state'
+                        ) THEN
+                            ALTER TABLE user_portfolios ADD COLUMN market_state JSONB NOT NULL DEFAULT '{}';
                         END IF;
                     END $$;
                 """))

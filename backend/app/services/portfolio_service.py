@@ -214,6 +214,74 @@ async def claim_daily_income(db: AsyncSession, portfolio: UserPortfolio) -> floa
 
 # ─── Card Play ────────────────────────────────────────────────────────────────
 
+MARKET_DIMENSIONS = ["sentiment", "inflation", "greed", "volatility", "fundamentals"]
+
+# How each market dimension contributes to the capital multiplier.
+# Positive sentiment/fundamentals boost returns; high inflation/volatility/greed hurt.
+_DIMENSION_CAPITAL_WEIGHTS = {
+    "sentiment": 0.30,       # positive sentiment → higher returns
+    "inflation": -0.25,      # rising inflation → drag on capital
+    "greed": -0.15,          # greed → overvaluation risk
+    "volatility": -0.20,     # high volatility → uncertainty penalty
+    "fundamentals": 0.35,    # strong fundamentals → solid returns
+}
+
+# Decay factor: market state drifts toward 0 each play (mean-reversion)
+_MARKET_DECAY = 0.92
+
+
+def _get_card_weights(card: Card) -> dict:
+    """Get the multi-dimensional weights from a card, falling back to alpha-derived defaults."""
+    weights = getattr(card, "weights", None)
+    if weights and isinstance(weights, dict) and any(weights.values()):
+        return weights
+    # Fallback: derive from alpha for backward compatibility
+    alpha = getattr(card, "alpha", 1.0)
+    return {
+        "sentiment": alpha * 0.3,
+        "inflation": 0.0,
+        "greed": 0.0,
+        "volatility": alpha * 0.2,
+        "fundamentals": alpha * 0.3,
+    }
+
+
+def _update_market_state(
+    current_state: dict, card: Card, action: str, reward: float,
+) -> dict:
+    """Update the cumulative market state based on card weights and player action.
+
+    Right (accept) amplifies the card's weights; left (decline) dampens them.
+    State values are clamped to [-1.0, 1.0].
+    """
+    card_weights = _get_card_weights(card)
+    action_scale = 1.0 if action == "right" else 0.4
+    state = dict(current_state or {})
+
+    for dim in MARKET_DIMENSIONS:
+        old = state.get(dim, 0.0)
+        delta = card_weights.get(dim, 0.0) * reward * action_scale
+        new_val = _MARKET_DECAY * old + delta
+        state[dim] = max(-1.0, min(1.0, new_val))
+
+    return state
+
+
+def _compute_market_multiplier(market_state: dict) -> float:
+    """Compute a capital multiplier from the current market state.
+
+    Returns a value centered around 1.0:
+    - Favorable conditions (good sentiment, strong fundamentals) → >1.0
+    - Adverse conditions (high inflation, volatility) → <1.0
+    Range is roughly [0.5, 1.8].
+    """
+    score = 0.0
+    for dim, weight in _DIMENSION_CAPITAL_WEIGHTS.items():
+        score += weight * market_state.get(dim, 0.0)
+    # Map score to a multiplier: score 0 → 1.0, score ±0.5 → ~0.75/1.5
+    return max(0.5, min(1.8, 1.0 + score))
+
+
 def _compute_reward(card: Card, action: str) -> float:
     card_type = card.type if isinstance(card.type, str) else card.type.value
     if card_type == "education":
@@ -275,10 +343,16 @@ async def play_card(
                 traits=pe.compute_traits(p_new),
             ))
 
-    # Capital update
+    # Update market state from card weights
+    portfolio.market_state = _update_market_state(
+        portfolio.market_state, card, action, reward,
+    )
+    market_mult = _compute_market_multiplier(portfolio.market_state)
+
+    # Capital update — alpha provides base magnitude, market multiplier adds dynamics
     alpha = getattr(card, "alpha", 1.0)
     capital_before = portfolio.capital
-    capital_delta = reward * 200 * alpha
+    capital_delta = reward * 200 * alpha * market_mult
     portfolio.capital = max(portfolio.capital + capital_delta, 100.0)
     portfolio.net_worth = portfolio.capital
     portfolio.peak_net_worth = max(portfolio.peak_net_worth, portfolio.net_worth)

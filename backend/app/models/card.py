@@ -49,3 +49,8 @@ class Card(Base):
     value_max: Mapped[float | None] = mapped_column(Float, nullable=True)
     value_step: Mapped[float | None] = mapped_column(Float, nullable=True)
     alpha: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)
+
+    # Multi-dimensional impact weights (JSON dict)
+    # Keys: sentiment, inflation, greed, volatility, fundamentals
+    # Each value in [-1.0, 1.0] — how much this card shifts that market dimension
+    weights: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
