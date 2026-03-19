@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View, Text, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { createSession, getSessions, SessionData } from "../../services/game";
+import { createDailySession, createSession, getDailyStatus, getSessions, SessionData, DailyStatusData } from "../../services/game";
 import { listPersonas, PersonaData } from "../../services/persona";
 import { useAuthStore } from "../../store/authStore";
 import { useGameStore } from "../../store/gameStore";
@@ -12,6 +12,49 @@ import { Colors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 
 const RANK_LABELS = ["—", "ANALYST I", "ASSOCIATE II", "DIRECTOR III", "MD IV"];
+const WEEKDAY_LABELS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+
+function getWeekStartLocal(date: Date) {
+  const start = new Date(date);
+  const mondayBasedDay = (start.getDay() + 6) % 7;
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - mondayBasedDay);
+  return start;
+}
+
+function hasSessionBeenPlayed(session: SessionData) {
+  if (session.is_daily) {
+    return session.daily_cards_played > 0 || session.daily_completed;
+  }
+  return session.progress > 0;
+}
+
+function buildCurrentWeekDays(sessions: SessionData[]) {
+  const weekStart = getWeekStartLocal(new Date());
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 7);
+  const playedDays = new Set<number>();
+
+  sessions.forEach((session) => {
+    if (!hasSessionBeenPlayed(session)) return;
+    const playedAt = new Date(session.updated_at || session.created_at);
+    if (Number.isNaN(playedAt.getTime())) return;
+    if (playedAt < weekStart || playedAt >= weekEnd) return;
+    playedDays.add((playedAt.getDay() + 6) % 7);
+  });
+
+  return Array.from({ length: 7 }).map((_, i) => {
+    const dayDate = new Date(weekStart);
+    dayDate.setDate(weekStart.getDate() + i);
+    return {
+      key: WEEKDAY_LABELS[i],
+      label: WEEKDAY_LABELS[i],
+      dateNumber: dayDate.getDate(),
+      isPlayed: playedDays.has(i),
+      isToday: dayDate.toDateString() === new Date().toDateString(),
+    };
+  });
+}
 
 function GridBg() {
   const { width, height } = useWindowDimensions();
@@ -49,16 +92,23 @@ export default function GameIndexScreen() {
   const { user, clearAuth } = useAuthStore();
   const { setSession, reset } = useGameStore();
   const [launching, setLaunching] = useState(false);
+  const [launchingDaily, setLaunchingDaily] = useState(false);
   const [loadingLast, setLoadingLast] = useState(false);
   const [lastSession, setLastSession] = useState<SessionData | null>(null);
+  const [allSessions, setAllSessions] = useState<SessionData[]>([]);
   const [activePersona, setActivePersona] = useState<PersonaData | null>(null);
+  const [dailyStatus, setDailyStatus] = useState<DailyStatusData | null>(null);
   const [loadingData, setLoadingData] = useState(true);
 
+  const currentWeekDays = useMemo(() => buildCurrentWeekDays(allSessions), [allSessions]);
+
   useEffect(() => {
-    Promise.all([getSessions(), listPersonas()])
-      .then(([sessions, personas]) => {
-        setLastSession(sessions[0] ?? null); // already sorted by updated_at desc
+    Promise.all([getSessions(), listPersonas(), getDailyStatus()])
+      .then(([sessions, personas, daily]) => {
+        setAllSessions(sessions);
+        setLastSession(sessions.find((s) => !s.is_daily) ?? sessions[0] ?? null);
         setActivePersona(personas.find((p) => p.is_active) ?? personas[0] ?? null);
+        setDailyStatus(daily);
       })
       .catch(() => {})
       .finally(() => setLoadingData(false));
@@ -82,6 +132,20 @@ export default function GameIndexScreen() {
     if (!lastSession) return;
     setSession(lastSession);
     router.push("/(game)/play");
+  };
+
+  const handleDailySession = async () => {
+    setLaunchingDaily(true);
+    try {
+      reset();
+      const session = await createDailySession();
+      setSession(session);
+      router.push("/(game)/play");
+    } catch {
+      Alert.alert("Error", "Could not create daily session.");
+    } finally {
+      setLaunchingDaily(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -182,13 +246,56 @@ export default function GameIndexScreen() {
             <TouchableOpacity
               style={[styles.ctaBtn, launching && { opacity: 0.5 }]}
               onPress={handleNewSession}
-              disabled={launching || loadingLast}
+              disabled={launching || launchingDaily || loadingLast}
             >
               {launching
                 ? <ActivityIndicator color={Colors.bg} size="small" />
                 : <Text style={styles.ctaBtnText}>▶  LAUNCH NEW SESSION</Text>
               }
             </TouchableOpacity>
+
+            {/* Daily session */}
+            <TouchableOpacity
+              style={[
+                styles.dailyBtn,
+                dailyStatus?.completed_today && styles.dailyBtnDone,
+                launchingDaily && { opacity: 0.6 },
+              ]}
+              onPress={handleDailySession}
+              disabled={launchingDaily || launching || loadingData}
+            >
+              <View style={styles.dailyLeft}>
+                <Text style={styles.dailyFire}>🔥</Text>
+                <View>
+                  <Text style={styles.dailyTitle}>DAILY SESSION</Text>
+                  <Text style={styles.dailySub}>
+                    {dailyStatus?.completed_today
+                      ? "Completed today"
+                      : `${dailyStatus?.remaining_cards ?? 10} cards left today`}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.streakBadge}>
+                <Text style={styles.streakLabel}>STREAK</Text>
+                <Text style={styles.streakValue}>{dailyStatus?.streak_count ?? 0}</Text>
+              </View>
+            </TouchableOpacity>
+
+            <View style={styles.weekStrip}>
+              {currentWeekDays.map((day) => (
+                <View
+                  key={day.key}
+                  style={[
+                    styles.weekDay,
+                    day.isPlayed && styles.weekDayPlayed,
+                    day.isToday && styles.weekDayToday,
+                  ]}
+                >
+                  <Text style={[styles.weekDayLabel, day.isPlayed && styles.weekDayLabelPlayed]}>{day.label}</Text>
+                  <Text style={[styles.weekDayDate, day.isPlayed && styles.weekDayDatePlayed]}>{day.dateNumber}</Text>
+                </View>
+              ))}
+            </View>
           </View>
 
           {/* History link */}
@@ -318,6 +425,108 @@ const styles = StyleSheet.create({
   continueBtnInner: { alignItems: "center", gap: 3 },
   continueBtnText: { fontSize: 11, fontFamily: Fonts.sansBold, color: Colors.blue, letterSpacing: 1.5 },
   continueBtnSub: { fontSize: 9, fontFamily: Fonts.mono, color: Colors.textDim },
+
+  dailyBtn: {
+    borderWidth: 1,
+    borderColor: "#ff8c2a",
+    backgroundColor: "#26140a",
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 3,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    shadowColor: "#ff7a00",
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+  },
+  dailyBtnDone: {
+    borderColor: "#ffb366",
+    backgroundColor: "#2e1b0c",
+  },
+  dailyLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  dailyFire: {
+    fontSize: 22,
+  },
+  dailyTitle: {
+    fontSize: 11,
+    fontFamily: Fonts.sansBold,
+    color: "#ffd9a3",
+    letterSpacing: 1.8,
+  },
+  dailySub: {
+    fontSize: 9,
+    fontFamily: Fonts.mono,
+    color: "#ffb870",
+    marginTop: 2,
+  },
+  streakBadge: {
+    minWidth: 66,
+    borderWidth: 1,
+    borderColor: "#ff9f43",
+    borderRadius: 3,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    alignItems: "center",
+    backgroundColor: "#1e1208",
+  },
+  streakLabel: {
+    fontSize: 8,
+    fontFamily: Fonts.sansBold,
+    color: "#ffb870",
+    letterSpacing: 1.2,
+  },
+  streakValue: {
+    fontSize: 16,
+    fontFamily: Fonts.mono,
+    color: "#ffddad",
+    marginTop: 1,
+  },
+
+  weekStrip: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 2,
+  },
+  weekDay: {
+    width: 42,
+    borderWidth: 1,
+    borderColor: Colors.borderDim,
+    borderRadius: 3,
+    paddingVertical: 6,
+    alignItems: "center",
+    backgroundColor: Colors.bg,
+  },
+  weekDayPlayed: {
+    borderColor: "#ff8c2a",
+    backgroundColor: "#2a160a",
+  },
+  weekDayToday: {
+    borderColor: "#f0c27a",
+  },
+  weekDayLabel: {
+    fontSize: 8,
+    fontFamily: Fonts.sansBold,
+    color: Colors.textMuted,
+    letterSpacing: 1.2,
+  },
+  weekDayLabelPlayed: {
+    color: "#ffd39d",
+  },
+  weekDayDate: {
+    marginTop: 2,
+    fontSize: 11,
+    fontFamily: Fonts.mono,
+    color: Colors.textDim,
+  },
+  weekDayDatePlayed: {
+    color: "#ffe0b7",
+  },
 
   historyLink: {
     alignItems: "center",

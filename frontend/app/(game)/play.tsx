@@ -198,10 +198,23 @@ export default function PlayScreen() {
 
   const handleLessonDismiss = useCallback(() => {
     setLesson(null);
+    if (!nextCard) {
+      setCurrentCard(null);
+      setNextCard(null);
+      setSwipeLocked(false);
+      if (session?.is_daily && session.daily_completed) {
+        Alert.alert(
+          "Daily Complete",
+          `Great run. Streak +1 and +$${Math.round(session.streak_bonus_awarded).toLocaleString()} capital bonus.`,
+          [{ text: "Back to Index", onPress: () => router.replace("/(game)/index") }]
+        );
+      }
+      return;
+    }
     setCurrentCard(nextCard);
     setNextCard(null);
     setSwipeLocked(false);
-  }, [nextCard]);
+  }, [nextCard, session, router]);
 
   if (initializing || !session) {
     return (
@@ -268,7 +281,11 @@ export default function PlayScreen() {
             />
           ) : !initializing ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>LOADING NEXT DECISION...</Text>
+              <Text style={styles.emptyText}>
+                {session.is_daily && session.daily_completed
+                  ? "DAILY SESSION COMPLETE"
+                  : "LOADING NEXT DECISION..."}
+              </Text>
               <ActivityIndicator color={Colors.blue} size="small" style={{ marginTop: 10 }} />
             </View>
           ) : null}

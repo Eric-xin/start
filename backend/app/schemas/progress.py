@@ -1,3 +1,4 @@
+from datetime import date
 from pydantic import BaseModel
 
 
@@ -26,6 +27,8 @@ class UserProgressOut(BaseModel):
     unlocked_decks: list[str]
     enabled_decks: list[str]
     total_cards_played: int
+    streak_count: int
+    last_streak_date: date | None
     strategies: list[StrategyInfo]
     decks: list[DeckInfo]
 

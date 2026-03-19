@@ -40,6 +40,39 @@ async def _ensure_sqlite_card_columns() -> None:
             pass
 
 
+async def _ensure_sqlite_daily_streak_columns() -> None:
+    if not settings.database_url.startswith("sqlite"):
+        return
+
+    async with engine.begin() as conn:
+        try:
+            game_rows = await conn.execute(text("PRAGMA table_info(game_sessions)"))
+            game_existing = {row[1] for row in game_rows.fetchall()}
+
+            if "is_daily" not in game_existing:
+                await conn.execute(text("ALTER TABLE game_sessions ADD COLUMN is_daily BOOLEAN DEFAULT 0 NOT NULL"))
+            if "daily_date" not in game_existing:
+                await conn.execute(text("ALTER TABLE game_sessions ADD COLUMN daily_date DATE"))
+            if "daily_cards_played" not in game_existing:
+                await conn.execute(text("ALTER TABLE game_sessions ADD COLUMN daily_cards_played INTEGER DEFAULT 0 NOT NULL"))
+            if "daily_target" not in game_existing:
+                await conn.execute(text("ALTER TABLE game_sessions ADD COLUMN daily_target INTEGER DEFAULT 10 NOT NULL"))
+            if "daily_completed" not in game_existing:
+                await conn.execute(text("ALTER TABLE game_sessions ADD COLUMN daily_completed BOOLEAN DEFAULT 0 NOT NULL"))
+            if "streak_bonus_awarded" not in game_existing:
+                await conn.execute(text("ALTER TABLE game_sessions ADD COLUMN streak_bonus_awarded FLOAT DEFAULT 0.0 NOT NULL"))
+
+            progress_rows = await conn.execute(text("PRAGMA table_info(user_progress)"))
+            progress_existing = {row[1] for row in progress_rows.fetchall()}
+
+            if "streak_count" not in progress_existing:
+                await conn.execute(text("ALTER TABLE user_progress ADD COLUMN streak_count INTEGER DEFAULT 0 NOT NULL"))
+            if "last_streak_date" not in progress_existing:
+                await conn.execute(text("ALTER TABLE user_progress ADD COLUMN last_streak_date DATE"))
+        except Exception:
+            pass
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Create all tables (new tables only — won't modify existing)
@@ -71,12 +104,31 @@ async def lifespan(app: FastAPI):
                             ALTER TABLE user_progress ADD COLUMN unlocked_decks JSONB;
                             ALTER TABLE user_progress ADD COLUMN enabled_decks JSONB;
                         END IF;
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name='user_progress' AND column_name='streak_count'
+                        ) THEN
+                            ALTER TABLE user_progress ADD COLUMN streak_count INTEGER DEFAULT 0 NOT NULL;
+                            ALTER TABLE user_progress ADD COLUMN last_streak_date DATE;
+                        END IF;
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name='game_sessions' AND column_name='is_daily'
+                        ) THEN
+                            ALTER TABLE game_sessions ADD COLUMN is_daily BOOLEAN DEFAULT FALSE NOT NULL;
+                            ALTER TABLE game_sessions ADD COLUMN daily_date DATE;
+                            ALTER TABLE game_sessions ADD COLUMN daily_cards_played INTEGER DEFAULT 0 NOT NULL;
+                            ALTER TABLE game_sessions ADD COLUMN daily_target INTEGER DEFAULT 10 NOT NULL;
+                            ALTER TABLE game_sessions ADD COLUMN daily_completed BOOLEAN DEFAULT FALSE NOT NULL;
+                            ALTER TABLE game_sessions ADD COLUMN streak_bonus_awarded DOUBLE PRECISION DEFAULT 0.0 NOT NULL;
+                        END IF;
                     END $$;
                 """))
             except Exception:
                 pass  # ignore if not postgres or already applied
 
         await _ensure_sqlite_card_columns()
+        await _ensure_sqlite_daily_streak_columns()
 
     # Seed data in development
     if settings.environment == "development":

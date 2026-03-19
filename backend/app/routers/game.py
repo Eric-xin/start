@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -8,7 +9,7 @@ from app.models.game import GameSession
 from app.models.card import Card
 from app.models.user import User
 from app.models.game import GameEvent
-from app.schemas.game import GameSessionOut, SwipeRequest, SwipeResponse, GameEventOut
+from app.schemas.game import GameSessionOut, SwipeRequest, SwipeResponse, GameEventOut, DailyStatusOut
 from app.schemas.card import CardOut
 from app.services import game_service
 from app.services.game_service import resolve_card
@@ -56,6 +57,35 @@ async def create_session(
 ):
     session = await game_service.create_session(db, current_user.id)
     return session
+
+
+@router.post("/daily-session", response_model=GameSessionOut, status_code=201)
+async def create_daily_session(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    session = await game_service.create_or_get_daily_session(db, current_user.id)
+    return session
+
+
+@router.get("/daily-status", response_model=DailyStatusOut)
+async def get_daily_status(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    today = datetime.now(timezone.utc).date()
+    progress = await game_service.get_or_create_progress(db, current_user.id)
+    daily_session_result = await db.execute(
+        select(GameSession)
+        .where(
+            GameSession.user_id == current_user.id,
+            GameSession.is_daily == True,  # noqa: E712
+            GameSession.daily_date == today,
+        )
+        .order_by(GameSession.updated_at.desc())
+    )
+    daily_session = daily_session_result.scalars().first()
+    return game_service.build_daily_status(progress, daily_session)
 
 
 @router.get("/sessions/{session_id}", response_model=GameSessionOut)
@@ -125,6 +155,8 @@ async def next_card(
 ):
     from app.services.game_service import get_or_create_progress, resolve_card
     session = await _get_session_for_user(session_id, current_user, db)
+    if session.is_daily and session.daily_completed:
+        return None
     progress = await get_or_create_progress(db, current_user.id)
     card = await recommend_next_card(
         db, session, redis,

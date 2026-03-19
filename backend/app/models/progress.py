@@ -1,6 +1,6 @@
 import uuid
-from datetime import datetime
-from sqlalchemy import Integer, DateTime, ForeignKey, JSON
+from datetime import datetime, date
+from sqlalchemy import Integer, Date, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import UUID
 from app.database import Base
@@ -51,6 +51,8 @@ class UserProgress(Base):
     unlocked_decks: Mapped[list] = mapped_column(JSON, nullable=True)   # nullable for migration
     enabled_decks: Mapped[list] = mapped_column(JSON, nullable=True)    # nullable for migration
     total_cards_played: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    streak_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    last_streak_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.utcnow, nullable=False
     )

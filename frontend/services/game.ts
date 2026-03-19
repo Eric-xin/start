@@ -39,8 +39,23 @@ export interface SessionData {
   capital: number;
   portfolio_weights: Record<string, number>;
   peak_capital: number;
+  is_daily: boolean;
+  daily_date: string | null;
+  daily_cards_played: number;
+  daily_target: number;
+  daily_completed: boolean;
+  streak_bonus_awarded: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface DailyStatusData {
+  streak_count: number;
+  cards_completed_today: number;
+  daily_target: number;
+  remaining_cards: number;
+  completed_today: boolean;
+  streak_bonus_capital: number;
 }
 
 export interface SwipeResponse {
@@ -57,6 +72,11 @@ export async function getSessions(): Promise<SessionData[]> {
 
 export async function createSession(): Promise<SessionData> {
   const resp = await api.post<SessionData>("/api/game/sessions");
+  return resp.data;
+}
+
+export async function createDailySession(): Promise<SessionData> {
+  const resp = await api.post<SessionData>("/api/game/daily-session");
   return resp.data;
 }
 
@@ -84,5 +104,10 @@ export async function getNextCard(sessionId: string): Promise<CardData | null> {
 
 export async function getSessionHistory(sessionId: string): Promise<GameEventData[]> {
   const resp = await api.get<GameEventData[]>(`/api/game/sessions/${sessionId}/history`);
+  return resp.data;
+}
+
+export async function getDailyStatus(): Promise<DailyStatusData> {
+  const resp = await api.get<DailyStatusData>("/api/game/daily-status");
   return resp.data;
 }

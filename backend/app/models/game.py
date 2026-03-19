@@ -1,6 +1,6 @@
 import uuid
-from datetime import datetime
-from sqlalchemy import String, Float, Integer, DateTime, ForeignKey, JSON, Enum as SAEnum
+from datetime import datetime, date
+from sqlalchemy import String, Float, Integer, DateTime, Date, Boolean, ForeignKey, JSON, Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
 from app.database import Base
@@ -34,6 +34,12 @@ class GameSession(Base):
     capital: Mapped[float] = mapped_column(Float, default=10000.0, nullable=False)
     portfolio_weights: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     peak_capital: Mapped[float] = mapped_column(Float, default=10000.0, nullable=False)
+    is_daily: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    daily_date: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)
+    daily_cards_played: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    daily_target: Mapped[int] = mapped_column(Integer, default=10, nullable=False)
+    daily_completed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    streak_bonus_awarded: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.utcnow, nullable=False
     )

@@ -25,6 +25,8 @@ export interface ProgressData {
   unlocked_decks: string[];
   enabled_decks: string[];
   total_cards_played: number;
+  streak_count: number;
+  last_streak_date: string | null;
   strategies: StrategyInfo[];
   decks: DeckInfo[];
 }

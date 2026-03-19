@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from pydantic import BaseModel
 from app.models.game import SwipeAction
 from app.schemas.card import CardOut
@@ -18,6 +18,12 @@ class GameSessionOut(BaseModel):
     capital: float
     portfolio_weights: dict
     peak_capital: float
+    is_daily: bool
+    daily_date: date | None = None
+    daily_cards_played: int
+    daily_target: int
+    daily_completed: bool
+    streak_bonus_awarded: float
     created_at: datetime
     updated_at: datetime
 
@@ -43,3 +49,12 @@ class SwipeResponse(BaseModel):
     reward: float
     session: GameSessionOut
     next_card: CardOut | None = None
+
+
+class DailyStatusOut(BaseModel):
+    streak_count: int
+    cards_completed_today: int
+    daily_target: int
+    remaining_cards: int
+    completed_today: bool
+    streak_bonus_capital: float = 1000.0

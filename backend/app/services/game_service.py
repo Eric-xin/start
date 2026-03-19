@@ -1,7 +1,7 @@
 """Game session management and swipe processing."""
 import random
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from redis.asyncio import Redis
@@ -29,6 +29,8 @@ def resolve_card(card: Card) -> CardOut:
 
 COOLDOWN_TTL_SECS = 30
 SNAPSHOT_INTERVAL = 10  # create a PersonaSnapshot every N cards
+DAILY_TARGET_CARDS = 10
+STREAK_BONUS_CAPITAL = 1000.0
 
 DEFAULT_RANK_THRESHOLDS = {
     2: {"stage": 2, "capital": 11000},
@@ -58,6 +60,8 @@ async def get_or_create_progress(db: AsyncSession, user_id: uuid.UUID) -> UserPr
             unlocked_decks=["savings_core"],
             enabled_decks=["savings_core"],
             total_cards_played=0,
+            streak_count=0,
+            last_streak_date=None,
         )
         db.add(progress)
         await db.flush()
@@ -65,6 +69,8 @@ async def get_or_create_progress(db: AsyncSession, user_id: uuid.UUID) -> UserPr
     if progress.unlocked_decks is None:
         progress.unlocked_decks = ["savings_core"]
         progress.enabled_decks = ["savings_core"]
+    if progress.streak_count is None:
+        progress.streak_count = 0
     return progress
 
 
@@ -152,10 +158,97 @@ async def create_session(db: AsyncSession, user_id: uuid.UUID) -> GameSession:
         capital=10000.0,
         portfolio_weights={},
         peak_capital=10000.0,
+        is_daily=False,
+        daily_cards_played=0,
+        daily_target=DAILY_TARGET_CARDS,
+        daily_completed=False,
+        streak_bonus_awarded=0.0,
     )
     db.add(session)
     await db.flush()
     return session
+
+
+async def create_or_get_daily_session(db: AsyncSession, user_id: uuid.UUID) -> GameSession:
+    persona = await get_or_create_default_persona(db, user_id)
+    await get_or_create_progress(db, user_id)
+
+    today = datetime.now(timezone.utc).date()
+
+    existing_result = await db.execute(
+        select(GameSession)
+        .where(
+            GameSession.user_id == user_id,
+            GameSession.is_daily == True,  # noqa: E712
+            GameSession.daily_date == today,
+        )
+        .order_by(GameSession.updated_at.desc())
+    )
+    existing = existing_result.scalars().first()
+    if existing:
+        return existing
+
+    session = GameSession(
+        user_id=user_id,
+        persona_id=persona.id,
+        stage=1,
+        progress=0.0,
+        persona_vector=list(persona.vector),
+        topic_mastery={},
+        investor_rank=1,
+        capital=10000.0,
+        portfolio_weights={},
+        peak_capital=10000.0,
+        is_daily=True,
+        daily_date=today,
+        daily_cards_played=0,
+        daily_target=DAILY_TARGET_CARDS,
+        daily_completed=False,
+        streak_bonus_awarded=0.0,
+    )
+    db.add(session)
+    await db.flush()
+    return session
+
+
+def build_daily_status(progress: UserProgress, session: GameSession | None) -> dict:
+    cards_done = 0
+    target = DAILY_TARGET_CARDS
+    completed = False
+
+    if session is not None:
+        cards_done = int(session.daily_cards_played)
+        target = int(session.daily_target)
+        completed = bool(session.daily_completed)
+
+    remaining = max(0, target - cards_done)
+    return {
+        "streak_count": int(progress.streak_count),
+        "cards_completed_today": cards_done,
+        "daily_target": target,
+        "remaining_cards": remaining,
+        "completed_today": completed,
+        "streak_bonus_capital": STREAK_BONUS_CAPITAL,
+    }
+
+
+def apply_streak_on_daily_completion(progress: UserProgress, session: GameSession) -> None:
+    today = datetime.now(timezone.utc).date()
+    yesterday = today - timedelta(days=1)
+
+    # Already credited today
+    if progress.last_streak_date == today:
+        return
+
+    if progress.last_streak_date == yesterday:
+        progress.streak_count = int(progress.streak_count) + 1
+    else:
+        progress.streak_count = 1
+
+    progress.last_streak_date = today
+    session.streak_bonus_awarded = STREAK_BONUS_CAPITAL
+    session.capital += STREAK_BONUS_CAPITAL
+    session.peak_capital = max(session.peak_capital, session.capital)
 
 
 # ─── Swipe Processing ─────────────────────────────────────────────────────────
@@ -207,6 +300,14 @@ async def process_swipe(
     action: str,
     redis: Redis,
 ) -> dict:
+    if session.is_daily and session.daily_completed:
+        return {
+            "lesson": "Daily session complete. Come back tomorrow for fresh cards.",
+            "reward": 0.0,
+            "session": session,
+            "next_card": None,
+        }
+
     # Load the global persona (fallback to session vector if no persona_id)
     persona: Persona | None = None
     if session.persona_id:
@@ -257,6 +358,12 @@ async def process_swipe(
     _check_strategy_unlocks(progress)
     progress.updated_at = datetime.now(timezone.utc)
 
+    if session.is_daily:
+        session.daily_cards_played += 1
+        if session.daily_cards_played >= session.daily_target:
+            session.daily_completed = True
+            apply_streak_on_daily_completion(progress, session)
+
     # Update capital (alpha scales the impact — e.g. rate cuts hit harder than trivia)
     alpha = getattr(card, "alpha", 1.0)
     capital_delta = reward * 200 * alpha
@@ -293,11 +400,13 @@ async def process_swipe(
 
     enabled_strat = progress.enabled_strategies if progress else STRATEGIES
     enabled_deck = progress.enabled_decks if progress else None
-    next_card_orm = await recommend_next_card(
-        db, session, redis,
-        enabled_strategies=enabled_strat,
-        enabled_decks=enabled_deck,
-    )
+    next_card_orm = None
+    if not (session.is_daily and session.daily_completed):
+        next_card_orm = await recommend_next_card(
+            db, session, redis,
+            enabled_strategies=enabled_strat,
+            enabled_decks=enabled_deck,
+        )
     next_card_out = resolve_card(next_card_orm) if next_card_orm else None
 
     lesson = _get_lesson(card, action)

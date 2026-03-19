@@ -44,6 +44,8 @@ def _build_progress_out(progress) -> UserProgressOut:
         unlocked_decks=unlocked_d,
         enabled_decks=enabled_d,
         total_cards_played=progress.total_cards_played,
+        streak_count=progress.streak_count,
+        last_streak_date=progress.last_streak_date,
         strategies=strategies,
         decks=decks,
     )
