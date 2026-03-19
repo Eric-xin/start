@@ -13,9 +13,14 @@ import { AchievementToast } from "../../components/AchievementToast";
 import { StatsPanel } from "../../components/HUD/StatsPanel";
 import { MarketContextPill } from "../../components/HUD/MarketContextPill";
 import { SidebarPanel } from "../../components/HUD/SidebarPanel";
+import { MarketPanel } from "../../components/panels/MarketPanel";
+import { NewsPanel } from "../../components/panels/NewsPanel";
+import { PortfolioPanel } from "../../components/panels/PortfolioPanel";
 import { Colors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { Layout } from "../../constants/layout";
+
+type PanelType = "market" | "news" | "portfolio" | null;
 
 // ─── Bloomberg Terminal Grid Background ────────────────────────────────────
 function TerminalGrid() {
@@ -56,9 +61,32 @@ function TerminalGrid() {
 }
 
 // ─── Top Status Bar ─────────────────────────────────────────────────────────
-function TopStatusBar({ session, onExit }: { session: any; onExit: () => void }) {
+function TopStatusBar({
+  session,
+  onExit,
+  activePanel,
+  onOpenPanel,
+}: {
+  session: any;
+  onExit: () => void;
+  activePanel: PanelType;
+  onOpenPanel: (p: PanelType) => void;
+}) {
   const now = new Date();
   const timeStr = now.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
+
+  const panelBtn = (id: Exclude<PanelType, null>, label: string) => {
+    const active = activePanel === id;
+    return (
+      <TouchableOpacity
+        key={id}
+        style={[tbStyles.panelBtn, active && tbStyles.panelBtnActive]}
+        onPress={() => onOpenPanel(active ? null : id)}
+      >
+        <Text style={[tbStyles.panelBtnText, active && tbStyles.panelBtnTextActive]}>{label}</Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={tbStyles.bar}>
@@ -76,6 +104,14 @@ function TopStatusBar({ session, onExit }: { session: any; onExit: () => void })
           ${Math.round(session.capital).toLocaleString()}
         </Text>
       </View>
+
+      {/* ── Panel trigger buttons ── */}
+      <View style={tbStyles.panelBtns}>
+        {panelBtn("market", "MARKET")}
+        {panelBtn("news", "NEWS")}
+        {panelBtn("portfolio", "PORTFOLIO")}
+      </View>
+
       <View style={tbStyles.right}>
         <View style={tbStyles.liveIndicator} />
         <Text style={tbStyles.time}>{timeStr}</Text>
@@ -131,6 +167,33 @@ const tbStyles = StyleSheet.create({
     color: Colors.textDim,
     letterSpacing: 1,
   },
+  panelBtns: {
+    flexDirection: "row",
+    gap: 4,
+    position: "absolute",
+    left: "50%",
+    transform: [{ translateX: -126 }],
+  },
+  panelBtn: {
+    borderWidth: 1,
+    borderColor: Colors.borderDim,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 2,
+  },
+  panelBtnActive: {
+    borderColor: Colors.blue,
+    backgroundColor: Colors.blueDim,
+  },
+  panelBtnText: {
+    fontSize: 9,
+    fontFamily: Fonts.sansBold,
+    color: Colors.textDim,
+    letterSpacing: 1.5,
+  },
+  panelBtnTextActive: {
+    color: Colors.blue,
+  },
   exitBtn: {
     borderWidth: 1,
     borderColor: Colors.borderDim,
@@ -182,6 +245,7 @@ export default function PlayScreen() {
 
   const [initializing, setInitializing] = React.useState(true);
   const [achievementQueue, setAchievementQueue] = useState<AchievementData[]>([]);
+  const [activePanel, setActivePanel] = useState<PanelType>(null);
   const mounted = useRef(false);
 
   useEffect(() => {
@@ -266,7 +330,12 @@ export default function PlayScreen() {
       )}
 
       {/* Top status bar */}
-      <TopStatusBar session={sessionProxy} onExit={() => router.replace("/(game)")} />
+      <TopStatusBar
+        session={sessionProxy}
+        onExit={() => router.replace("/(game)")}
+        activePanel={activePanel}
+        onOpenPanel={setActivePanel}
+      />
 
       {/* Body */}
       <View style={styles.body}>
@@ -332,6 +401,15 @@ export default function PlayScreen() {
 
       {/* Bottom stats panel */}
       <StatsPanel session={sessionProxy} />
+
+      {/* ── Floating panels ── */}
+      <MarketPanel visible={activePanel === "market"} onClose={() => setActivePanel(null)} />
+      <NewsPanel visible={activePanel === "news"} onClose={() => setActivePanel(null)} />
+      <PortfolioPanel
+        visible={activePanel === "portfolio"}
+        onClose={() => setActivePanel(null)}
+        portfolio={portfolio}
+      />
     </View>
   );
 }
