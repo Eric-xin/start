@@ -22,9 +22,12 @@ class GameSession(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
+    persona_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("personas.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     stage: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     progress: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
-    persona_vector: Mapped[list] = mapped_column(JSON, nullable=False)
+    persona_vector: Mapped[list | None] = mapped_column(JSON, nullable=True)
     topic_mastery: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     last_card_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
     investor_rank: Mapped[int] = mapped_column(Integer, default=1, nullable=False)

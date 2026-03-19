@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { CardData, SessionData } from "../services/game";
+// SessionData no longer includes persona_vector — it now has persona_id
 
 interface LessonState {
   text: string;

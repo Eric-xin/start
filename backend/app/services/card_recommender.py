@@ -124,12 +124,23 @@ async def recommend_next_card(
     db: AsyncSession,
     session: GameSession,
     redis: Redis,
+    enabled_strategies: list[str] | None = None,
 ) -> Card | None:
+    from app.models.progress import STRATEGY_META
+    # Compute the max allowed stage from enabled strategies (always include session.stage)
+    if enabled_strategies:
+        strategy_max = max(
+            (STRATEGY_META[s]["stage"] for s in enabled_strategies if s in STRATEGY_META),
+            default=session.stage,
+        )
+    else:
+        strategy_max = session.stage
+    max_stage = max(strategy_max, session.stage)
+
     result = await db.execute(
         select(Card).where(
             Card.is_active == True,  # noqa: E712
-            Card.stage_min <= session.stage,
-            Card.stage_max >= session.stage,
+            Card.stage_min <= max_stage,
         )
     )
     cards = result.scalars().all()

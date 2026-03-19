@@ -161,3 +161,92 @@ def initialize_persona() -> np.ndarray:
     rng = np.random.default_rng()  # non-deterministic for new users
     p = rng.standard_normal(DIM_P).astype(np.float32)
     return _normalize(p).tolist()
+
+
+def compute_pca_2d(
+    vectors: list[list[float]],
+) -> tuple[list[tuple[float, float]], list[float]]:
+    """
+    Project N persona vectors to 2D using PCA (SVD).
+    Returns (coords, variance_explained_ratio) for up to 2 components.
+    """
+    if not vectors:
+        return [], []
+    X = np.array(vectors, dtype=np.float32)
+    if X.shape[0] == 1:
+        return [(0.0, 0.0)], [1.0, 0.0]
+
+    X_centered = X - X.mean(axis=0)
+    U, S, Vt = np.linalg.svd(X_centered, full_matrices=False)
+
+    total_var = float(np.sum(S ** 2))
+    n_comp = min(2, len(S))
+    var_ratio = [float(S[i] ** 2 / total_var) if total_var > 1e-8 else 0.0 for i in range(n_comp)]
+    while len(var_ratio) < 2:
+        var_ratio.append(0.0)
+
+    coords_2d = X_centered @ Vt[:n_comp].T
+    result = []
+    for row in coords_2d:
+        x = float(row[0]) if len(row) > 0 else 0.0
+        y = float(row[1]) if len(row) > 1 else 0.0
+        result.append((x, y))
+
+    return result, var_ratio
+
+
+def interpret_persona(traits: dict) -> str:
+    """Generate a natural language interpretation from the 6 trait scores (0–100)."""
+    ra = traits.get("risk_appetite", 50)
+    fo = traits.get("fomo_sensitivity", 50)
+    la = traits.get("loss_aversion", 50)
+    di = traits.get("diversification_bias", 50)
+    tf = traits.get("patience", 50)   # using patience as trend proxy
+    oc = traits.get("overconfidence", 50)
+
+    lines = []
+
+    # Risk appetite
+    if ra > 68:
+        lines.append("You have a high appetite for risk, actively seeking asymmetric return opportunities even at the cost of significant volatility.")
+    elif ra > 52:
+        lines.append("You are moderately risk-tolerant, comfortable with market swings when the upside justifies the exposure.")
+    elif ra > 35:
+        lines.append("You lean toward capital preservation, preferring steady returns over speculative gains.")
+    else:
+        lines.append("You are strongly risk-averse, prioritizing capital protection above all else.")
+
+    # FOMO
+    if fo > 65:
+        lines.append("FOMO (fear of missing out) is a notable behavioral pattern — you tend to act quickly on perceived opportunities, sometimes before full due diligence.")
+    elif fo < 35:
+        lines.append("You are largely immune to market hype and make decisions independently of crowd momentum.")
+
+    # Loss aversion
+    if la > 68:
+        lines.append("Loss aversion influences your exits — you may hold losing positions longer than optimal to avoid crystallizing a loss.")
+    elif la < 32:
+        lines.append("You cut losses decisively and show no emotional attachment to underperforming positions.")
+
+    # Diversification
+    if di > 68:
+        lines.append("Diversification is a core principle for you; you spread exposure across asset classes to reduce idiosyncratic risk.")
+    elif di < 32:
+        lines.append("You run a concentrated book, making high-conviction bets on a small number of positions.")
+
+    # Patience (used as time-horizon proxy)
+    if tf > 65:
+        lines.append("Your investment horizon is long-term — you think in years and are comfortable through short-term drawdowns.")
+    elif tf < 35:
+        lines.append("You prefer shorter holding periods and gravitate toward catalysts with near-term resolution.")
+
+    # Overconfidence
+    if oc > 68:
+        lines.append("A degree of overconfidence may lead you to under-weight downside scenarios in sizing decisions.")
+    elif oc < 32:
+        lines.append("You are deliberately humble in your conviction, often building positions more slowly than warranted by the thesis.")
+
+    if not lines:
+        lines.append("Your behavioral profile is well-balanced across all dimensions, with no dominant behavioral biases detected.")
+
+    return " ".join(lines)

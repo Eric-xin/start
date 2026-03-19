@@ -18,6 +18,8 @@ class CardOut(BaseModel):
     diagnostic_power: float
     left_choice: str
     right_choice: str
+    left_lesson: str
+    right_lesson: str
     card_band_color: CardBandColor
 
 

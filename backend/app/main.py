@@ -1,18 +1,51 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 from app.config import get_settings
 from app.database import engine, Base
-from app.routers import auth, users, cards, admin, game, persona
+from app.routers import auth, users, cards, admin, game, progress
+from app.routers import personas as personas_router
+
+# Import models so Base.metadata knows about all tables
+import app.models.user       # noqa: F401
+import app.models.card       # noqa: F401
+import app.models.game       # noqa: F401
+import app.models.persona    # noqa: F401
+import app.models.progress   # noqa: F401
 
 settings = get_settings()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create tables (alembic handles prod migrations, this helps dev)
+    # Create all tables (new tables only — won't modify existing)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+    # Dev-only: safely add new columns to existing tables
+    if settings.environment == "development":
+        async with engine.begin() as conn:
+            try:
+                await conn.execute(text("""
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name='game_sessions' AND column_name='persona_id'
+                        ) THEN
+                            ALTER TABLE game_sessions
+                                ADD COLUMN persona_id UUID REFERENCES personas(id) ON DELETE SET NULL;
+                        END IF;
+                        -- Allow persona_vector to be null for sessions using persona_id
+                        BEGIN
+                            ALTER TABLE game_sessions ALTER COLUMN persona_vector DROP NOT NULL;
+                        EXCEPTION WHEN OTHERS THEN NULL;
+                        END;
+                    END $$;
+                """))
+            except Exception:
+                pass  # ignore if not postgres or already applied
 
     # Seed data in development
     if settings.environment == "development":
@@ -47,7 +80,8 @@ app.include_router(users.router)
 app.include_router(cards.router)
 app.include_router(admin.router)
 app.include_router(game.router)
-app.include_router(persona.router)
+app.include_router(personas_router.router)
+app.include_router(progress.router)
 
 
 @app.get("/health")

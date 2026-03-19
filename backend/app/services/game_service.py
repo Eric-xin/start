@@ -6,10 +6,15 @@ from sqlalchemy import select
 from redis.asyncio import Redis
 from app.models.game import GameSession, GameEvent, GameConfig, SwipeAction
 from app.models.card import Card
+from app.models.persona import Persona, PersonaSnapshot
+from app.models.progress import UserProgress, STRATEGY_META, STRATEGIES
 from app.services import persona_engine as pe
 from app.services.card_recommender import recommend_next_card
 import numpy as np
 
+
+COOLDOWN_TTL_SECS = 30
+SNAPSHOT_INTERVAL = 10  # create a PersonaSnapshot every N cards
 
 DEFAULT_RANK_THRESHOLDS = {
     2: {"stage": 2, "capital": 11000},
@@ -21,18 +26,89 @@ DEFAULT_RANK_THRESHOLDS = {
 async def _get_config(db: AsyncSession, key: str, default):
     result = await db.execute(select(GameConfig).where(GameConfig.key == key))
     cfg = result.scalar_one_or_none()
-    if cfg:
-        return cfg.value
-    return default
+    return cfg.value if cfg else default
 
+
+# ─── User Progress ────────────────────────────────────────────────────────────
+
+async def get_or_create_progress(db: AsyncSession, user_id: uuid.UUID) -> UserProgress:
+    result = await db.execute(
+        select(UserProgress).where(UserProgress.user_id == user_id)
+    )
+    progress = result.scalar_one_or_none()
+    if not progress:
+        progress = UserProgress(
+            user_id=user_id,
+            unlocked_strategies=["savings"],
+            enabled_strategies=["savings"],
+            total_cards_played=0,
+        )
+        db.add(progress)
+        await db.flush()
+    return progress
+
+
+def _check_strategy_unlocks(progress: UserProgress) -> bool:
+    """Unlock new strategies based on total cards played. Returns True if new unlock."""
+    total = progress.total_cards_played
+    unlocked = list(progress.unlocked_strategies)
+    changed = False
+    for key, meta in STRATEGY_META.items():
+        if key not in unlocked and total >= meta["unlock_at"]:
+            unlocked.append(key)
+            changed = True
+    if changed:
+        progress.unlocked_strategies = unlocked
+        # Auto-enable newly unlocked strategies
+        enabled = list(progress.enabled_strategies)
+        for key in unlocked:
+            if key not in enabled:
+                enabled.append(key)
+        progress.enabled_strategies = enabled
+    return changed
+
+
+# ─── Persona ──────────────────────────────────────────────────────────────────
+
+async def get_active_persona(db: AsyncSession, user_id: uuid.UUID) -> Persona | None:
+    result = await db.execute(
+        select(Persona).where(
+            Persona.user_id == user_id,
+            Persona.is_active == True,  # noqa: E712
+        )
+    )
+    return result.scalar_one_or_none()
+
+
+async def get_or_create_default_persona(db: AsyncSession, user_id: uuid.UUID) -> Persona:
+    persona = await get_active_persona(db, user_id)
+    if not persona:
+        # Create default persona
+        persona = Persona(
+            user_id=user_id,
+            name="Default Persona",
+            vector=pe.initialize_persona(),
+            cards_played=0,
+            is_active=True,
+        )
+        db.add(persona)
+        await db.flush()
+    return persona
+
+
+# ─── Session ──────────────────────────────────────────────────────────────────
 
 async def create_session(db: AsyncSession, user_id: uuid.UUID) -> GameSession:
-    persona = pe.initialize_persona()
+    persona = await get_or_create_default_persona(db, user_id)
+    # Ensure user progress exists
+    await get_or_create_progress(db, user_id)
+
     session = GameSession(
         user_id=user_id,
+        persona_id=persona.id,
         stage=1,
         progress=0.0,
-        persona_vector=persona,
+        persona_vector=list(persona.vector),  # cached mirror for legacy compat
         topic_mastery={},
         investor_rank=1,
         capital=10000.0,
@@ -44,18 +120,15 @@ async def create_session(db: AsyncSession, user_id: uuid.UUID) -> GameSession:
     return session
 
 
-def compute_reward(card: Card, action: str) -> float:
-    """Compute reward for a swipe decision."""
-    card_type = card.type if isinstance(card.type, str) else card.type.value
+# ─── Swipe Processing ─────────────────────────────────────────────────────────
 
+def compute_reward(card: Card, action: str) -> float:
+    card_type = card.type if isinstance(card.type, str) else card.type.value
     if card_type == "education":
         return float(card.diagnostic_power)
-
-    # For event/action cards, right swipe is generally "invest/act" — reward based on difficulty
     if action == "right":
         return float(card.difficulty) * 0.5 + 0.1
-    else:
-        return float(1.0 - card.difficulty) * 0.3
+    return float(1.0 - card.difficulty) * 0.3
 
 
 def _get_lesson(card: Card, action: str) -> str:
@@ -66,14 +139,12 @@ def update_topic_mastery(topic_mastery: dict, card: Card, reward: float) -> dict
     mastery = dict(topic_mastery)
     topics = card.topics if isinstance(card.topics, list) else []
     for topic in topics:
-        current = mastery.get(topic, 0.0)
-        mastery[topic] = min(1.0, current + reward * 0.1)
+        mastery[topic] = min(1.0, mastery.get(topic, 0.0) + reward * 0.1)
     return mastery
 
 
 async def update_investor_rank(session: GameSession, db: AsyncSession) -> None:
     thresholds = await _get_config(db, "investor_rank_thresholds", DEFAULT_RANK_THRESHOLDS)
-    # Check ranks from highest to lowest
     for rank in [4, 3, 2]:
         rank_str = str(rank)
         t = thresholds.get(rank_str) or thresholds.get(rank)
@@ -98,10 +169,23 @@ async def process_swipe(
     action: str,
     redis: Redis,
 ) -> dict:
-    persona_before = list(session.persona_vector)
+    # Load the global persona (fallback to session vector if no persona_id)
+    persona: Persona | None = None
+    if session.persona_id:
+        persona_result = await db.execute(
+            select(Persona).where(Persona.id == session.persona_id)
+        )
+        persona = persona_result.scalar_one_or_none()
+
+    if persona:
+        p_vec = list(persona.vector)
+    else:
+        p_vec = list(session.persona_vector or pe.initialize_persona())
+
+    persona_before = p_vec
 
     # Encode
-    p_t = np.array(persona_before, dtype=np.float32)
+    p_t = np.array(p_vec, dtype=np.float32)
     e_t = pe.encode_event(card)
     a_t = pe.encode_action(action)
     s_t = pe.encode_state(session)
@@ -112,13 +196,36 @@ async def process_swipe(
     p_new = pe.update_persona(p_t, e_t, a_t, s_t, reward, rates)
     persona_after = p_new.tolist()
 
-    # Update capital (simple model: reward → capital change)
-    capital_delta = reward * 200  # $200 per unit reward
+    # Persist persona update
+    if persona:
+        persona.vector = persona_after
+        persona.cards_played += 1
+        persona.updated_at = datetime.now(timezone.utc)
+
+        # Snapshot every SNAPSHOT_INTERVAL cards
+        if persona.cards_played % SNAPSHOT_INTERVAL == 0:
+            traits = pe.compute_traits(p_new)
+            snapshot = PersonaSnapshot(
+                persona_id=persona.id,
+                cards_played=persona.cards_played,
+                vector=persona_after,
+                traits=traits,
+            )
+            db.add(snapshot)
+
+    # Update user progress
+    progress = await get_or_create_progress(db, session.user_id)
+    progress.total_cards_played += 1
+    _check_strategy_unlocks(progress)
+    progress.updated_at = datetime.now(timezone.utc)
+
+    # Update capital
+    capital_delta = reward * 200
     session.capital += capital_delta
     if session.capital > session.peak_capital:
         session.peak_capital = session.capital
 
-    # Update session state
+    # Update session state (mirror persona vector for legacy compat)
     session.persona_vector = persona_after
     session.topic_mastery = update_topic_mastery(session.topic_mastery, card, reward)
     session.last_card_type = card.type if isinstance(card.type, str) else card.type.value
@@ -137,22 +244,18 @@ async def process_swipe(
     )
     db.add(event)
 
-    # Set cooldown in Redis
+    # Cooldown in Redis
     cooldown_key = f"cooldown:{session.id}:{card.id}"
-    ttl = card.cooldown * COOLDOWN_TTL_SECS
-    await redis.setex(cooldown_key, ttl, "1")
+    await redis.setex(cooldown_key, card.cooldown * COOLDOWN_TTL_SECS, "1")
 
-    # Get next card recommendation
-    next_card = await recommend_next_card(db, session, redis)
+    # Get enabled stages from user progress for card recommender
+    enabled = progress.enabled_strategies if progress else STRATEGIES
+    next_card = await recommend_next_card(db, session, redis, enabled_strategies=enabled)
 
     lesson = _get_lesson(card, action)
-
     return {
         "lesson": lesson,
         "reward": reward,
         "session": session,
         "next_card": next_card,
     }
-
-
-COOLDOWN_TTL_SECS = 30

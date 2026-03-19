@@ -14,15 +14,26 @@ export interface CardData {
   diagnostic_power: number;
   left_choice: string;
   right_choice: string;
+  left_lesson: string;
+  right_lesson: string;
   card_band_color: string;
+}
+
+export interface GameEventData {
+  id: number;
+  card_id: number | null;
+  action: "left" | "right";
+  reward: number;
+  card: CardData | null;
+  created_at: string;
 }
 
 export interface SessionData {
   id: string;
   user_id: string;
+  persona_id: string | null;
   stage: number;
   progress: number;
-  persona_vector: number[];
   topic_mastery: Record<string, number>;
   investor_rank: number;
   capital: number;
@@ -37,6 +48,11 @@ export interface SwipeResponse {
   reward: number;
   session: SessionData;
   next_card: CardData | null;
+}
+
+export async function getSessions(): Promise<SessionData[]> {
+  const resp = await api.get<SessionData[]>("/api/game/sessions");
+  return resp.data;
 }
 
 export async function createSession(): Promise<SessionData> {
@@ -63,5 +79,10 @@ export async function swipe(
 
 export async function getNextCard(sessionId: string): Promise<CardData | null> {
   const resp = await api.get<CardData | null>(`/api/game/sessions/${sessionId}/next-card`);
+  return resp.data;
+}
+
+export async function getSessionHistory(sessionId: string): Promise<GameEventData[]> {
+  const resp = await api.get<GameEventData[]>(`/api/game/sessions/${sessionId}/history`);
   return resp.data;
 }

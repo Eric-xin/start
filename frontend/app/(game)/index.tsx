@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View, Text, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { createSession } from "../../services/game";
+import { createSession, getSessions, SessionData } from "../../services/game";
+import { listPersonas, PersonaData } from "../../services/persona";
 import { useAuthStore } from "../../store/authStore";
 import { useGameStore } from "../../store/gameStore";
 import { Colors } from "../../constants/colors";
@@ -47,10 +48,24 @@ export default function GameIndexScreen() {
   const router = useRouter();
   const { user, clearAuth } = useAuthStore();
   const { setSession, reset } = useGameStore();
-  const [loading, setLoading] = useState(false);
+  const [launching, setLaunching] = useState(false);
+  const [loadingLast, setLoadingLast] = useState(false);
+  const [lastSession, setLastSession] = useState<SessionData | null>(null);
+  const [activePersona, setActivePersona] = useState<PersonaData | null>(null);
+  const [loadingData, setLoadingData] = useState(true);
 
-  const handleNewGame = async () => {
-    setLoading(true);
+  useEffect(() => {
+    Promise.all([getSessions(), listPersonas()])
+      .then(([sessions, personas]) => {
+        setLastSession(sessions[0] ?? null); // already sorted by updated_at desc
+        setActivePersona(personas.find((p) => p.is_active) ?? personas[0] ?? null);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingData(false));
+  }, []);
+
+  const handleNewSession = async () => {
+    setLaunching(true);
     try {
       reset();
       const session = await createSession();
@@ -59,8 +74,14 @@ export default function GameIndexScreen() {
     } catch {
       Alert.alert("Error", "Could not create session. Is the backend running?");
     } finally {
-      setLoading(false);
+      setLaunching(false);
     }
+  };
+
+  const handleContinueLast = async () => {
+    if (!lastSession) return;
+    setSession(lastSession);
+    router.push("/(game)/play");
   };
 
   const handleLogout = async () => {
@@ -79,15 +100,26 @@ export default function GameIndexScreen() {
           <View style={styles.barSep} />
           <Text style={styles.topBarLabel}>FINANCIAL INTELLIGENCE PLATFORM</Text>
         </View>
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-          <Text style={styles.logoutText}>LOGOUT</Text>
-        </TouchableOpacity>
+        <View style={styles.topRight}>
+          <TouchableOpacity style={styles.topBtn} onPress={() => router.push("/(profile)/")}>
+            <Text style={styles.topBtnText}>PROFILE</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.topBtn} onPress={() => router.push("/(profile)/personas")}>
+            <Text style={styles.topBtnText}>PERSONAS</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.topBtn} onPress={() => router.push("/(profile)/decks")}>
+            <Text style={styles.topBtnText}>DECKS</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+            <Text style={styles.logoutText}>LOGOUT</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Main content */}
       <View style={styles.content}>
 
-        {/* Welcome panel */}
+        {/* Investor profile panel */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <View style={styles.blueDot} />
@@ -99,13 +131,18 @@ export default function GameIndexScreen() {
           <View style={styles.dataRow}>
             <DataBlock label="TIER" value={user?.subscription_tier?.toUpperCase() ?? "NORMAL"} accent={Colors.blue} />
             <View style={styles.dataSep} />
-            <DataBlock label="RANK" value={RANK_LABELS[1]} accent={Colors.teal} />
+            <DataBlock
+              label="ACTIVE PERSONA"
+              value={activePersona?.name ?? (loadingData ? "..." : "—")}
+              sub={activePersona ? `${activePersona.cards_played} cards` : undefined}
+              accent={Colors.teal}
+            />
             <View style={styles.dataSep} />
             <DataBlock label="STATUS" value="ACTIVE" sub="VERIFIED" accent={Colors.green} />
           </View>
         </View>
 
-        {/* Action panel */}
+        {/* Session control panel */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <View style={styles.blueDot} />
@@ -113,18 +150,53 @@ export default function GameIndexScreen() {
           </View>
 
           <Text style={styles.sessionDesc}>
-            Each session is an independent run through the decision engine. Your persona vector adapts with every swipe.
+            Each session is a run through the decision engine. Every swipe updates your active persona
+            {activePersona ? <Text style={{ color: Colors.teal }}> "{activePersona.name}"</Text> : null}.
           </Text>
 
+          <View style={styles.buttonRow}>
+            {/* New session */}
+            <TouchableOpacity
+              style={[styles.ctaBtn, launching && { opacity: 0.5 }]}
+              onPress={handleNewSession}
+              disabled={launching || loadingLast}
+            >
+              {launching
+                ? <ActivityIndicator color={Colors.bg} size="small" />
+                : <Text style={styles.ctaBtnText}>▶  NEW SESSION</Text>
+              }
+            </TouchableOpacity>
+
+            {/* Continue last */}
+            <TouchableOpacity
+              style={[
+                styles.continueBtn,
+                (!lastSession || loadingData) && styles.continueBtnDisabled,
+              ]}
+              onPress={handleContinueLast}
+              disabled={!lastSession || loadingData}
+            >
+              {loadingData ? (
+                <ActivityIndicator color={Colors.blue} size="small" />
+              ) : lastSession ? (
+                <View style={styles.continueBtnInner}>
+                  <Text style={styles.continueBtnText}>CONTINUE LAST</Text>
+                  <Text style={styles.continueBtnSub}>
+                    ${Math.round(lastSession.capital).toLocaleString()} · Stage {lastSession.stage}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={styles.continueBtnText}>NO PRIOR SESSION</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* History link */}
           <TouchableOpacity
-            style={[styles.ctaBtn, loading && { opacity: 0.5 }]}
-            onPress={handleNewGame}
-            disabled={loading}
+            style={styles.historyLink}
+            onPress={() => router.push("/(game)/sessions")}
           >
-            {loading
-              ? <ActivityIndicator color={Colors.bg} size="small" />
-              : <Text style={styles.ctaBtnText}>▶  LAUNCH NEW SESSION</Text>
-            }
+            <Text style={styles.historyLinkText}>VIEW SESSION HISTORY →</Text>
           </TouchableOpacity>
         </View>
 
@@ -167,10 +239,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   topLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
+  topRight: { flexDirection: "row", alignItems: "center", gap: 6 },
   logo: { fontSize: 14, fontFamily: Fonts.mono, color: Colors.blue, letterSpacing: 3 },
   barSep: { width: 1, height: 14, backgroundColor: Colors.borderDim },
   topBarLabel: { fontSize: 9, fontFamily: Fonts.sansBold, color: Colors.textDim, letterSpacing: 2 },
-  logoutBtn: { borderWidth: 1, borderColor: Colors.borderDim, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 2 },
+  topBtn: {
+    borderWidth: 1, borderColor: Colors.borderDim,
+    paddingHorizontal: 9, paddingVertical: 4, borderRadius: 2,
+  },
+  topBtnText: { fontSize: 8, fontFamily: Fonts.sansBold, color: Colors.textDim, letterSpacing: 1.5 },
+  logoutBtn: {
+    borderWidth: 1, borderColor: Colors.borderDim,
+    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 2,
+    marginLeft: 4,
+  },
   logoutText: { fontSize: 9, fontFamily: Fonts.sansBold, color: Colors.textDim, letterSpacing: 1.5 },
 
   content: {
@@ -210,14 +292,40 @@ const styles = StyleSheet.create({
 
   sessionDesc: { fontSize: 12, fontFamily: Fonts.sans, color: Colors.textDim, lineHeight: 18, marginBottom: 16 },
 
+  buttonRow: { flexDirection: "row", gap: 10, marginBottom: 12 },
+
   ctaBtn: {
+    flex: 1,
     backgroundColor: Colors.blue,
     paddingVertical: 14,
-    paddingHorizontal: 24,
+    paddingHorizontal: 12,
     alignItems: "center",
     borderRadius: 2,
   },
-  ctaBtnText: { fontSize: 13, fontFamily: Fonts.sansBold, color: Colors.bg, letterSpacing: 2 },
+  ctaBtnText: { fontSize: 12, fontFamily: Fonts.sansBold, color: Colors.bg, letterSpacing: 2 },
+
+  continueBtn: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: Colors.blue + "66",
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 2,
+  },
+  continueBtnDisabled: { borderColor: Colors.borderDim, opacity: 0.5 },
+  continueBtnInner: { alignItems: "center", gap: 3 },
+  continueBtnText: { fontSize: 11, fontFamily: Fonts.sansBold, color: Colors.blue, letterSpacing: 1.5 },
+  continueBtnSub: { fontSize: 9, fontFamily: Fonts.mono, color: Colors.textDim },
+
+  historyLink: {
+    alignItems: "center",
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: Colors.borderFaint,
+  },
+  historyLinkText: { fontSize: 9, fontFamily: Fonts.sansBold, color: Colors.textDim, letterSpacing: 2 },
 
   bottomBar: {
     height: 30,

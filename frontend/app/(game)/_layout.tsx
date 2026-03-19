@@ -6,9 +6,14 @@ export default function GameLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: Colors.background },
+        contentStyle: { backgroundColor: Colors.bg },
         animation: "fade",
       }}
-    />
+    >
+      <Stack.Screen name="index" />
+      <Stack.Screen name="play" />
+      <Stack.Screen name="sessions" />
+      <Stack.Screen name="session/[id]" />
+    </Stack>
   );
 }

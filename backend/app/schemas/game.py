@@ -10,9 +10,9 @@ class GameSessionOut(BaseModel):
 
     id: uuid.UUID
     user_id: uuid.UUID
+    persona_id: uuid.UUID | None = None
     stage: int
     progress: float
-    persona_vector: list
     topic_mastery: dict
     investor_rank: int
     capital: float
@@ -20,6 +20,17 @@ class GameSessionOut(BaseModel):
     peak_capital: float
     created_at: datetime
     updated_at: datetime
+
+
+class GameEventOut(BaseModel):
+    model_config = {"from_attributes": True}
+
+    id: int
+    card_id: int | None
+    action: str
+    reward: float
+    card: CardOut | None = None
+    created_at: datetime
 
 
 class SwipeRequest(BaseModel):
@@ -32,12 +43,3 @@ class SwipeResponse(BaseModel):
     reward: float
     session: GameSessionOut
     next_card: CardOut | None = None
-
-
-class TraitsOut(BaseModel):
-    risk_appetite: float
-    fomo_sensitivity: float
-    loss_aversion: float
-    patience: float
-    diversification_bias: float
-    overconfidence: float
