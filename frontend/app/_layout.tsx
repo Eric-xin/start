@@ -6,6 +6,7 @@ import { useAppFonts } from "../hooks/useFont";
 import { useAuthStore } from "../store/authStore";
 import { StyleSheet, View, ActivityIndicator } from "react-native";
 import { Colors } from "../constants/colors";
+import { LuckyGuideChat } from "../components/chat/LuckyGuideChat";
 
 export default function RootLayout() {
   const [fontsLoaded] = useAppFonts();
@@ -52,6 +53,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={styles.root}>
       <StatusBar style="light" />
       <Slot />
+      {!!token && !inAuth && <LuckyGuideChat />}
     </GestureHandlerRootView>
   );
 }

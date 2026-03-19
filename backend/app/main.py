@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from app.config import get_settings
 from app.database import engine, Base
-from app.routers import auth, users, cards, admin, game, progress
+from app.routers import auth, users, cards, admin, game, progress, chat
 from app.routers import personas as personas_router
 from app.routers import portfolio as portfolio_router
 from app.routers import achievements as achievements_router
@@ -157,6 +157,7 @@ app.include_router(admin.router)
 app.include_router(game.router)
 app.include_router(personas_router.router)
 app.include_router(progress.router)
+app.include_router(chat.router)
 app.include_router(portfolio_router.router)
 app.include_router(achievements_router.router)
 app.include_router(simulation_router.router)
