@@ -13,6 +13,7 @@ import { Fonts } from "../../constants/fonts";
 import { usePortfolioStore } from "../../store/portfolioStore";
 import { useThemeStore } from "../../store/themeStore";
 import { ThemeModeToggle } from "../../components/theme/ThemeModeToggle";
+import { LanguageSwitcher } from "../../components/navigation/LanguageSwitcher";
 import { LEADERBOARD_SEED } from "../../seeds/leaderboard";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -191,6 +192,14 @@ export default function LeaderboardScreen() {
   const you = ranked.find((p) => p.isYou)!;
   const maxValue = ranked[0]?.net_worth ?? 1;
 
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.push("/(game)");
+    }
+  };
+
   return (
     <View style={[styles.screen, isNormal && { backgroundColor: colors.bg }]}>
 
@@ -208,11 +217,9 @@ export default function LeaderboardScreen() {
             {isNormal ? t("leaderboard.topBar") : t("leaderboard.topBarPro")}
           </Text>
         </View>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <View style={styles.headerRight}>
+          <LanguageSwitcher />
           <ThemeModeToggle compact />
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={[styles.headerTitle, { color: colors.textDim }]}>BACK</Text>
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -271,7 +278,7 @@ export default function LeaderboardScreen() {
       >
         <TouchableOpacity
           style={[styles.backBtn, { borderColor: colors.blue }]}
-          onPress={() => router.back()}
+          onPress={handleBack}
           activeOpacity={0.75}
         >
           <Text style={[styles.backBtnText, { color: colors.blue }]}>{t("leaderboard.back")}</Text>
@@ -320,6 +327,11 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 11,
     fontFamily: Fonts.mono,
+  },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
     color: Colors.textDim,
     letterSpacing: 1.5,
   },

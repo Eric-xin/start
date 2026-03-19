@@ -115,8 +115,7 @@ export function PCAMap({ snapshots, varianceExplained, size = 300 }: Props) {
           x={8} y={pad + plotSize / 2}
           fill={Colors.textMuted} fontSize={8} textAnchor="middle"
           fontFamily={Fonts.sansBold}
-          rotation={-90}
-          originX={8} originY={pad + plotSize / 2}
+          transform={`rotate(-90 8 ${pad + plotSize / 2})`}
         >
           PC2 ({pc2Var}%)
         </SvgText>
