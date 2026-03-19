@@ -304,7 +304,10 @@ async def process_swipe(
 ) -> dict:
     if session.is_daily and session.daily_completed:
         return {
-            "lesson": "Daily session complete. Come back tomorrow for fresh cards.",
+            "lesson": localize_text(
+                "Daily session complete. Come back tomorrow for fresh cards.",
+                language,
+            ),
             "reward": 0.0,
             "session": session,
             "next_card": None,
