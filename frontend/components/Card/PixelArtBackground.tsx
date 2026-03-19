@@ -144,130 +144,218 @@ function addLine(map: Map<string, Pixel>, x0: number, y0: number, x1: number, y1
   }
 }
 
+function addCircle(map: Map<string, Pixel>, cx: number, cy: number, r: number, shade: 0 | 1 | 2) {
+  for (let y = cy - r; y <= cy + r; y += 1) {
+    for (let x = cx - r; x <= cx + r; x += 1) {
+      const dx = x - cx;
+      const dy = y - cy;
+      if (dx * dx + dy * dy <= r * r) {
+        addPixel(map, x, y, shade);
+      }
+    }
+  }
+}
+
+function addRing(map: Map<string, Pixel>, cx: number, cy: number, r: number, shade: 0 | 1 | 2) {
+  addCircle(map, cx, cy, r, shade);
+  addCircle(map, cx, cy, Math.max(0, r - 1), 0);
+}
+
+function addCandles(map: Map<string, Pixel>, x: number, y: number, heights: number[]) {
+  heights.forEach((h, i) => {
+    const px = x + i * 3;
+    addRect(map, px, y - h, 2, h, (i % 2 === 0 ? 1 : 2));
+    addLine(map, px + 1, y - h - 1, px + 1, y + 1, 2);
+  });
+}
+
+function addArrow(map: Map<string, Pixel>, x0: number, y0: number, x1: number, y1: number, shade: 0 | 1 | 2) {
+  addLine(map, x0, y0, x1, y1, shade);
+  const dx = x1 - x0;
+  const dy = y1 - y0;
+  const ax = dx === 0 ? 0 : (dx > 0 ? 1 : -1);
+  const ay = dy === 0 ? 0 : (dy > 0 ? 1 : -1);
+  addLine(map, x1, y1, x1 - ax - ay, y1 - ay + ax, shade);
+  addLine(map, x1, y1, x1 - ax + ay, y1 - ay - ax, shade);
+}
+
+function addClock(map: Map<string, Pixel>, cx: number, cy: number, phase: number) {
+  addRing(map, cx, cy, 4, 1);
+  addPixel(map, cx, cy, 2);
+  const minute = phase % 4;
+  const hour = (phase + 1) % 4;
+  const minuteHands: Array<[number, number]> = [[0, -3], [3, 0], [0, 3], [-3, 0]];
+  const hourHands: Array<[number, number]> = [[1, -2], [2, 1], [-1, 2], [-2, -1]];
+  addLine(map, cx, cy, cx + minuteHands[minute][0], cy + minuteHands[minute][1], 2);
+  addLine(map, cx, cy, cx + hourHands[hour][0], cy + hourHands[hour][1], 2);
+}
+
+function addShield(map: Map<string, Pixel>, x: number, y: number) {
+  addRect(map, x, y, 6, 5, 1);
+  addLine(map, x, y + 5, x + 2, y + 7, 2);
+  addLine(map, x + 5, y + 5, x + 3, y + 7, 2);
+  addLine(map, x + 2, y + 7, x + 3, y + 7, 2);
+  addLine(map, x + 2, y + 1, x + 2, y + 5, 2);
+  addLine(map, x + 3, y + 1, x + 3, y + 5, 2);
+}
+
+function addPie(map: Map<string, Pixel>, cx: number, cy: number, r: number, phase: number) {
+  addCircle(map, cx, cy, r, 1);
+  addLine(map, cx, cy, cx + r, cy, 2);
+  if (phase % 2 === 0) {
+    addLine(map, cx, cy, cx, cy - r, 2);
+    addRect(map, cx, cy - r, r, r, 2);
+  } else {
+    addLine(map, cx, cy, cx - r, cy, 2);
+    addRect(map, cx - r, cy, r, r, 2);
+  }
+}
+
+function addDollar(map: Map<string, Pixel>, x: number, y: number) {
+  addLine(map, x + 1, y, x + 1, y + 8, 2);
+  addRect(map, x, y + 1, 3, 2, 1);
+  addRect(map, x, y + 5, 3, 2, 1);
+  addPixel(map, x + 2, y + 3, 2);
+  addPixel(map, x, y + 4, 2);
+}
+
+function addScales(map: Map<string, Pixel>, x: number, y: number) {
+  addLine(map, x + 4, y, x + 4, y + 8, 2);
+  addLine(map, x + 1, y + 2, x + 7, y + 2, 2);
+  addLine(map, x + 1, y + 2, x, y + 5, 1);
+  addLine(map, x + 7, y + 2, x + 8, y + 5, 1);
+  addRect(map, x - 1, y + 5, 3, 2, 1);
+  addRect(map, x + 6, y + 5, 3, 2, 2);
+}
+
+function addBurst(map: Map<string, Pixel>, cx: number, cy: number) {
+  addLine(map, cx - 3, cy, cx + 3, cy, 2);
+  addLine(map, cx, cy - 3, cx, cy + 3, 2);
+  addLine(map, cx - 2, cy - 2, cx + 2, cy + 2, 1);
+  addLine(map, cx - 2, cy + 2, cx + 2, cy - 2, 1);
+}
+
 function buildSubjectPixels(subject: Subject, variant: number): Pixel[] {
   const map = new Map<string, Pixel>();
   const rand = lcg(variant + 1);
+  const phase = variant % 4;
   const bias = variant % 3;
 
   switch (subject) {
     case "stocks":
-      addRect(map, 2, 10, 2, 4, 1);
-      addRect(map, 5, 8, 2, 6, 2);
-      addRect(map, 8, 9, 2, 5, 1);
-      addRect(map, 11, 6, 2, 8, 2);
-      addLine(map, 2, 12, 13, 4 + bias, 2);
+      addCandles(map, 2, 12, [3, 5, 4, 7]);
+      addArrow(map, 2, 12, 13, 5 + bias, 2);
       break;
     case "bonds":
-      addRect(map, 3, 4, 10, 8, 1);
-      addLine(map, 3, 4, 8, 2, 2);
-      addLine(map, 12, 4, 8, 2, 2);
-      addLine(map, 5, 7, 10, 7, 2);
-      addLine(map, 5, 9, 10, 9, 2);
+      addRect(map, 2, 4, 12, 8, 1);
+      addShield(map, 4, 5);
+      addLine(map, 9, 6, 12, 6, 2);
+      addLine(map, 9, 8, 12, 8, 2);
+      addLine(map, 9, 10, 12, 10, 2);
       break;
     case "inflation":
-      addRect(map, 4, 10, 8, 2, 1);
-      addLine(map, 8, 11, 8, 4, 2);
-      addLine(map, 8, 4, 6, 6, 2);
-      addLine(map, 8, 4, 10, 6, 2);
-      addRect(map, 6, 6, 4, 4, 1);
+      addDollar(map, 6, 4);
+      addArrow(map, 5, 12, 11, 5, 2);
+      addLine(map, 2, 12, 13, 12, 1);
       break;
     case "etfs":
-      addRect(map, 3, 8, 4, 4, 1);
-      addRect(map, 7, 8, 4, 4, 2);
-      addRect(map, 5, 4, 4, 4, 1);
+      addRect(map, 2, 8, 3, 3, 1);
+      addRect(map, 6, 8, 3, 3, 2);
+      addRect(map, 10, 8, 3, 3, 1);
+      addRect(map, 6, 4, 3, 3, 2);
+      addLine(map, 4, 9, 6, 9, 2);
+      addLine(map, 9, 9, 10, 9, 2);
+      addLine(map, 7, 7, 7, 8, 2);
       break;
     case "market_growth":
-      addLine(map, 2, 12, 5, 10, 1);
-      addLine(map, 5, 10, 7, 11, 1);
-      addLine(map, 7, 11, 10, 7, 2);
-      addLine(map, 10, 7, 13, 5, 2);
-      addRect(map, 12, 4, 2, 2, 2);
+      addLine(map, 2, 12, 4, 11, 1);
+      addLine(map, 4, 11, 7, 12, 1);
+      addLine(map, 7, 12, 10, 8, 2);
+      addLine(map, 10, 8, 13, 5, 2);
+      addArrow(map, 10, 8, 13, 5, 2);
       break;
     case "market_timing":
-      addRect(map, 3, 3, 10, 10, 1);
-      addLine(map, 8, 3, 8, 8, 2);
-      addLine(map, 8, 8, 11, 8, 2);
-      addRect(map, 7, 2, 2, 2, 2);
+      addClock(map, 6, 6, phase);
+      addCandles(map, 9, 13, [3, 5, 4]);
       break;
     case "volatility":
       addLine(map, 2, 10, 4, 5, 2);
       addLine(map, 4, 5, 7, 12, 2);
       addLine(map, 7, 12, 10, 6, 1);
       addLine(map, 10, 6, 13, 11, 1);
+      addBurst(map, 8, 8);
       break;
     case "risk_return":
-      addRect(map, 2, 10, 5, 2, 1);
-      addRect(map, 9, 6, 5, 2, 2);
-      addLine(map, 5, 10, 9, 6, 2);
+      addScales(map, 4, 4);
+      addArrow(map, 4, 12, 12, 6, 2);
       break;
     case "saving_vs_investing":
       addRect(map, 2, 8, 5, 5, 1);
-      addRect(map, 9, 5, 5, 8, 2);
+      addDollar(map, 3, 8);
+      addCandles(map, 9, 13, [5, 7]);
       break;
     case "opportunity_cost":
-      addRect(map, 3, 5, 4, 7, 1);
-      addRect(map, 9, 5, 4, 7, 2);
-      addLine(map, 7, 8, 9, 8, 2);
+      addRect(map, 2, 6, 4, 6, 1);
+      addRect(map, 10, 6, 4, 6, 2);
+      addArrow(map, 6, 9, 10, 9, 2);
       break;
     case "asset_allocation":
-      addRect(map, 3, 4, 10, 10, 1);
-      addLine(map, 8, 4, 8, 14, 2);
-      addLine(map, 3, 9, 13, 9, 2);
+      addPie(map, 6, 8, 4, phase);
+      addRect(map, 11, 6, 2, 6, 2);
+      addRect(map, 13, 8, 1, 4, 1);
       break;
     case "diversification":
       addRect(map, 3, 4, 4, 4, 1);
       addRect(map, 9, 4, 4, 4, 2);
       addRect(map, 3, 10, 4, 4, 2);
       addRect(map, 9, 10, 4, 4, 1);
+      addLine(map, 7, 6, 9, 6, 2);
+      addLine(map, 7, 12, 9, 12, 2);
       break;
     case "compounding":
       addRect(map, 3, 10, 2, 3, 1);
       addRect(map, 6, 8, 2, 5, 1);
       addRect(map, 9, 6, 2, 7, 2);
       addRect(map, 12, 4, 2, 9, 2);
+      addArrow(map, 3, 12, 13, 4, 2);
       break;
     case "time_horizon":
-      addRect(map, 4, 4, 8, 8, 1);
-      addLine(map, 8, 8, 8, 5, 2);
-      addLine(map, 8, 8, 10, 9, 2);
+      addClock(map, 8, 8, phase);
+      addArrow(map, 2, 13, 13, 13, 1);
       break;
     case "consistency":
       addRect(map, 3, 5, 2, 8, 1);
       addRect(map, 6, 5, 2, 8, 1);
       addRect(map, 9, 5, 2, 8, 1);
       addRect(map, 12, 5, 2, 8, 1);
+      addLine(map, 2, 13, 14, 13, 2);
       break;
     case "dca":
-      addRect(map, 3, 5, 3, 3, 1);
-      addRect(map, 7, 7, 3, 3, 1);
-      addRect(map, 11, 9, 3, 3, 2);
+      addDollar(map, 2, 6);
+      addDollar(map, 6, 7);
+      addDollar(map, 10, 8);
+      addArrow(map, 2, 12, 13, 9, 1);
       break;
     case "rebalancing":
-      addRect(map, 3, 6, 4, 6, 1);
-      addRect(map, 9, 6, 4, 6, 2);
-      addLine(map, 7, 9, 9, 9, 2);
-      addLine(map, 7, 9, 6, 8, 2);
-      addLine(map, 9, 9, 10, 8, 2);
+      addPie(map, 5, 8, 3, phase);
+      addPie(map, 11, 8, 3, phase + 1);
+      addArrow(map, 7, 8, 9, 8, 2);
       break;
     case "fomo":
-      addRect(map, 4, 5, 8, 8, 1);
-      addRect(map, 6, 7, 4, 4, 2);
-      addRect(map, 11, 4, 2, 2, 2);
+      addCandles(map, 3, 12, [3, 5, 8, 10]);
+      addBurst(map, 12, 4);
+      addArrow(map, 4, 11, 13, 3, 2);
       break;
     case "overtrading":
-      addLine(map, 2, 6, 7, 6, 2);
-      addLine(map, 7, 6, 6, 5, 2);
-      addLine(map, 7, 6, 6, 7, 2);
-      addLine(map, 13, 10, 8, 10, 1);
-      addLine(map, 8, 10, 9, 9, 1);
-      addLine(map, 8, 10, 9, 11, 1);
+      addArrow(map, 2, 5, 8, 5, 2);
+      addArrow(map, 13, 11, 7, 11, 1);
       addRect(map, 6, 7, 4, 3, 1);
+      addLine(map, 8, 6, 8, 10, 2);
       break;
     case "panic_selling":
-      addLine(map, 2, 4, 13, 12, 2);
-      addLine(map, 13, 12, 11, 12, 2);
-      addLine(map, 13, 12, 13, 10, 2);
-      addRect(map, 3, 3, 4, 3, 1);
+      addCandles(map, 2, 12, [8, 6, 4, 3]);
+      addArrow(map, 3, 4, 13, 12, 2);
+      addBurst(map, 3, 3);
       break;
     default:
       addRect(map, 4, 4, 8, 8, 1);
@@ -275,7 +363,7 @@ function buildSubjectPixels(subject: Subject, variant: number): Pixel[] {
   }
 
   const mirrored = variant % 2 === 1;
-  const sparkleCount = 5 + (variant % 6);
+  const sparkleCount = 2 + (variant % 4);
   const jitter = variant % 4 === 0 ? 1 : 0;
 
   const transformed = new Map<string, Pixel>();
