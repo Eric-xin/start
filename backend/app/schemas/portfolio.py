@@ -47,6 +47,7 @@ class PlayCardRequest(BaseModel):
 class PlayCardResponse(BaseModel):
     lesson: str
     reward: float
+    is_correct: bool
     capital_before: float
     capital_after: float
     net_worth: float

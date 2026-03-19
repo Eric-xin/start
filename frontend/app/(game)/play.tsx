@@ -246,6 +246,7 @@ export default function PlayScreen() {
   const [initializing, setInitializing] = React.useState(true);
   const [achievementQueue, setAchievementQueue] = useState<AchievementData[]>([]);
   const [activePanel, setActivePanel] = useState<PanelType>(null);
+  const [isChoiceFlipped, setIsChoiceFlipped] = useState<boolean>(Math.random() < 0.5);
   const mounted = useRef(false);
 
   useEffect(() => {
@@ -271,10 +272,13 @@ export default function PlayScreen() {
     setSwipeLocked(true);
     setCurrentCard(null);
     try {
-      const result = await playCard(currentCard.id, direction);
+      const action = isChoiceFlipped
+        ? (direction === "left" ? "right" : "left")
+        : direction;
+      const result = await playCard(currentCard.id, action);
       setPortfolio(result.portfolio);
       setNextCard(result.next_card ?? null);
-      setLesson({ text: result.lesson, direction, reward: result.reward });
+      setLesson({ text: result.lesson, direction, reward: result.reward, isCorrect: result.is_correct });
       if (result.newly_unlocked_achievements?.length) {
         setAchievementQueue((q) => [...q, ...result.newly_unlocked_achievements]);
       }
@@ -283,12 +287,13 @@ export default function PlayScreen() {
       setCurrentCard(currentCard);
       Alert.alert("Error", "Swipe failed. Check connection.");
     }
-  }, [currentCard, isSwipeLocked]);
+  }, [currentCard, isSwipeLocked, isChoiceFlipped]);
 
   const handleLessonDismiss = useCallback(() => {
     setLesson(null);
     setCurrentCard(nextCard);
     setNextCard(null);
+    setIsChoiceFlipped(Math.random() < 0.5);
     setSwipeLocked(false);
   }, [nextCard]);
 
@@ -362,6 +367,7 @@ export default function PlayScreen() {
               text={lesson.text}
               direction={lesson.direction}
               reward={lesson.reward}
+              isCorrect={lesson.isCorrect}
               onDismiss={handleLessonDismiss}
             />
           ) : currentCard ? (
@@ -371,6 +377,7 @@ export default function PlayScreen() {
               card={currentCard}
               isLocked={isSwipeLocked}
               onSwipe={handleSwipe}
+              isChoiceFlipped={isChoiceFlipped}
               areaWidth={cardAreaW}
               areaHeight={cardAreaH - 48}
             />
@@ -390,9 +397,9 @@ export default function PlayScreen() {
 
           {/* Swipe hints */}
           {currentCard && !isSwipeLocked && !lesson && (
-            <View style={styles.swipeHints}>
-              <Text style={[styles.swipeHintText, { color: Colors.red }]}>← DECLINE</Text>
-              <Text style={[styles.swipeHintText, { color: Colors.green }]}>ACCEPT →</Text>
+            <View style={styles.swipeHints} pointerEvents="none">
+              <Text style={styles.swipeHintText}>← OPTION</Text>
+              <Text style={styles.swipeHintText}>OPTION →</Text>
             </View>
           )}
         </View>

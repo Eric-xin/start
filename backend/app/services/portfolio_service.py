@@ -1,4 +1,5 @@
 """Portfolio service — continuous gameplay replacing the session model."""
+
 import random
 import uuid
 from datetime import datetime, date, timedelta, timezone
@@ -21,9 +22,9 @@ SNAPSHOT_INTERVAL = 10
 COOLDOWN_TTL_SECS = 30
 
 DAILY_BASE_INCOME = 500.0
-DAILY_STAGE_BONUS = 100.0   # per stage above 1
-DAILY_STREAK_BONUS = 25.0   # per streak day
-MAX_STREAK_BONUS = 250.0    # cap at 10 days
+DAILY_STAGE_BONUS = 100.0  # per stage above 1
+DAILY_STREAK_BONUS = 25.0  # per streak day
+MAX_STREAK_BONUS = 250.0  # cap at 10 days
 
 DEFAULT_RANK_THRESHOLDS = {
     2: {"stage": 2, "capital": 11_000},
@@ -34,6 +35,7 @@ DEFAULT_RANK_THRESHOLDS = {
 
 # ─── Income Calculation ────────────────────────────────────────────────────────
 
+
 def compute_daily_income(portfolio: UserPortfolio) -> float:
     stage_bonus = DAILY_STAGE_BONUS * (portfolio.stage - 1)
     streak_bonus = min(portfolio.income_streak * DAILY_STREAK_BONUS, MAX_STREAK_BONUS)
@@ -42,9 +44,14 @@ def compute_daily_income(portfolio: UserPortfolio) -> float:
 
 # ─── Card Resolver ─────────────────────────────────────────────────────────────
 
+
 def resolve_card(card: Card) -> CardOut:
     out = CardOut.model_validate(card)
-    if card.value_min is not None and card.value_max is not None and card.value_step is not None:
+    if (
+        card.value_min is not None
+        and card.value_max is not None
+        and card.value_step is not None
+    ):
         step = card.value_step
         steps = round((card.value_max - card.value_min) / step)
         value = card.value_min + random.randint(0, steps) * step
@@ -55,6 +62,7 @@ def resolve_card(card: Card) -> CardOut:
 
 # ─── Config ────────────────────────────────────────────────────────────────────
 
+
 async def _get_config(db: AsyncSession, key: str, default):
     result = await db.execute(select(GameConfig).where(GameConfig.key == key))
     cfg = result.scalar_one_or_none()
@@ -62,6 +70,7 @@ async def _get_config(db: AsyncSession, key: str, default):
 
 
 # ─── Snapshot ──────────────────────────────────────────────────────────────────
+
 
 async def _upsert_snapshot(db: AsyncSession, portfolio: UserPortfolio) -> None:
     today = date.today()
@@ -76,17 +85,22 @@ async def _upsert_snapshot(db: AsyncSession, portfolio: UserPortfolio) -> None:
         snapshot.net_worth = portfolio.net_worth
         snapshot.capital = portfolio.capital
     else:
-        db.add(NetWorthSnapshot(
-            portfolio_id=portfolio.id,
-            net_worth=portfolio.net_worth,
-            capital=portfolio.capital,
-            snapshot_date=today,
-        ))
+        db.add(
+            NetWorthSnapshot(
+                portfolio_id=portfolio.id,
+                net_worth=portfolio.net_worth,
+                capital=portfolio.capital,
+                snapshot_date=today,
+            )
+        )
 
 
 # ─── Persona ───────────────────────────────────────────────────────────────────
 
-async def get_or_create_default_persona(db: AsyncSession, user_id: uuid.UUID) -> Persona:
+
+async def get_or_create_default_persona(
+    db: AsyncSession, user_id: uuid.UUID
+) -> Persona:
     result = await db.execute(
         select(Persona).where(
             Persona.user_id == user_id,
@@ -109,8 +123,11 @@ async def get_or_create_default_persona(db: AsyncSession, user_id: uuid.UUID) ->
 
 # ─── Progress ──────────────────────────────────────────────────────────────────
 
+
 async def get_or_create_progress(db: AsyncSession, user_id: uuid.UUID) -> UserProgress:
-    result = await db.execute(select(UserProgress).where(UserProgress.user_id == user_id))
+    result = await db.execute(
+        select(UserProgress).where(UserProgress.user_id == user_id)
+    )
     progress = result.scalar_one_or_none()
     if not progress:
         progress = UserProgress(
@@ -164,8 +181,13 @@ def _check_strategy_unlocks(progress: UserProgress) -> None:
 
 # ─── Portfolio ────────────────────────────────────────────────────────────────
 
-async def get_or_create_portfolio(db: AsyncSession, user_id: uuid.UUID) -> UserPortfolio:
-    result = await db.execute(select(UserPortfolio).where(UserPortfolio.user_id == user_id))
+
+async def get_or_create_portfolio(
+    db: AsyncSession, user_id: uuid.UUID
+) -> UserPortfolio:
+    result = await db.execute(
+        select(UserPortfolio).where(UserPortfolio.user_id == user_id)
+    )
     portfolio = result.scalar_one_or_none()
     if not portfolio:
         persona = await get_or_create_default_persona(db, user_id)
@@ -189,7 +211,10 @@ async def get_or_create_portfolio(db: AsyncSession, user_id: uuid.UUID) -> UserP
 
 # ─── Daily Income ─────────────────────────────────────────────────────────────
 
-async def claim_daily_income(db: AsyncSession, portfolio: UserPortfolio) -> float | None:
+
+async def claim_daily_income(
+    db: AsyncSession, portfolio: UserPortfolio
+) -> float | None:
     today = date.today()
     if portfolio.last_income_date == today:
         return None
@@ -221,11 +246,11 @@ MARKET_DIMENSIONS = ["sentiment", "inflation", "greed", "volatility", "fundament
 # How each market dimension contributes to the capital multiplier.
 # Positive sentiment/fundamentals boost returns; high inflation/volatility/greed hurt.
 _DIMENSION_CAPITAL_WEIGHTS = {
-    "sentiment": 0.30,       # positive sentiment → higher returns
-    "inflation": -0.25,      # rising inflation → drag on capital
-    "greed": -0.15,          # greed → overvaluation risk
-    "volatility": -0.20,     # high volatility → uncertainty penalty
-    "fundamentals": 0.35,    # strong fundamentals → solid returns
+    "sentiment": 0.30,  # positive sentiment → higher returns
+    "inflation": -0.25,  # rising inflation → drag on capital
+    "greed": -0.15,  # greed → overvaluation risk
+    "volatility": -0.20,  # high volatility → uncertainty penalty
+    "fundamentals": 0.35,  # strong fundamentals → solid returns
 }
 
 # Decay factor: market state drifts toward 0 each play (mean-reversion)
@@ -249,7 +274,10 @@ def _get_card_weights(card: Card) -> dict:
 
 
 def _update_market_state(
-    current_state: dict, card: Card, action: str, reward: float,
+    current_state: dict,
+    card: Card,
+    action: str,
+    reward: float,
 ) -> dict:
     """Update the cumulative market state based on card weights and player action.
 
@@ -284,19 +312,103 @@ def _compute_market_multiplier(market_state: dict) -> float:
     return max(0.5, min(1.8, 1.0 + score))
 
 
-def _compute_reward(card: Card, action: str) -> float:
+def _context_score(weights: dict | None, market_state: dict | None) -> float:
+    """Return a normalized score in [-1, 1] where positive favors accepting risk."""
+    w = weights or {}
+    m = market_state or {}
+
+    card_score = (
+        0.35 * float(w.get("sentiment", 0.0))
+        + 0.45 * float(w.get("fundamentals", 0.0))
+        - 0.30 * float(w.get("inflation", 0.0))
+        - 0.30 * float(w.get("volatility", 0.0))
+        - 0.15 * float(w.get("greed", 0.0))
+    )
+    market_score = (
+        0.30 * float(m.get("sentiment", 0.0))
+        + 0.40 * float(m.get("fundamentals", 0.0))
+        - 0.30 * float(m.get("inflation", 0.0))
+        - 0.35 * float(m.get("volatility", 0.0))
+        - 0.15 * float(m.get("greed", 0.0))
+    )
+
+    raw = 0.6 * card_score + 0.4 * market_score
+    return max(-1.0, min(1.0, raw))
+
+
+_RISK_ON_HINTS = (
+    "buy",
+    "invest",
+    "heavier",
+    "concentrate",
+    "let it ride",
+    "run",
+    "momentum",
+    "go",
+)
+
+_RISK_OFF_HINTS = (
+    "sell",
+    "wait",
+    "pause",
+    "cash",
+    "conservative",
+    "bonds",
+    "cut",
+    "rebalance",
+    "skip",
+    "avoid",
+)
+
+
+def _choice_risk_signal(choice_text: str) -> float:
+    """Infer risk posture from a choice string in [-1, 1]."""
+    text = (choice_text or "").lower()
+    on = sum(1 for token in _RISK_ON_HINTS if token in text)
+    off = sum(1 for token in _RISK_OFF_HINTS if token in text)
+    total = on + off
+    if total == 0:
+        return 0.0
+    return max(-1.0, min(1.0, float(on - off) / float(total)))
+
+
+def _action_quality(card: Card, action: str, regime: float) -> float:
+    """Return how suitable an action is for the current card/regime in [0, 1]."""
+    left_signal = _choice_risk_signal(getattr(card, "left_choice", ""))
+    right_signal = _choice_risk_signal(getattr(card, "right_choice", ""))
+    signal = right_signal if action == "right" else left_signal
+
+    distance = min(2.0, abs(signal - regime))
+    quality = 1.0 - (distance / 2.0)
+    return max(0.0, min(1.0, quality))
+
+
+def _compute_reward(card: Card, action: str, market_state: dict | None = None) -> float:
+    """Compute signed reward: better choice gains capital, worse choice loses capital."""
     card_type = card.type if isinstance(card.type, str) else card.type.value
+    regime = _context_score(getattr(card, "weights", {}), market_state)
+    chosen_quality = _action_quality(card, action, regime)
+    alt_action = "left" if action == "right" else "right"
+    alt_quality = _action_quality(card, alt_action, regime)
+
+    difficulty = float(card.difficulty)
+    diagnostic = float(card.diagnostic_power)
+
+    # Stronger cards create larger upside/downside; education has lower stakes.
     if card_type == "education":
-        return float(card.diagnostic_power)
-    if action == "right":
-        return float(card.difficulty) * 0.5 + 0.1
-    return float(1.0 - card.difficulty) * 0.3
+        magnitude = 0.18 + 0.22 * diagnostic
+    else:
+        magnitude = 0.30 + 0.30 * difficulty
+
+    edge = chosen_quality - alt_quality
+    reward = edge * magnitude
+    return max(-0.8, min(0.8, float(reward)))
 
 
 def _update_topic_mastery(topic_mastery: dict, card: Card, reward: float) -> dict:
     mastery = dict(topic_mastery or {})
-    for topic in (card.topics if isinstance(card.topics, list) else []):
-        mastery[topic] = min(1.0, mastery.get(topic, 0.0) + reward * 0.1)
+    for topic in card.topics if isinstance(card.topics, list) else []:
+        mastery[topic] = max(0.0, min(1.0, mastery.get(topic, 0.0) + reward * 0.1))
     return mastery
 
 
@@ -321,12 +433,19 @@ async def play_card(
         r = await db.execute(select(Persona).where(Persona.id == portfolio.persona_id))
         persona = r.scalar_one_or_none()
 
-    p_vec = list(persona.vector if persona else (portfolio.persona_vector or pe.initialize_persona()))
+    p_vec = list(
+        persona.vector
+        if persona
+        else (portfolio.persona_vector or pe.initialize_persona())
+    )
     p_t = np.array(p_vec, dtype=np.float32)
     e_t = pe.encode_event(card)
     a_t = pe.encode_action(action)
     s_t = pe.encode_state_portfolio(portfolio)
-    reward = _compute_reward(card, action)
+    reward = _compute_reward(card, action, portfolio.market_state)
+    alt_action = "left" if action == "right" else "right"
+    alt_reward = _compute_reward(card, alt_action, portfolio.market_state)
+    is_optimal = reward >= alt_reward
 
     # Update persona vector
     rates = await _get_config(db, "persona_update_rates", None)
@@ -338,16 +457,21 @@ async def play_card(
         persona.cards_played += 1
         persona.updated_at = datetime.now(timezone.utc)
         if persona.cards_played % SNAPSHOT_INTERVAL == 0:
-            db.add(PersonaSnapshot(
-                persona_id=persona.id,
-                cards_played=persona.cards_played,
-                vector=persona_after,
-                traits=pe.compute_traits(p_new),
-            ))
+            db.add(
+                PersonaSnapshot(
+                    persona_id=persona.id,
+                    cards_played=persona.cards_played,
+                    vector=persona_after,
+                    traits=pe.compute_traits(p_new),
+                )
+            )
 
     # Update market state from card weights
     portfolio.market_state = _update_market_state(
-        portfolio.market_state, card, action, reward,
+        portfolio.market_state,
+        card,
+        action,
+        reward,
     )
     market_mult = _compute_market_multiplier(portfolio.market_state)
 
@@ -361,8 +485,12 @@ async def play_card(
 
     # Portfolio state update
     portfolio.persona_vector = persona_after
-    portfolio.topic_mastery = _update_topic_mastery(portfolio.topic_mastery, card, reward)
-    portfolio.last_card_type = card.type if isinstance(card.type, str) else card.type.value
+    portfolio.topic_mastery = _update_topic_mastery(
+        portfolio.topic_mastery, card, reward
+    )
+    portfolio.last_card_type = (
+        card.type if isinstance(card.type, str) else card.type.value
+    )
     portfolio.total_cards_played += 1
     portfolio.updated_at = datetime.now(timezone.utc)
 
@@ -372,7 +500,9 @@ async def play_card(
         portfolio.stage = new_stage
 
     # Investor rank
-    thresholds = await _get_config(db, "investor_rank_thresholds", DEFAULT_RANK_THRESHOLDS)
+    thresholds = await _get_config(
+        db, "investor_rank_thresholds", DEFAULT_RANK_THRESHOLDS
+    )
     portfolio.investor_rank = _compute_investor_rank(portfolio, thresholds)
 
     # Update user progress (strategy/deck unlocks)
@@ -382,14 +512,16 @@ async def play_card(
     progress.updated_at = datetime.now(timezone.utc)
 
     # Record card play
-    db.add(CardPlay(
-        portfolio_id=portfolio.id,
-        card_id=card.id,
-        action=action,
-        reward=reward,
-        capital_before=capital_before,
-        capital_after=portfolio.capital,
-    ))
+    db.add(
+        CardPlay(
+            portfolio_id=portfolio.id,
+            card_id=card.id,
+            action=action,
+            reward=reward,
+            capital_before=capital_before,
+            capital_after=portfolio.capital,
+        )
+    )
 
     # Cooldown
     if redis:
@@ -405,16 +537,22 @@ async def play_card(
 
     # Recommend next card
     next_card_orm = await recommend_next_card(
-        db, portfolio, redis,
+        db,
+        portfolio,
+        redis,
         enabled_strategies=progress.enabled_strategies,
         enabled_decks=progress.enabled_decks,
     )
     next_card_out = resolve_card(next_card_orm) if next_card_orm else None
-    lesson = card.right_lesson if action == "right" else card.left_lesson
+    if is_optimal:
+        lesson = card.right_lesson if action == "right" else card.left_lesson
+    else:
+        lesson = "That decision was costly in this context. Reassess the signal before committing next time."
 
     return {
         "lesson": lesson,
         "reward": reward,
+        "is_correct": is_optimal,
         "capital_before": capital_before,
         "capital_after": portfolio.capital,
         "net_worth": portfolio.net_worth,

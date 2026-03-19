@@ -11,12 +11,13 @@ import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { CardFace } from "./CardFace";
 import { CardGlow } from "./CardGlow";
 import { Layout } from "../../constants/layout";
-import type { CardData } from "../../services/game";
+import type { CardData } from "../../services/portfolio";
 
 interface Props {
   card: CardData;
   isLocked: boolean;
   onSwipe: (direction: "left" | "right") => void;
+  isChoiceFlipped?: boolean;
   // Gesture area fills this container — defaults to card dimensions
   areaWidth?: number;
   areaHeight?: number;
@@ -26,6 +27,7 @@ export function CardContainer({
   card,
   isLocked,
   onSwipe,
+  isChoiceFlipped = false,
   areaWidth = Layout.cardWidth,
   areaHeight = Layout.cardHeight,
 }: Props) {
@@ -78,7 +80,7 @@ export function CardContainer({
     <GestureDetector gesture={pan}>
       <View style={{ width: areaWidth, height: areaHeight, alignItems: "center", justifyContent: "center" }}>
         <Animated.View style={[styles.card, cardStyle]}>
-          <CardFace card={card} />
+          <CardFace card={card} isChoiceFlipped={isChoiceFlipped} />
           <CardGlow dragX={dragX} />
         </Animated.View>
       </View>

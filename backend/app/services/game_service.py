@@ -1,4 +1,5 @@
 """Game session management and swipe processing."""
+
 import random
 import uuid
 from datetime import datetime, timezone
@@ -8,7 +9,13 @@ from redis.asyncio import Redis
 from app.models.game import GameSession, GameEvent, GameConfig, SwipeAction
 from app.models.card import Card
 from app.models.persona import Persona, PersonaSnapshot
-from app.models.progress import UserProgress, STRATEGY_META, STRATEGIES, DECK_META, DECKS
+from app.models.progress import (
+    UserProgress,
+    STRATEGY_META,
+    STRATEGIES,
+    DECK_META,
+    DECKS,
+)
 from app.services import persona_engine as pe
 from app.services.card_recommender import recommend_next_card
 from app.schemas.card import CardOut
@@ -18,7 +25,11 @@ import numpy as np
 def resolve_card(card: Card) -> CardOut:
     """Build a CardOut with {value} in the body replaced by a random value from the card's range."""
     out = CardOut.model_validate(card)
-    if card.value_min is not None and card.value_max is not None and card.value_step is not None:
+    if (
+        card.value_min is not None
+        and card.value_max is not None
+        and card.value_step is not None
+    ):
         step = card.value_step
         steps = round((card.value_max - card.value_min) / step)
         value = card.value_min + random.randint(0, steps) * step
@@ -44,6 +55,7 @@ async def _get_config(db: AsyncSession, key: str, default):
 
 
 # ─── User Progress ────────────────────────────────────────────────────────────
+
 
 async def get_or_create_progress(db: AsyncSession, user_id: uuid.UUID) -> UserProgress:
     result = await db.execute(
@@ -110,6 +122,7 @@ def _check_strategy_unlocks(progress: UserProgress) -> bool:
 
 # ─── Persona ──────────────────────────────────────────────────────────────────
 
+
 async def get_active_persona(db: AsyncSession, user_id: uuid.UUID) -> Persona | None:
     result = await db.execute(
         select(Persona).where(
@@ -120,7 +133,9 @@ async def get_active_persona(db: AsyncSession, user_id: uuid.UUID) -> Persona | 
     return result.scalar_one_or_none()
 
 
-async def get_or_create_default_persona(db: AsyncSession, user_id: uuid.UUID) -> Persona:
+async def get_or_create_default_persona(
+    db: AsyncSession, user_id: uuid.UUID
+) -> Persona:
     persona = await get_active_persona(db, user_id)
     if not persona:
         # Create default persona
@@ -137,6 +152,7 @@ async def get_or_create_default_persona(db: AsyncSession, user_id: uuid.UUID) ->
 
 
 # ─── Session ──────────────────────────────────────────────────────────────────
+
 
 async def create_session(db: AsyncSession, user_id: uuid.UUID) -> GameSession:
     persona = await get_or_create_default_persona(db, user_id)
@@ -162,29 +178,118 @@ async def create_session(db: AsyncSession, user_id: uuid.UUID) -> GameSession:
 
 # ─── Swipe Processing ─────────────────────────────────────────────────────────
 
-def compute_reward(card: Card, action: str) -> float:
+
+def _context_score(weights: dict | None, market_state: dict | None) -> float:
+    """Return a normalized score in [-1, 1] where positive favors accepting risk."""
+    w = weights or {}
+    m = market_state or {}
+
+    card_score = (
+        0.35 * float(w.get("sentiment", 0.0))
+        + 0.45 * float(w.get("fundamentals", 0.0))
+        - 0.30 * float(w.get("inflation", 0.0))
+        - 0.30 * float(w.get("volatility", 0.0))
+        - 0.15 * float(w.get("greed", 0.0))
+    )
+    market_score = (
+        0.30 * float(m.get("sentiment", 0.0))
+        + 0.40 * float(m.get("fundamentals", 0.0))
+        - 0.30 * float(m.get("inflation", 0.0))
+        - 0.35 * float(m.get("volatility", 0.0))
+        - 0.15 * float(m.get("greed", 0.0))
+    )
+
+    raw = 0.6 * card_score + 0.4 * market_score
+    return max(-1.0, min(1.0, raw))
+
+
+_RISK_ON_HINTS = (
+    "buy",
+    "invest",
+    "heavier",
+    "concentrate",
+    "let it ride",
+    "run",
+    "momentum",
+    "go",
+)
+
+_RISK_OFF_HINTS = (
+    "sell",
+    "wait",
+    "pause",
+    "cash",
+    "conservative",
+    "bonds",
+    "cut",
+    "rebalance",
+    "skip",
+    "avoid",
+)
+
+
+def _choice_risk_signal(choice_text: str) -> float:
+    """Infer risk posture from a choice string in [-1, 1]."""
+    text = (choice_text or "").lower()
+    on = sum(1 for token in _RISK_ON_HINTS if token in text)
+    off = sum(1 for token in _RISK_OFF_HINTS if token in text)
+    total = on + off
+    if total == 0:
+        return 0.0
+    return max(-1.0, min(1.0, float(on - off) / float(total)))
+
+
+def _action_quality(card: Card, action: str, regime: float) -> float:
+    """Return how suitable an action is for the current card/regime in [0, 1]."""
+    left_signal = _choice_risk_signal(getattr(card, "left_choice", ""))
+    right_signal = _choice_risk_signal(getattr(card, "right_choice", ""))
+    signal = right_signal if action == "right" else left_signal
+
+    # Lower distance means the action matches the current regime better.
+    distance = min(2.0, abs(signal - regime))
+    quality = 1.0 - (distance / 2.0)
+    return max(0.0, min(1.0, quality))
+
+
+def compute_reward(card: Card, action: str, market_state: dict | None = None) -> float:
+    """Compute signed reward: better choice gains capital, worse choice loses capital."""
     card_type = card.type if isinstance(card.type, str) else card.type.value
+    regime = _context_score(getattr(card, "weights", {}), market_state)
+    chosen_quality = _action_quality(card, action, regime)
+    alt_action = "left" if action == "right" else "right"
+    alt_quality = _action_quality(card, alt_action, regime)
+
+    difficulty = float(card.difficulty)
+    diagnostic = float(card.diagnostic_power)
+
     if card_type == "education":
-        return float(card.diagnostic_power)
-    if action == "right":
-        return float(card.difficulty) * 0.5 + 0.1
-    return float(1.0 - card.difficulty) * 0.3
+        magnitude = 0.18 + 0.22 * diagnostic
+    else:
+        magnitude = 0.30 + 0.30 * difficulty
+
+    edge = chosen_quality - alt_quality
+    reward = edge * magnitude
+    return max(-0.8, min(0.8, float(reward)))
 
 
-def _get_lesson(card: Card, action: str) -> str:
-    return card.right_lesson if action == "right" else card.left_lesson
+def _get_lesson(card: Card, action: str, is_optimal: bool) -> str:
+    if is_optimal:
+        return card.right_lesson if action == "right" else card.left_lesson
+    return "That decision was costly in this context. Reassess the signal before committing next time."
 
 
 def update_topic_mastery(topic_mastery: dict, card: Card, reward: float) -> dict:
     mastery = dict(topic_mastery)
     topics = card.topics if isinstance(card.topics, list) else []
     for topic in topics:
-        mastery[topic] = min(1.0, mastery.get(topic, 0.0) + reward * 0.1)
+        mastery[topic] = max(0.0, min(1.0, mastery.get(topic, 0.0) + reward * 0.1))
     return mastery
 
 
 async def update_investor_rank(session: GameSession, db: AsyncSession) -> None:
-    thresholds = await _get_config(db, "investor_rank_thresholds", DEFAULT_RANK_THRESHOLDS)
+    thresholds = await _get_config(
+        db, "investor_rank_thresholds", DEFAULT_RANK_THRESHOLDS
+    )
     for rank in [4, 3, 2]:
         rank_str = str(rank)
         t = thresholds.get(rank_str) or thresholds.get(rank)
@@ -229,7 +334,11 @@ async def process_swipe(
     e_t = pe.encode_event(card)
     a_t = pe.encode_action(action)
     s_t = pe.encode_state(session)
-    reward = compute_reward(card, action)
+    current_market = getattr(session, "market_state", None)
+    reward = compute_reward(card, action, current_market)
+    alt_action = "left" if action == "right" else "right"
+    alt_reward = compute_reward(card, alt_action, current_market)
+    is_optimal = reward >= alt_reward
 
     # Update persona
     rates = await _get_config(db, "persona_update_rates", None)
@@ -261,8 +370,10 @@ async def process_swipe(
 
     # Update capital — use multi-dimensional weights via market state
     from app.services.portfolio_service import (
-        _update_market_state, _compute_market_multiplier,
+        _update_market_state,
+        _compute_market_multiplier,
     )
+
     session_market = getattr(session, "market_state", None) or {}
     session_market = _update_market_state(session_market, card, action, reward)
     market_mult = _compute_market_multiplier(session_market)
@@ -276,7 +387,9 @@ async def process_swipe(
     # Update session state (mirror persona vector for legacy compat)
     session.persona_vector = persona_after
     session.topic_mastery = update_topic_mastery(session.topic_mastery, card, reward)
-    session.last_card_type = card.type if isinstance(card.type, str) else card.type.value
+    session.last_card_type = (
+        card.type if isinstance(card.type, str) else card.type.value
+    )
     await update_progress(session, db)
     await update_investor_rank(session, db)
     session.updated_at = datetime.now(timezone.utc)
@@ -303,13 +416,15 @@ async def process_swipe(
     enabled_strat = progress.enabled_strategies if progress else STRATEGIES
     enabled_deck = progress.enabled_decks if progress else None
     next_card_orm = await recommend_next_card(
-        db, session, redis,
+        db,
+        session,
+        redis,
         enabled_strategies=enabled_strat,
         enabled_decks=enabled_deck,
     )
     next_card_out = resolve_card(next_card_orm) if next_card_orm else None
 
-    lesson = _get_lesson(card, action)
+    lesson = _get_lesson(card, action, is_optimal)
     return {
         "lesson": lesson,
         "reward": reward,
