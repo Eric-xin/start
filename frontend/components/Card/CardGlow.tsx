@@ -32,7 +32,6 @@ export function CardGlow({ dragX }: Props) {
         start={{ x: 0, y: 0.5 }}
         end={{ x: 1, y: 0.5 }}
         style={[styles.overlay, leftStyle]}
-        pointerEvents="none"
       />
       {/* Right glow — green (accept) */}
       <AnimatedGradient
@@ -40,7 +39,6 @@ export function CardGlow({ dragX }: Props) {
         start={{ x: 0, y: 0.5 }}
         end={{ x: 1, y: 0.5 }}
         style={[styles.overlay, rightStyle]}
-        pointerEvents="none"
       />
     </>
   );
@@ -50,5 +48,6 @@ const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: Layout.cardBorderRadius,
+    pointerEvents: "none",
   },
 });

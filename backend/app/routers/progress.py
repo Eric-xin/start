@@ -4,8 +4,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.user import User
 from app.models.progress import STRATEGY_META, STRATEGIES, DECK_META, DECKS
-from app.schemas.progress import UserProgressOut, UserProgressUpdate, StrategyInfo, DeckInfo
+from app.schemas.progress import (
+    UserProgressOut,
+    UserProgressUpdate,
+    StrategyInfo,
+    DeckInfo,
+    PurchaseDeckRequest,
+    PurchaseDeckResponse,
+)
 from app.services.game_service import get_or_create_progress
+from app.services.portfolio_service import get_or_create_portfolio
 from app.core.dependencies import get_current_active_user
 
 router = APIRouter(prefix="/api/progress", tags=["progress"])
@@ -35,6 +43,9 @@ def _build_progress_out(progress) -> UserProgressOut:
             unlock_at=DECK_META[k]["unlock_at"],
             is_unlocked=k in unlocked_d,
             is_enabled=k in enabled_d,
+            is_purchasable=bool(DECK_META[k].get("is_purchasable", False)),
+            shop_price=DECK_META[k].get("shop_price"),
+            card_style=DECK_META[k].get("card_style"),
         )
         for k in DECKS
     ]
@@ -83,3 +94,51 @@ async def update_progress(
     await db.commit()
     await db.refresh(progress)
     return _build_progress_out(progress)
+
+
+@router.post("/purchase-deck", response_model=PurchaseDeckResponse)
+async def purchase_deck(
+    body: PurchaseDeckRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    progress = await get_or_create_progress(db, current_user.id)
+    deck_key = body.deck_key
+    meta = DECK_META.get(deck_key)
+    if not meta:
+        raise HTTPException(status_code=404, detail="Deck not found")
+    if not meta.get("is_purchasable"):
+        raise HTTPException(status_code=400, detail="This deck is not purchasable")
+
+    unlocked = list(progress.unlocked_decks or [])
+    if deck_key in unlocked:
+        raise HTTPException(status_code=400, detail="Deck already unlocked")
+
+    price = int(meta.get("shop_price") or 0)
+    if price <= 0:
+        raise HTTPException(status_code=400, detail="Deck price is invalid")
+
+    portfolio = await get_or_create_portfolio(db, current_user.id)
+    if portfolio.capital < price:
+        raise HTTPException(status_code=400, detail=f"Not enough capital. Need ${price:,}.")
+
+    portfolio.capital -= price
+    portfolio.net_worth = max(0.0, portfolio.net_worth - price)
+
+    unlocked.append(deck_key)
+    progress.unlocked_decks = unlocked
+
+    enabled = list(progress.enabled_decks or [])
+    if deck_key not in enabled:
+        enabled.append(deck_key)
+        progress.enabled_decks = enabled
+
+    await db.commit()
+    await db.refresh(progress)
+    await db.refresh(portfolio)
+    return PurchaseDeckResponse(
+        progress=_build_progress_out(progress),
+        remaining_capital=portfolio.capital,
+        remaining_net_worth=portfolio.net_worth,
+        purchased_deck_key=deck_key,
+    )

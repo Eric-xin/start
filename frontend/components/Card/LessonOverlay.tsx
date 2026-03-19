@@ -91,10 +91,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.borderDim,
     overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
+    boxShadow: "0 12px 20px rgba(0, 0, 0, 0.5)",
     elevation: 14,
   },
   topBand: {

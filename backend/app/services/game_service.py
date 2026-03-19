@@ -103,6 +103,8 @@ def _check_strategy_unlocks(progress: UserProgress) -> bool:
     unlocked_d = list(progress.unlocked_decks or [])
     deck_changed = False
     for key, meta in DECK_META.items():
+        if meta.get("is_purchasable"):
+            continue
         if key not in unlocked_d and total >= meta["unlock_at"]:
             unlocked_d.append(key)
             deck_changed = True

@@ -31,6 +31,27 @@ DECK_META = {
     "real_estate_deck":  {"label": "Real Estate",        "strategy": "index",        "topics": ["real_estate"],    "description": "Property, REITs and real asset investing.",                "unlock_at": 78},
     # Alternatives
     "derivatives_deck":  {"label": "Derivatives",        "strategy": "alternatives", "topics": ["derivatives"],    "description": "Options, futures and structured financial products.",      "unlock_at": 100},
+    # Shop Decks
+    "great_depression_deck": {
+        "label": "Great Depression",
+        "strategy": "savings",
+        "topics": ["great_depression"],
+        "description": "1920s-1930s crisis decisions, policy responses, and global spillovers.",
+        "unlock_at": 9_999,
+        "shop_price": 5000,
+        "is_purchasable": True,
+        "card_style": "old",
+    },
+    "covid_era_deck": {
+        "label": "COVID Era & Recovery",
+        "strategy": "savings",
+        "topics": ["covid"],
+        "description": "Pandemic shocks, policy responses, and the post-COVID reopening boom.",
+        "unlock_at": 9_999,
+        "shop_price": 5000,
+        "is_purchasable": True,
+        "card_style": "metal",
+    },
 }
 
 DECKS = list(DECK_META.keys())

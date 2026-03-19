@@ -17,6 +17,9 @@ export interface DeckInfo {
   unlock_at: number;
   is_unlocked: boolean;
   is_enabled: boolean;
+  is_purchasable?: boolean;
+  shop_price?: number | null;
+  card_style?: string | null;
 }
 
 export interface ProgressData {
@@ -39,5 +42,17 @@ export async function updateProgress(data: {
   enabled_decks?: string[];
 }): Promise<ProgressData> {
   const resp = await api.patch<ProgressData>("/api/progress", data);
+  return resp.data;
+}
+
+export interface PurchaseDeckResponse {
+  progress: ProgressData;
+  remaining_capital: number;
+  remaining_net_worth: number;
+  purchased_deck_key: string;
+}
+
+export async function purchaseDeck(deckKey: string): Promise<PurchaseDeckResponse> {
+  const resp = await api.post<PurchaseDeckResponse>("/api/progress/purchase-deck", { deck_key: deckKey });
   return resp.data;
 }

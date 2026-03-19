@@ -28,7 +28,19 @@ export default function RootLayout() {
     }
   }, [token, isHydrated, fontsLoaded, segments]);
 
+  // Not ready yet — show spinner
   if (!fontsLoaded || !isHydrated) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator color={Colors.blue} size="large" />
+      </View>
+    );
+  }
+
+  // Auth decision pending — keep showing spinner so there's no flash of the wrong screen
+  const inAuth = segments[0] === "(auth)";
+  const redirectPending = (!token && !inAuth) || (token && inAuth);
+  if (redirectPending) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator color={Colors.blue} size="large" />

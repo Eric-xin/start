@@ -17,6 +17,9 @@ weights: multi-dimensional impact on the simulated market state.
   fundamentals — underlying economic health (-1 weak … +1 strong)
 """
 
+from app.seeds.cards_great_depression import GREAT_DEPRESSION_CARDS
+from app.seeds.cards_covid import COVID_ERA_CARDS
+
 SEED_CARDS = [
     # ══════════════════════════════════════════════════════════════════════════
     # STAGE 1 — Foundations: Understanding Money
@@ -1224,3 +1227,6 @@ SEED_CARDS = [
         },
     },
 ]
+
+SEED_CARDS.extend(GREAT_DEPRESSION_CARDS)
+SEED_CARDS.extend(COVID_ERA_CARDS)

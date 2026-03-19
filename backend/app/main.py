@@ -9,6 +9,7 @@ from app.routers import personas as personas_router
 from app.routers import portfolio as portfolio_router
 from app.routers import achievements as achievements_router
 from app.routers import simulation as simulation_router
+from app.routers import game_hud as game_hud_router
 
 # Import models so Base.metadata knows about all tables
 import app.models.user       # noqa: F401
@@ -160,6 +161,7 @@ app.include_router(progress.router)
 app.include_router(portfolio_router.router)
 app.include_router(achievements_router.router)
 app.include_router(simulation_router.router)
+app.include_router(game_hud_router.router)
 
 
 @app.get("/health")
