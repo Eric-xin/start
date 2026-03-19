@@ -10,7 +10,19 @@ from sqlalchemy import select
 from app.database import AsyncSessionLocal, engine, Base
 from app.models.card import Card
 from app.models.game import GameConfig
+from app.models.achievement import Achievement
 from app.seeds.cards import SEED_CARDS
+from app.seeds.achievements import SEED_ACHIEVEMENTS
+
+SMTP_CONFIGS = [
+    {"key": "smtp_host",      "value": "smtp.mailtrap.io",   "description": "SMTP server hostname"},
+    {"key": "smtp_port",      "value": 587,                  "description": "SMTP server port"},
+    {"key": "smtp_user",      "value": "",                   "description": "SMTP username / API key"},
+    {"key": "smtp_password",  "value": "",                   "description": "SMTP password"},
+    {"key": "smtp_from",      "value": "noreply@cardecon.app", "description": "From email address"},
+    {"key": "smtp_from_name", "value": "CardEcon",           "description": "From display name"},
+    {"key": "email_backend",  "value": "console",            "description": "Email backend: 'console' (logs only) or 'smtp' (sends real email)"},
+]
 
 DEFAULT_CONFIGS = [
     {
@@ -59,7 +71,7 @@ async def seed_cards(db: AsyncSession) -> int:
 
 async def seed_configs(db: AsyncSession) -> int:
     seeded = 0
-    for cfg_data in DEFAULT_CONFIGS:
+    for cfg_data in DEFAULT_CONFIGS + SMTP_CONFIGS:
         result = await db.execute(select(GameConfig).where(GameConfig.key == cfg_data["key"]))
         if not result.scalar_one_or_none():
             config = GameConfig(**cfg_data)
@@ -68,12 +80,24 @@ async def seed_configs(db: AsyncSession) -> int:
     return seeded
 
 
+async def seed_achievements(db: AsyncSession) -> int:
+    result = await db.execute(select(Achievement).limit(1))
+    if result.scalar_one_or_none():
+        return 0
+    seeded = 0
+    for ach_data in SEED_ACHIEVEMENTS:
+        db.add(Achievement(**ach_data))
+        seeded += 1
+    return seeded
+
+
 async def run_seeds():
     async with AsyncSessionLocal() as db:
         cards_seeded = await seed_cards(db)
         configs_seeded = await seed_configs(db)
+        achievements_seeded = await seed_achievements(db)
         await db.commit()
-        print(f"Seeded {cards_seeded} cards, {configs_seeded} config entries.")
+        print(f"Seeded {cards_seeded} cards, {configs_seeded} configs, {achievements_seeded} achievements.")
 
 
 if __name__ == "__main__":

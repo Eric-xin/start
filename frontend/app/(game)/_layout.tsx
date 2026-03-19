@@ -12,8 +12,9 @@ export default function GameLayout() {
     >
       <Stack.Screen name="index" />
       <Stack.Screen name="play" />
-      <Stack.Screen name="sessions" />
-      <Stack.Screen name="session/[id]" />
+      <Stack.Screen name="portfolio" />
+      <Stack.Screen name="achievements" />
+      <Stack.Screen name="simulation" />
     </Stack>
   );
 }

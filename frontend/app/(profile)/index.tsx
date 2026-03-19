@@ -11,6 +11,7 @@ import { listPersonas, PersonaData } from "../../services/persona";
 import { getProgress, updateProgress, ProgressData } from "../../services/progress";
 import { getSessions, SessionData } from "../../services/game";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
+import { getPortfolio, getRecentPlays, PortfolioData, CardPlayData } from "../../services/portfolio";
 import { Colors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 
@@ -223,16 +224,20 @@ export default function ProfileScreen() {
 
   const [activePersona, setActivePersona] = useState<PersonaData | null>(null);
   const [progress, setProgress] = useState<ProgressData | null>(null);
-  const [sessions, setSessions] = useState<SessionData[]>([]);
+  const [portfolio, setPortfolioData] = useState<PortfolioData | null>(null);
+  const [recentPlays, setRecentPlays] = useState<CardPlayData[]>([]);
   const [loading, setLoading] = useState(true);
   const [togglingDeck, setTogglingDeck] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const [personas, prog, sess] = await Promise.all([listPersonas(), getProgress(), getSessions()]);
+      const [personas, prog, port, plays] = await Promise.all([
+        listPersonas(), getProgress(), getPortfolio(), getRecentPlays(3),
+      ]);
       setActivePersona(personas.find((p) => p.is_active) ?? personas[0] ?? null);
       setProgress(prog);
-      setSessions(sess);
+      setPortfolioData(port);
+      setRecentPlays(plays);
     } catch {}
     finally { setLoading(false); }
   }, []);
@@ -355,33 +360,31 @@ export default function ProfileScreen() {
         )}
       </View>
 
-      {/* Recent Sessions */}
+      {/* Recent Decisions */}
       <View style={s.card}>
         <SectionHeader
-          title={t("profile.recentSessions")}
-          action={t("profile.viewAll")}
-          onAction={() => router.push("/(game)/sessions")}
+          title="RECENT DECISIONS"
+          action="VIEW PORTFOLIO →"
+          onAction={() => router.push("/(game)/portfolio")}
         />
-        {sessions.length === 0 ? (
-          <Text style={s.emptyTxt}>{t("profile.noSessions")}</Text>
+        {recentPlays.length === 0 ? (
+          <Text style={s.emptyTxt}>No card plays yet. Start playing to build history.</Text>
         ) : (
-          sessions.slice(0, 3).map((sess) => {
-            const delta = sess.capital - 10000;
-            const isUp = delta >= 0;
+          recentPlays.map((play) => {
+            const capChange = play.capital_after - play.capital_before;
+            const isUp = capChange >= 0;
             return (
-              <TouchableOpacity
-                key={sess.id}
-                style={s.sessionRow}
-                onPress={() => router.push(`/(game)/session/${sess.id}`)}
-              >
+              <View key={play.id} style={s.sessionRow}>
                 <View style={{ flex: 1 }}>
-                  <Text style={s.sessionCapital}>${Math.round(sess.capital).toLocaleString()}</Text>
-                  <Text style={s.sessionMeta}>{t("profile.stage")} {sess.stage} · {new Date(sess.updated_at).toLocaleDateString()}</Text>
+                  <Text style={s.sessionCapital}>{play.card?.emoji ?? "•"} {play.card?.title ?? "Card"}</Text>
+                  <Text style={s.sessionMeta}>
+                    {play.action === "right" ? "ACCEPTED" : "DECLINED"} · {new Date(play.created_at).toLocaleDateString()}
+                  </Text>
                 </View>
                 <Text style={[s.sessionDelta, { color: isUp ? Colors.green : Colors.red }]}>
-                  {isUp ? "+" : ""}{((delta / 10000) * 100).toFixed(1)}%
+                  {isUp ? "+" : ""}${capChange.toFixed(2)}
                 </Text>
-              </TouchableOpacity>
+              </View>
             );
           })
         )}

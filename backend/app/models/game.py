@@ -57,8 +57,8 @@ class GameEvent(Base):
     session_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("game_sessions.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    card_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("cards.id", ondelete="SET NULL"), nullable=True
+    card_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("cards.id", ondelete="SET NULL"), nullable=True
     )
     action: Mapped[SwipeAction] = mapped_column(SAEnum(SwipeAction), nullable=False)
     reward: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)

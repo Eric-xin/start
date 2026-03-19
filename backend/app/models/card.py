@@ -1,5 +1,7 @@
 import enum
-from sqlalchemy import String, Float, Integer, Boolean, Enum as SAEnum, JSON, Text
+import uuid
+from sqlalchemy import String, Float, Integer, Boolean, Enum as SAEnum, JSON, Text, func
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
 
@@ -21,7 +23,7 @@ class CardBandColor(str, enum.Enum):
 class Card(Base):
     __tablename__ = "cards"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     card_id: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
     type: Mapped[CardType] = mapped_column(SAEnum(CardType), nullable=False)
     title: Mapped[str] = mapped_column(String(120), nullable=False)
@@ -43,10 +45,7 @@ class Card(Base):
         SAEnum(CardBandColor), default=CardBandColor.steel_blue, nullable=False
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    # Numerical value range for event and action cards — None for education cards
     value_min: Mapped[float | None] = mapped_column(Float, nullable=True)
     value_max: Mapped[float | None] = mapped_column(Float, nullable=True)
     value_step: Mapped[float | None] = mapped_column(Float, nullable=True)
-    # Simulation weight — higher alpha means the card's outcome has a bigger
-    # impact on capital / persona updates (e.g. a rate cut matters more than trivia)
     alpha: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)

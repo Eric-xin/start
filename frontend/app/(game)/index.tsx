@@ -6,10 +6,11 @@ import {
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { createDailySession, createSession, getDailyStatus, getSessions, SessionData, DailyStatusData } from "../../services/game";
+import { getPortfolio, getNextCard, PortfolioData } from "../../services/portfolio";
 import { listPersonas, PersonaData } from "../../services/persona";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
 import { useAuthStore } from "../../store/authStore";
-import { useGameStore } from "../../store/gameStore";
+import { usePortfolioStore } from "../../store/portfolioStore";
 import { Colors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 
@@ -123,12 +124,13 @@ export default function GameIndexScreen() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const { user, clearAuth } = useAuthStore();
-  const { setSession, reset } = useGameStore();
+  const { setPortfolio, setCurrentCard } = usePortfolioStore();
   const [launching, setLaunching] = useState(false);
   const [launchingDaily, setLaunchingDaily] = useState(false);
   const [loadingLast, setLoadingLast] = useState(false);
   const [lastSession, setLastSession] = useState<SessionData | null>(null);
   const [allSessions, setAllSessions] = useState<SessionData[]>([]);
+  const [portfolio, setLocalPortfolio] = useState<PortfolioData | null>(null);
   const [activePersona, setActivePersona] = useState<PersonaData | null>(null);
   const [dailyStatus, setDailyStatus] = useState<DailyStatusData | null>(null);
   const [loadingData, setLoadingData] = useState(true);
@@ -151,55 +153,54 @@ export default function GameIndexScreen() {
     [allSessions, weekdayLabels]
   );
 
-  useEffect(() => {
-    Promise.all([getSessions(), listPersonas(), getDailyStatus()])
-      .then(([sessions, personas, daily]) => {
-        setAllSessions(sessions);
-        setLastSession(sessions.find((s) => !s.is_daily) ?? sessions[0] ?? null);
-        setActivePersona(personas.find((p) => p.is_active) ?? personas[0] ?? null);
-        setDailyStatus(daily);
-      })
-      .catch(() => {})
-      .finally(() => setLoadingData(false));
-  }, []);
+ useEffect(() => {
+  Promise.all([getPortfolio(), getSessions(), listPersonas(), getDailyStatus()])
+    .then(([p, sessions, personas, daily]) => {
+      setLocalPortfolio(p);
+      setPortfolio(p);
+      setAllSessions(sessions);
+      setLastSession(sessions.find((s) => !s.is_daily) ?? sessions[0] ?? null);
+      setActivePersona(personas.find((pa) => pa.is_active) ?? personas[0] ?? null);
+      setDailyStatus(daily);
+    })
+    .catch(() => {})
+    .finally(() => setLoadingData(false));
+}, []);
 
-  const handleNewSession = async () => {
+  const handlePlay = async () => {
     setLaunching(true);
     try {
-      reset();
-      const session = await createSession();
-      setSession(session);
+      const card = await getNextCard();
+      setCurrentCard(card);
       router.push("/(game)/play");
     } catch {
-      Alert.alert(t("profile.error"), t("auth.errors.unableConnect"));
+Alert.alert(t("profile.error"), t("auth.errors.unableConnect"));
     } finally {
       setLaunching(false);
     }
   };
 
-  const handleContinueLast = async () => {
-    if (!lastSession) return;
-    setSession(lastSession);
+const handleContinueLast = async () => {
+  if (!lastSession) return;
+  setSession(lastSession);
+  router.push("/(game)/play");
+};
+
+const handleDailySession = async () => {
+  setLaunchingDaily(true);
+  try {
+    reset();
+    const session = await createDailySession();
+    setSession(session);
     router.push("/(game)/play");
-  };
-
-  const handleDailySession = async () => {
-    setLaunchingDaily(true);
-    try {
-      reset();
-      const session = await createDailySession();
-      setSession(session);
-      router.push("/(game)/play");
-    } catch {
-      Alert.alert(t("profile.error"), t("auth.errors.unableConnect"));
-    } finally {
-      setLaunchingDaily(false);
-    }
-  };
-
+  } catch {
+    Alert.alert(t("profile.error"), t("auth.errors.unableConnect"));
+  } finally {
+    setLaunchingDaily(false);
+  }
+};
   const handleLogout = async () => {
     await clearAuth();
-    router.replace("/(auth)/login");
   };
 
   return (
@@ -221,8 +222,14 @@ export default function GameIndexScreen() {
           <TouchableOpacity style={styles.topBtn} onPress={() => router.push("/(profile)/personas")}>
             <Text style={styles.topBtnText}>{t("gameIndex.personas")}</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={styles.topBtn} onPress={() => router.push("/(game)/simulation")}>
+            <Text style={styles.topBtnText}>SIMULATION</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={styles.topBtn} onPress={() => router.push("/(profile)/decks")}>
             <Text style={styles.topBtnText}>{t("gameIndex.decks")}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.topBtn} onPress={() => router.push("/(game)/achievements")}>
+            <Text style={styles.topBtnText}>ACHIEVEMENTS</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
             <Text style={styles.logoutText}>{t("gameIndex.logout")}</Text>
@@ -243,20 +250,29 @@ export default function GameIndexScreen() {
           <Text style={styles.email}>{user?.email ?? "—"}</Text>
 
           <View style={styles.dataRow}>
-            <DataBlock label={t("gameIndex.tier")} value={user?.subscription_tier?.toUpperCase() ?? "NORMAL"} accent={Colors.blue} />
+            <DataBlock
+              label="NET WORTH"
+              value={loadingData ? "..." : `$${(portfolio?.net_worth ?? 0).toLocaleString("en-US", { maximumFractionDigits: 0 })}`}
+              accent={Colors.blue}
+            />
             <View style={styles.dataSep} />
             <DataBlock
-              label={t("gameIndex.activePersona")}
-              value={activePersona?.name ?? (loadingData ? "..." : "—")}
-              sub={activePersona ? t("gameIndex.cardsPlayed", { count: activePersona.cards_played }) : undefined}
+              label="STAGE / RANK"
+              value={loadingData ? "..." : `S${portfolio?.stage ?? 1} / R${portfolio?.investor_rank ?? 1}`}
+              sub={portfolio ? RANK_LABELS[portfolio.investor_rank] : undefined}
               accent={Colors.teal}
             />
             <View style={styles.dataSep} />
-            <DataBlock label={t("gameIndex.status")} value={t("gameIndex.active")} sub={t("gameIndex.verified")} accent={Colors.green} />
+            <DataBlock
+              label="INCOME"
+              value={loadingData ? "..." : (portfolio?.can_claim_income ? "READY" : "CLAIMED")}
+              sub={portfolio?.can_claim_income ? `+$${portfolio.pending_income.toFixed(0)} available` : "tomorrow"}
+              accent={portfolio?.can_claim_income ? Colors.green : Colors.textDim}
+            />
           </View>
         </View>
 
-        {/* Session control panel */}
+        {/* Play control panel */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <View style={styles.blueDot} />
@@ -269,14 +285,9 @@ export default function GameIndexScreen() {
           </Text>
 
           <View style={styles.buttonRow}>
-            {/* Continue last */}
             <TouchableOpacity
-              style={[
-                styles.continueBtn,
-                (!lastSession || loadingData) && styles.continueBtnDisabled,
-              ]}
-              onPress={handleContinueLast}
-              disabled={!lastSession || loadingData}
+              style={[styles.continueBtn]}
+              onPress={() => router.push("/(game)/portfolio")}
             >
               {loadingData ? (
                 <ActivityIndicator color={Colors.blue} size="small" />
@@ -292,7 +303,6 @@ export default function GameIndexScreen() {
               )}
             </TouchableOpacity>
 
-            {/* New session */}
             <TouchableOpacity
               style={[styles.ctaBtn, launching && { opacity: 0.5 }]}
               onPress={handleNewSession}
@@ -348,10 +358,9 @@ export default function GameIndexScreen() {
             </View>
           </View>
 
-          {/* History link */}
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={styles.historyLink}
-            onPress={() => router.push("/(game)/sessions")}
+            onPress={() => router.push("/(game)/portfolio")}
           >
             <Text style={styles.historyLinkText}>{t("gameIndex.viewHistory")}</Text>
           </TouchableOpacity>

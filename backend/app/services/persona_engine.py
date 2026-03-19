@@ -116,6 +116,32 @@ def encode_state(session: "GameSession") -> np.ndarray:
     return state
 
 
+def encode_state_portfolio(portfolio) -> np.ndarray:
+    """Encode UserPortfolio state into 8-dim vector (replaces encode_state for continuous play)."""
+    capital = float(portfolio.capital)
+    peak = float(portfolio.peak_net_worth) if portfolio.peak_net_worth > 0 else 10_000.0
+    capital_norm = min(capital / 20_000.0, 2.0)
+    drawdown = max(0.0, (peak - capital) / peak)
+    stage_norm = float(portfolio.stage) / 5.0
+    # Use cards_played as a progress proxy: 100 cards ≈ full stage mastery
+    progress = min(float(portfolio.total_cards_played) / 100.0, 1.0)
+
+    weights_dict = portfolio.portfolio_weights if isinstance(portfolio.portfolio_weights, dict) else {}
+    weights = np.array(list(weights_dict.values()), dtype=np.float32) if weights_dict else np.array([1.0])
+    concentration = float(np.max(weights)) if len(weights) > 0 else 1.0
+
+    return np.array([
+        capital_norm,
+        0.5,
+        0.5,
+        drawdown,
+        0.1,
+        progress,
+        concentration,
+        stage_norm,
+    ], dtype=np.float32)
+
+
 def encode_action(action: str) -> np.ndarray:
     """One-hot encode action: left=0, right=1, hold=2."""
     a = np.zeros(DIM_A, dtype=np.float32)

@@ -6,6 +6,9 @@ from app.config import get_settings
 from app.database import engine, Base
 from app.routers import auth, users, cards, admin, game, progress
 from app.routers import personas as personas_router
+from app.routers import portfolio as portfolio_router
+from app.routers import achievements as achievements_router
+from app.routers import simulation as simulation_router
 
 # Import models so Base.metadata knows about all tables
 import app.models.user       # noqa: F401
@@ -13,6 +16,9 @@ import app.models.card       # noqa: F401
 import app.models.game       # noqa: F401
 import app.models.persona    # noqa: F401
 import app.models.progress   # noqa: F401
+import app.models.portfolio  # noqa: F401
+import app.models.achievement  # noqa: F401
+import app.models.market     # noqa: F401
 
 settings = get_settings()
 
@@ -93,41 +99,52 @@ async def lifespan(app: FastAPI):
                             ADD COLUMN persona_id UUID REFERENCES personas(id) ON DELETE SET NULL;
                     END IF;
                     BEGIN
-                        ALTER TABLE game_sessions ALTER COLUMN persona_vector DROP NOT NULL;
-                    EXCEPTION WHEN OTHERS THEN NULL;
-                    END;
-                    IF NOT EXISTS (
-                        SELECT 1 FROM information_schema.columns
-                        WHERE table_name='user_progress' AND column_name='unlocked_decks'
-                    ) THEN
-                        ALTER TABLE user_progress ADD COLUMN unlocked_decks JSONB;
-                        ALTER TABLE user_progress ADD COLUMN enabled_decks JSONB;
-                    END IF;
-                    IF NOT EXISTS (
-                        SELECT 1 FROM information_schema.columns
-                        WHERE table_name='user_progress' AND column_name='streak_count'
-                    ) THEN
-                        ALTER TABLE user_progress ADD COLUMN streak_count INTEGER DEFAULT 0 NOT NULL;
-                        ALTER TABLE user_progress ADD COLUMN last_streak_date DATE;
-                    END IF;
-                    IF NOT EXISTS (
-                        SELECT 1 FROM information_schema.columns
-                        WHERE table_name='game_sessions' AND column_name='is_daily'
-                    ) THEN
-                        ALTER TABLE game_sessions ADD COLUMN is_daily BOOLEAN DEFAULT FALSE NOT NULL;
-                        ALTER TABLE game_sessions ADD COLUMN daily_date DATE;
-                        ALTER TABLE game_sessions ADD COLUMN daily_cards_played INTEGER DEFAULT 0 NOT NULL;
-                        ALTER TABLE game_sessions ADD COLUMN daily_target INTEGER DEFAULT 10 NOT NULL;
-                        ALTER TABLE game_sessions ADD COLUMN daily_completed BOOLEAN DEFAULT FALSE NOT NULL;
-                        ALTER TABLE game_sessions ADD COLUMN streak_bonus_awarded DOUBLE PRECISION DEFAULT 0.0 NOT NULL;
-                    END IF;
-                END $$;
-            """))
-        except Exception:
-            pass  # ignore if not postgres or already applied
+IF EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name='cards' AND column_name='id'
+                            AND data_type='integer'
+                        ) THEN
+                            DROP TABLE IF EXISTS card_plays CASCADE;
+                            DROP TABLE IF EXISTS game_events CASCADE;
+                            DROP TABLE IF EXISTS cards CASCADE;
+                        END IF;
 
-    await _ensure_sqlite_card_columns()
-    await _ensure_sqlite_daily_streak_columns()
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name='game_sessions' AND column_name='persona_id'
+                        ) THEN
+                            ALTER TABLE game_sessions
+                                ADD COLUMN persona_id UUID REFERENCES personas(id) ON DELETE SET NULL;
+                        END IF;
+                        BEGIN
+                            ALTER TABLE game_sessions ALTER COLUMN persona_vector DROP NOT NULL;
+                        EXCEPTION WHEN OTHERS THEN NULL;
+                        END;
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name='user_progress' AND column_name='unlocked_decks'
+                        ) THEN
+                            ALTER TABLE user_progress ADD COLUMN unlocked_decks JSONB;
+                            ALTER TABLE user_progress ADD COLUMN enabled_decks JSONB;
+                        END IF;
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name='user_progress' AND column_name='streak_count'
+                        ) THEN
+                            ALTER TABLE user_progress ADD COLUMN streak_count INTEGER DEFAULT 0 NOT NULL;
+                            ALTER TABLE user_progress ADD COLUMN last_streak_date DATE;
+                        END IF;
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name='game_sessions' AND column_name='is_daily'
+                        ) THEN
+                            ALTER TABLE game_sessions ADD COLUMN is_daily BOOLEAN DEFAULT FALSE NOT NULL;
+                            ALTER TABLE game_sessions ADD COLUMN daily_date DATE;
+                            ALTER TABLE game_sessions ADD COLUMN daily_cards_played INTEGER DEFAULT 0 NOT NULL;
+                            ALTER TABLE game_sessions ADD COLUMN daily_target INTEGER DEFAULT 10 NOT NULL;
+                            ALTER TABLE game_sessions ADD COLUMN daily_completed BOOLEAN DEFAULT FALSE NOT NULL;
+                            ALTER TABLE game_sessions ADD COLUMN streak_bonus_awarded DOUBLE PRECISION DEFAULT 0.0 NOT NULL;
+                        END IF;
 
     # Seed data in development
     if settings.environment == "development":
@@ -164,6 +181,9 @@ app.include_router(admin.router)
 app.include_router(game.router)
 app.include_router(personas_router.router)
 app.include_router(progress.router)
+app.include_router(portfolio_router.router)
+app.include_router(achievements_router.router)
+app.include_router(simulation_router.router)
 
 
 @app.get("/health")

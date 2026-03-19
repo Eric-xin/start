@@ -1,3 +1,4 @@
+"""Email service — reads SMTP settings from GameConfig at runtime (falls back to env vars)."""
 import logging
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
@@ -14,8 +15,39 @@ def _render(template_name: str, context: dict) -> str:
     return jinja_env.get_template(template_name).render(**context)
 
 
-def _send(to: str, subject: str, html_body: str) -> None:
-    if settings.email_backend == "console":
+async def _get_smtp_config() -> dict:
+    """Load SMTP settings from GameConfig DB, falling back to env vars."""
+    try:
+        from app.database import AsyncSessionLocal
+        from app.models.game import GameConfig
+        from sqlalchemy import select
+
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                select(GameConfig).where(GameConfig.key.in_([
+                    "smtp_host", "smtp_port", "smtp_user", "smtp_password",
+                    "smtp_from", "smtp_from_name", "email_backend",
+                ]))
+            )
+            rows = {c.key: c.value for c in result.scalars().all()}
+    except Exception:
+        rows = {}
+
+    return {
+        "host":       rows.get("smtp_host", settings.smtp_host),
+        "port":       int(rows.get("smtp_port", settings.smtp_port)),
+        "user":       rows.get("smtp_user", settings.smtp_user),
+        "password":   rows.get("smtp_password", settings.smtp_password),
+        "from_addr":  rows.get("smtp_from", settings.smtp_from),
+        "from_name":  rows.get("smtp_from_name", settings.smtp_from_name),
+        "backend":    rows.get("email_backend", settings.email_backend),
+    }
+
+
+async def _send(to: str, subject: str, html_body: str) -> None:
+    cfg = await _get_smtp_config()
+
+    if cfg["backend"] == "console":
         logger.info(f"[EMAIL] To: {to} | Subject: {subject}\n{html_body[:300]}...")
         return
 
@@ -23,13 +55,13 @@ def _send(to: str, subject: str, html_body: str) -> None:
     message = emails.Message(
         subject=subject,
         html=html_body,
-        mail_from=(settings.smtp_from_name, settings.smtp_from),
+        mail_from=(cfg["from_name"], cfg["from_addr"]),
     )
     smtp_options = {
-        "host": settings.smtp_host,
-        "port": settings.smtp_port,
-        "user": settings.smtp_user,
-        "password": settings.smtp_password,
+        "host": cfg["host"],
+        "port": cfg["port"],
+        "user": cfg["user"],
+        "password": cfg["password"],
         "tls": True,
     }
     response = message.send(to=to, smtp=smtp_options)
@@ -37,13 +69,16 @@ def _send(to: str, subject: str, html_body: str) -> None:
         logger.error(f"Email to {to} failed: {response.error}")
 
 
-def send_verification_email(to: str, token: str, username: str) -> None:
-    verify_url = f"{settings.frontend_url}/verify-email?token={token}"
+async def send_verification_email(to: str, token: str, username: str) -> None:
+    cfg = await _get_smtp_config()
+    frontend_url = settings.frontend_url
+    verify_url = f"{frontend_url}/verify-email?token={token}"
     html = _render("email_verify.html", {"username": username, "verify_url": verify_url})
-    _send(to, "Verify your CardEcon account", html)
+    await _send(to, "Verify your CardEcon account", html)
 
 
-def send_password_reset_email(to: str, token: str) -> None:
-    reset_url = f"{settings.frontend_url}/reset-password?token={token}"
+async def send_password_reset_email(to: str, token: str) -> None:
+    frontend_url = settings.frontend_url
+    reset_url = f"{frontend_url}/reset-password?token={token}"
     html = _render("password_reset.html", {"reset_url": reset_url})
-    _send(to, "Reset your CardEcon password", html)
+    await _send(to, "Reset your CardEcon password", html)

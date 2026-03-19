@@ -1,14 +1,14 @@
-import React, { useEffect, useCallback, useRef } from "react";
+import React, { useEffect, useCallback, useRef, useState } from "react";
 import {
   View, Text, StyleSheet, ActivityIndicator,
-  Alert, useWindowDimensions, Platform,
+  Alert, useWindowDimensions, Platform, TouchableOpacity,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { useTranslation } from "react-i18next";
-import { useGameStore } from "../../store/gameStore";
-import { swipe, getNextCard } from "../../services/game";
+import { usePortfolioStore } from "../../store/portfolioStore";
+
 import { CardContainer } from "../../components/Card/CardContainer";
 import { LessonOverlay } from "../../components/Card/LessonOverlay";
+import { AchievementToast } from "../../components/AchievementToast";
 import { StatsPanel } from "../../components/HUD/StatsPanel";
 import { MarketContextPill } from "../../components/HUD/MarketContextPill";
 import { SidebarPanel } from "../../components/HUD/SidebarPanel";
@@ -56,7 +56,7 @@ function TerminalGrid() {
 }
 
 // ─── Top Status Bar ─────────────────────────────────────────────────────────
-function TopStatusBar({ session }: { session: any }) {
+function TopStatusBar({ session, onExit }: { session: any; onExit: () => void }) {
   const { t, i18n } = useTranslation();
   const now = new Date();
   const locale = i18n?.language || undefined;
@@ -81,6 +81,9 @@ function TopStatusBar({ session }: { session: any }) {
       <View style={tbStyles.right}>
         <View style={tbStyles.liveIndicator} />
         <Text style={tbStyles.time}>{timeStr}</Text>
+        <TouchableOpacity style={tbStyles.exitBtn} onPress={onExit}>
+          <Text style={tbStyles.exitBtnText}>EXIT</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -130,6 +133,20 @@ const tbStyles = StyleSheet.create({
     color: Colors.textDim,
     letterSpacing: 1,
   },
+  exitBtn: {
+    borderWidth: 1,
+    borderColor: Colors.borderDim,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 2,
+    marginLeft: 4,
+  },
+  exitBtnText: {
+    fontSize: 9,
+    fontFamily: Fonts.sansBold,
+    color: Colors.textDim,
+    letterSpacing: 1.5,
+  },
 });
 
 // ─── Ghost card ──────────────────────────────────────────────────────────────
@@ -162,20 +179,26 @@ export default function PlayScreen() {
   const isMedium = width >= Layout.tabletBreakpoint;
 
   const {
-    session, currentCard, nextCard, lesson, isSwipeLocked,
-    setSession, setCurrentCard, setNextCard, setLesson, setSwipeLocked,
-  } = useGameStore();
+    portfolio, currentCard, nextCard, lesson, isSwipeLocked,
+    setPortfolio, setCurrentCard, setNextCard, setLesson, setSwipeLocked,
+  } = usePortfolioStore();
 
   const [initializing, setInitializing] = React.useState(true);
+  const [achievementQueue, setAchievementQueue] = useState<AchievementData[]>([]);
   const mounted = useRef(false);
 
   useEffect(() => {
     mounted.current = true;
-    if (!session) {
+    if (currentCard) {
+      // Card was pre-loaded from the index screen
+      setInitializing(false);
+      return;
+    }
+    if (!portfolio) {
       const t = setTimeout(() => router.replace("/(game)/index"), 0);
       return () => clearTimeout(t);
     }
-    getNextCard(session.id)
+    getNextCard()
       .then((c) => { if (mounted.current && c) setCurrentCard(c); })
       .catch(() => Alert.alert(t("profile.error"), t("auth.errors.unableConnect")))
       .finally(() => { if (mounted.current) setInitializing(false); });
@@ -183,22 +206,23 @@ export default function PlayScreen() {
   }, []);
 
   const handleSwipe = useCallback(async (direction: "left" | "right") => {
-    if (!session || !currentCard || isSwipeLocked) return;
+    if (!currentCard || isSwipeLocked) return;
     setSwipeLocked(true);
-    // Immediately hide the card (it flew off) — show loading state
     setCurrentCard(null);
     try {
-      const result = await swipe(session.id, currentCard.id, direction);
-      setSession(result.session);
-      // Show lesson overlay; store next card ready for after dismiss
+      const result = await playCard(currentCard.id, direction);
+      setPortfolio(result.portfolio);
       setNextCard(result.next_card ?? null);
       setLesson({ text: result.lesson, direction, reward: result.reward });
+      if (result.newly_unlocked_achievements?.length) {
+        setAchievementQueue((q) => [...q, ...result.newly_unlocked_achievements]);
+      }
     } catch {
       setSwipeLocked(false);
       setCurrentCard(currentCard); // restore on error
       Alert.alert(t("profile.error"), t("auth.errors.unableConnect"));
     }
-  }, [session, currentCard, isSwipeLocked]);
+  }, [currentCard, isSwipeLocked]);
 
   const handleLessonDismiss = useCallback(() => {
     setLesson(null);
@@ -220,7 +244,7 @@ export default function PlayScreen() {
     setSwipeLocked(false);
   }, [nextCard, session, router]);
 
-  if (initializing || !session) {
+  if (initializing || (!currentCard && !lesson)) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator color={Colors.blue} size="large" />
@@ -229,9 +253,14 @@ export default function PlayScreen() {
     );
   }
 
-  const showSidebar = isWide || (isMedium && session.investor_rank >= 3);
-  const showDonut = session.investor_rank >= 4 && isWide;
-  const showMarketPill = session.investor_rank >= 2;
+  const rank = portfolio?.investor_rank ?? 1;
+  // Build a session-shaped proxy so HUD components keep working unchanged
+  const sessionProxy = portfolio
+    ? { ...portfolio, progress: (portfolio.total_cards_played % 20) / 20 }
+    : { capital: 0, stage: 1, investor_rank: 1, progress: 0, portfolio_weights: {} };
+  const showSidebar = isWide || (isMedium && rank >= 3);
+  const showDonut = rank >= 4 && isWide;
+  const showMarketPill = rank >= 2;
 
   // Card area: subtract sidebar if visible
   const sidebarW = showSidebar ? Layout.sidebarWidth : 0;
@@ -243,15 +272,26 @@ export default function PlayScreen() {
     <View style={styles.container}>
       <TerminalGrid />
 
+      {/* Achievement toast */}
+      {achievementQueue.length > 0 && (
+        <AchievementToast
+          key={achievementQueue[0].key}
+          emoji={achievementQueue[0].emoji}
+          title={achievementQueue[0].title}
+          tier={achievementQueue[0].tier}
+          onDone={() => setAchievementQueue((q) => q.slice(1))}
+        />
+      )}
+
       {/* Top status bar */}
-      <TopStatusBar session={session} />
+      <TopStatusBar session={sessionProxy} onExit={() => router.replace("/(game)/index")} />
 
       {/* Body */}
       <View style={styles.body}>
         {/* Left sidebar — Rank 3+ or wide screen */}
         {showSidebar && (
           <View style={[styles.sidePanel, { width: Layout.sidebarWidth }]}>
-            <SidebarPanel session={session} />
+            <SidebarPanel session={sessionProxy} />
           </View>
         )}
 
@@ -297,7 +337,7 @@ export default function PlayScreen() {
           {/* Market context pill — Rank 2+ */}
           {showMarketPill && !lesson && (
             <View style={styles.pillRow}>
-              <MarketContextPill stage={session.stage} capital={session.capital} />
+              <MarketContextPill stage={sessionProxy.stage} capital={sessionProxy.capital} />
             </View>
           )}
 
@@ -313,14 +353,14 @@ export default function PlayScreen() {
         {/* Right panel — portfolio donut (Rank 4+, wide) */}
         {showDonut && (
           <View style={[styles.sidePanel, { width: donutW, alignItems: "center", paddingTop: 24 }]}>
-            <Text style={styles.panelLabelText}>{t("play.portfolio")}</Text>
-            <PortfolioDonut weights={session.portfolio_weights} size={100} />
+<Text style={styles.panelLabelText}>{t("play.portfolio")}</Text>
+<PortfolioDonut weights={sessionProxy.portfolio_weights} size={100} />
           </View>
         )}
       </View>
 
       {/* Bottom stats panel */}
-      <StatsPanel session={session} />
+      <StatsPanel session={sessionProxy} />
     </View>
   );
 }
