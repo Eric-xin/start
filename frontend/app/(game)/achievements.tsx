@@ -11,6 +11,7 @@ import { Colors, useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { useThemeStore } from "../../store/themeStore";
 import { ThemeModeToggle } from "../../components/theme/ThemeModeToggle";
+import { AchievementShareModal } from "../../components/share/AchievementShareModal";
 
 const TIER_COLORS: Record<string, string> = {
   bronze: "#cd7f32",
@@ -30,7 +31,13 @@ const CATEGORY_LABELS: Record<string, string> = {
   strategy: "STRATEGY & DECKS",
 };
 
-function AchievementCard({ achievement }: { achievement: AchievementData }) {
+function AchievementCard({
+  achievement,
+  onShare,
+}: {
+  achievement: AchievementData;
+  onShare: (a: AchievementData) => void;
+}) {
   const colors = useColors();
   const accent = TIER_COLORS[achievement.tier] ?? colors.blue;
   const locked = !achievement.unlocked;
@@ -48,10 +55,17 @@ function AchievementCard({ achievement }: { achievement: AchievementData }) {
           </Text>
         )}
       </View>
-      <View style={[s.tierBadge, { borderColor: locked ? colors.borderDim : accent }]}>
-        <Text style={[s.tierText, { color: locked ? colors.textMuted : accent }]}>
-          {achievement.tier.toUpperCase()}
-        </Text>
+      <View style={s.achRight}>
+        <View style={[s.tierBadge, { borderColor: locked ? colors.borderDim : accent }]}>
+          <Text style={[s.tierText, { color: locked ? colors.textMuted : accent }]}>
+            {achievement.tier.toUpperCase()}
+          </Text>
+        </View>
+        {!locked && (
+          <TouchableOpacity style={s.shareBtn} onPress={() => onShare(achievement)}>
+            <Text style={[s.shareIcon, { color: accent }]}>↑</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -65,6 +79,7 @@ export default function AchievementsScreen() {
   const { width } = useWindowDimensions();
   const [achievements, setAchievements] = useState<AchievementData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sharingAchievement, setSharingAchievement] = useState<AchievementData | null>(null);
 
   useEffect(() => {
     getAchievements()
@@ -125,6 +140,11 @@ export default function AchievementsScreen() {
         <View style={[styles.progressFill, { backgroundColor: colors.blue, width: total > 0 ? `${(unlocked / total) * 100}%` : "0%" }]} />
       </View>
 
+      <AchievementShareModal
+        achievement={sharingAchievement}
+        onClose={() => setSharingAchievement(null)}
+      />
+
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         {isNormal ? (
           <View style={[styles.section, { backgroundColor: colors.bgPanel, borderWidth: 1, borderColor: colors.borderDim, borderRadius: 18, padding: 16 }]}>
@@ -154,7 +174,7 @@ export default function AchievementsScreen() {
               </View>
               <View style={[styles.grid, { maxWidth: width > 800 ? 800 : "100%" }]}>
                 {items.map((a) => (
-                  <AchievementCard key={a.key} achievement={a} />
+                  <AchievementCard key={a.key} achievement={a} onShare={setSharingAchievement} />
                 ))}
               </View>
             </View>
@@ -205,6 +225,10 @@ const s = StyleSheet.create({
     color: Colors.textMuted,
     marginTop: 4,
   },
+  achRight: {
+    alignItems: "center",
+    gap: 6,
+  },
   tierBadge: {
     borderWidth: 1,
     borderRadius: 2,
@@ -215,6 +239,16 @@ const s = StyleSheet.create({
     fontSize: 8,
     fontFamily: Fonts.sansBold,
     letterSpacing: 1.5,
+  },
+  shareBtn: {
+    width: 24,
+    height: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  shareIcon: {
+    fontSize: 14,
+    fontFamily: Fonts.sansBold,
   },
 });
 

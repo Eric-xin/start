@@ -12,6 +12,7 @@ import { Fonts } from "../../../constants/fonts";
 import { useThemeStore } from "../../../store/themeStore";
 import { ThemeModeToggle } from "../../../components/theme/ThemeModeToggle";
 import { AppTopBar } from "../../../components/navigation/AppTopBar";
+import { sharePersonaPDF } from "../../../hooks/useShare";
 
 const TRAIT_LABELS: Record<string, string> = {
   risk_appetite: "Risk Appetite",
@@ -63,6 +64,7 @@ export default function PersonaDetailScreen() {
   const [editName, setEditName] = useState(false);
   const [nameInput, setNameInput] = useState("");
   const [saving, setSaving] = useState(false);
+  const [sharingPDF, setSharingPDF] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -235,6 +237,18 @@ export default function PersonaDetailScreen() {
     </View>
   ) : null;
 
+  const handleSharePDF = async () => {
+    if (!persona) return;
+    setSharingPDF(true);
+    try {
+      await sharePersonaPDF(persona);
+    } catch {
+      Alert.alert(t("common.error"), "Could not generate PDF.");
+    } finally {
+      setSharingPDF(false);
+    }
+  };
+
   const handleBack = () => {
     if (router.canGoBack()) {
       router.back();
@@ -248,7 +262,21 @@ export default function PersonaDetailScreen() {
       <AppTopBar
         label={isNormal ? t("personaDetail.topBar") : t("personaDetail.topBarPro")}
         onBack={handleBack}
-        rightContent={<ThemeModeToggle compact />}
+        rightContent={
+          <>
+            <ThemeModeToggle compact />
+            <TouchableOpacity
+              style={[styles.pdfBtn, sharingPDF && { opacity: 0.5 }]}
+              onPress={handleSharePDF}
+              disabled={sharingPDF}
+            >
+              {sharingPDF
+                ? <ActivityIndicator size="small" color={colors.blue} />
+                : <Text style={[styles.pdfBtnText, { color: colors.blue }]}>PDF ↑</Text>
+              }
+            </TouchableOpacity>
+          </>
+        }
       />
 
       <ScrollView contentContainerStyle={styles.scroll}>
@@ -335,4 +363,22 @@ const styles = StyleSheet.create({
   traitTrack: { height: 4, backgroundColor: Colors.borderDim, borderRadius: 2, overflow: "hidden", marginBottom: 6 },
   traitFill: { height: 4, borderRadius: 2 },
   traitDesc: { fontSize: 10, fontFamily: Fonts.sans, color: Colors.textMuted, lineHeight: 14 },
+
+  pdfBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: Colors.borderDim,
+    borderRadius: 2,
+    marginLeft: 8,
+    minWidth: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pdfBtnText: {
+    fontSize: 9,
+    fontFamily: Fonts.sansBold,
+    letterSpacing: 1,
+    color: Colors.blue,
+  },
 });
