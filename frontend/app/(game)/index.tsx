@@ -261,7 +261,7 @@ export default function GameIndexScreen() {
                       <Text style={styles.guideRole}>{currentCompanion.personality}</Text>
                     </View>
                   </View>
-                  <Text style={styles.guideQuote}>"{currentCompanion.previewQuote}"</Text>
+                  {/* <Text style={styles.guideQuote}>"{currentCompanion.previewQuote}"</Text> */}
                 </>
               ) : (
                 <Text style={styles.guideQuote}>
@@ -455,12 +455,14 @@ const createStyles = (colors: ReturnType<typeof useColors>, isNormal: boolean) =
       borderColor: colors.borderDim,
       borderRadius: isNormal ? 24 : 2,
       padding: 20,
+      gap: 14,
     },
     guideTop: {
       flexDirection: "row",
       alignItems: "center",
       gap: 14,
-      marginBottom: 12,
+      marginTop: 4,
+      marginBottom: 6,
     },
     guideCopy: {
       flex: 1,
@@ -497,6 +499,7 @@ const createStyles = (colors: ReturnType<typeof useColors>, isNormal: boolean) =
       fontFamily: Fonts.sansBold,
       color: colors.blue,
       letterSpacing: isNormal ? 0.4 : 1.8,
+      marginBottom: 2,
     },
     modeGrid: {
       gap: 10,
