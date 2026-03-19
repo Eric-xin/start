@@ -31,6 +31,20 @@ DECK_META = {
     "real_estate_deck":  {"label": "Real Estate",        "strategy": "index",        "topics": ["real_estate"],    "description": "Property, REITs and real asset investing.",                "unlock_at": 78},
     # Alternatives
     "derivatives_deck":  {"label": "Derivatives",        "strategy": "alternatives", "topics": ["derivatives"],    "description": "Options, futures and structured financial products.",      "unlock_at": 100},
+    "market_psychology_deck": {
+        "label": "Market Psychology",
+        "strategy": "alternatives",
+        "topics": [
+            "panic_selling",
+            "fomo",
+            "overtrading",
+            "consistency",
+            "market_timing",
+            "volatility",
+        ],
+        "description": "Behavioral biases, market stress reactions, and decision-discipline under uncertainty.",
+        "unlock_at": 120,
+    },
     # Shop Decks
     "great_depression_deck": {
         "label": "Great Depression",

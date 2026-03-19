@@ -21,6 +21,7 @@ from app.seeds.cards_great_depression import GREAT_DEPRESSION_CARDS
 from app.seeds.cards_covid import COVID_ERA_CARDS
 from app.seeds.cards_financial_statements import FINANCIAL_STATEMENTS_CARDS
 from app.seeds.cards_macro_events import MACRO_EVENTS_CARDS
+from app.seeds.cards_market_psychology import MARKET_PSYCHOLOGY_CARDS
 
 SEED_CARDS = [
     # ══════════════════════════════════════════════════════════════════════════
@@ -1234,3 +1235,4 @@ SEED_CARDS.extend(GREAT_DEPRESSION_CARDS)
 SEED_CARDS.extend(COVID_ERA_CARDS)
 SEED_CARDS.extend(FINANCIAL_STATEMENTS_CARDS)
 SEED_CARDS.extend(MACRO_EVENTS_CARDS)
+SEED_CARDS.extend(MARKET_PSYCHOLOGY_CARDS)
