@@ -93,9 +93,6 @@ export default function PersonasScreen() {
     <View style={styles.container}>
       {/* Top bar */}
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backText}>← BACK</Text>
-        </TouchableOpacity>
         <Text style={styles.logo}>CARDECON</Text>
         <View style={styles.barSep} />
         <Text style={styles.topLabel}>PERSONAS</Text>
@@ -104,6 +101,9 @@ export default function PersonasScreen() {
           onPress={() => setShowCreate(!showCreate)}
         >
           <Text style={styles.createBtnText}>+ NEW</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text style={styles.backText}>BACK →</Text>
         </TouchableOpacity>
       </View>
 

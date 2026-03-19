@@ -127,13 +127,13 @@ export default function DecksScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backText}>← BACK</Text>
-        </TouchableOpacity>
         <Text style={styles.logo}>CARDECON</Text>
         <View style={styles.barSep} />
         <Text style={styles.topLabel}>INVESTMENT DECKS</Text>
         {saving && <ActivityIndicator color={Colors.blue} size="small" style={{ marginLeft: "auto" }} />}
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text style={styles.backText}>BACK →</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
   backText: { fontSize: 9, fontFamily: Fonts.sansBold, color: Colors.textDim, letterSpacing: 1.5 },
   logo: { fontSize: 13, fontFamily: Fonts.mono, color: Colors.blue, letterSpacing: 3 },
   barSep: { width: 1, height: 14, backgroundColor: Colors.borderDim },
-  topLabel: { fontSize: 9, fontFamily: Fonts.sansBold, color: Colors.textDim, letterSpacing: 2 },
+  topLabel: { fontSize: 9, fontFamily: Fonts.sansBold, color: Colors.textDim, letterSpacing: 2, flex: 1 },
 
   scroll: { padding: 20, gap: 14, alignItems: "center" },
 

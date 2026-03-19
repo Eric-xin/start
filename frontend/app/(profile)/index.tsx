@@ -489,12 +489,13 @@ export default function ProfileScreen() {
     <View style={s.container}>
       {/* Top bar */}
       <View style={s.topBar}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <Text style={s.backText}>← BACK</Text>
-        </TouchableOpacity>
         <Text style={s.logo}>CARDECON</Text>
         <View style={s.barSep} />
         <Text style={s.topLabel}>PROFILE</Text>
+        <View style={{ flex: 1 }} />
+        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+          <Text style={s.backText}>BACK →</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={[s.scroll, isWide && s.scrollWide]}>

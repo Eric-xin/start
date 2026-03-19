@@ -98,7 +98,7 @@ export default function GameIndexScreen() {
         <View style={styles.topLeft}>
           <Text style={styles.logo}>CARDECON</Text>
           <View style={styles.barSep} />
-          <Text style={styles.topBarLabel}>FINANCIAL INTELLIGENCE PLATFORM</Text>
+          <Text style={styles.topBarLabel}>INDEX</Text>
         </View>
         <View style={styles.topRight}>
           <TouchableOpacity style={styles.topBtn} onPress={() => router.push("/(profile)/")}>
@@ -155,18 +155,6 @@ export default function GameIndexScreen() {
           </Text>
 
           <View style={styles.buttonRow}>
-            {/* New session */}
-            <TouchableOpacity
-              style={[styles.ctaBtn, launching && { opacity: 0.5 }]}
-              onPress={handleNewSession}
-              disabled={launching || loadingLast}
-            >
-              {launching
-                ? <ActivityIndicator color={Colors.bg} size="small" />
-                : <Text style={styles.ctaBtnText}>▶  NEW SESSION</Text>
-              }
-            </TouchableOpacity>
-
             {/* Continue last */}
             <TouchableOpacity
               style={[
@@ -179,15 +167,27 @@ export default function GameIndexScreen() {
               {loadingData ? (
                 <ActivityIndicator color={Colors.blue} size="small" />
               ) : lastSession ? (
-                <View style={styles.continueBtnInner}>
-                  <Text style={styles.continueBtnText}>CONTINUE LAST</Text>
+                <View style={[styles.continueBtnInner, { flexDirection: "row", gap: 8 }]}>
+                  <Text style={styles.continueBtnText}>CONTINUE LAST SESSION</Text>
                   <Text style={styles.continueBtnSub}>
-                    ${Math.round(lastSession.capital).toLocaleString()} · Stage {lastSession.stage}
+                    · ${Math.round(lastSession.capital).toLocaleString()} · STAGE {lastSession.stage}
                   </Text>
                 </View>
               ) : (
-                <Text style={styles.continueBtnText}>NO PRIOR SESSION</Text>
+                <Text style={styles.continueBtnText}>NO PRIOR SESSION FOUND</Text>
               )}
+            </TouchableOpacity>
+
+            {/* New session */}
+            <TouchableOpacity
+              style={[styles.ctaBtn, launching && { opacity: 0.5 }]}
+              onPress={handleNewSession}
+              disabled={launching || loadingLast}
+            >
+              {launching
+                ? <ActivityIndicator color={Colors.bg} size="small" />
+                : <Text style={styles.ctaBtnText}>▶  LAUNCH NEW SESSION</Text>
+              }
             </TouchableOpacity>
           </View>
 
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
 
   sessionDesc: { fontSize: 12, fontFamily: Fonts.sans, color: Colors.textDim, lineHeight: 18, marginBottom: 16 },
 
-  buttonRow: { flexDirection: "row", gap: 10, marginBottom: 12 },
+  buttonRow: { flexDirection: "column", gap: 12, marginBottom: 12 },
 
   ctaBtn: {
     flex: 1,

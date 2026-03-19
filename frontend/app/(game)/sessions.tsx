@@ -32,13 +32,13 @@ export default function SessionsScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backText}>← BACK</Text>
-        </TouchableOpacity>
         <Text style={styles.logo}>CARDECON</Text>
         <View style={styles.barSep} />
         <Text style={styles.topLabel}>SESSION HISTORY</Text>
         <Text style={styles.sessionCount}>{sessions.length} SESSIONS</Text>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text style={styles.backText}>BACK →</Text>
+        </TouchableOpacity>
       </View>
 
       {loading ? (

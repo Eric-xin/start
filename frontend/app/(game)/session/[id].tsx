@@ -174,9 +174,6 @@ export default function SessionDetailScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backText}>← BACK</Text>
-        </TouchableOpacity>
         <Text style={styles.logo}>CARDECON</Text>
         <View style={styles.barSep} />
         <Text style={styles.topLabel}>SESSION REVIEW</Text>
@@ -185,6 +182,9 @@ export default function SessionDetailScreen() {
             <Text style={styles.continueTopBtnText}>CONTINUE SESSION →</Text>
           </TouchableOpacity>
         )}
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text style={styles.backText}>BACK →</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
