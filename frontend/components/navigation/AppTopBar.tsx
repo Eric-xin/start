@@ -59,7 +59,7 @@ export function AppTopBar({
               {
                 borderColor: colors.borderDim,
                 backgroundColor: isNormal ? colors.bg : "transparent",
-                borderRadius: isNormal ? 999 : 2,
+                borderRadius: 8,
               },
             ]}
           >

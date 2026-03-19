@@ -136,14 +136,14 @@ export default function ArenaHubScreen() {
 
         {/* Tab selector */}
         <View style={styles.tabs}>
-          {(["create", "join"] as const).map((t) => (
+          {(["create", "join"] as const).map((tabType) => (
             <TouchableOpacity
-              key={t}
-              style={[styles.tab, tab === t && styles.tabActive]}
-              onPress={() => setTab(t)}
+              key={tabType}
+              style={[styles.tab, tab === tabType && styles.tabActive]}
+              onPress={() => setTab(tabType)}
             >
-              <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
-                {t === "create"
+              <Text style={[styles.tabText, tab === tabType && styles.tabTextActive]}>
+                {tabType === "create"
                   ? isNormal ? t("arena.hub.tabs.create") : t("arena.hub.tabs.createPro")
                   : isNormal ? t("arena.hub.tabs.join") : t("arena.hub.tabs.joinPro")}
               </Text>

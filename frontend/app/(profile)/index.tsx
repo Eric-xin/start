@@ -614,7 +614,7 @@ export default function ProfileScreen() {
     <View style={[s.container, { backgroundColor: colors.bg }]}>
       <AppTopBar
         label={isNormal ? t("profileHome.topLabel") : t("profileHome.topLabelPro")}
-        onBack={() => router.back()}
+        onBack={() => router.canGoBack() ? router.back() : router.push("/(game)")}
         rightContent={<ThemeModeToggle compact />}
       />
 

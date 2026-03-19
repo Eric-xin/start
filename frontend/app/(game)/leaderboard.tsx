@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   StyleSheet,
-  TouchableOpacity,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -205,6 +204,7 @@ export default function LeaderboardScreen() {
 
       <AppTopBar
         label={isNormal ? t("leaderboard.topBar") : t("leaderboard.topBarPro")}
+        onBack={handleBack}
         rightContent={<ThemeModeToggle compact />}
       />
 
@@ -251,24 +251,7 @@ export default function LeaderboardScreen() {
         {ranked.map((p) => (
           <LeaderRow key={p.id} player={p} maxValue={maxValue} />
         ))}
-        <View style={{ height: 80 }} />
       </ScrollView>
-
-      {/* ── Footer back button ─────────────────────────────────────────────── */}
-      <View
-        style={[
-          styles.footer,
-          isNormal && { backgroundColor: colors.bgPanel, borderTopColor: colors.borderDim },
-        ]}
-      >
-        <TouchableOpacity
-          style={[styles.backBtn, { borderColor: colors.blue }]}
-          onPress={handleBack}
-          activeOpacity={0.75}
-        >
-          <Text style={[styles.backBtnText, { color: colors.blue }]}>{t("leaderboard.back")}</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 }
@@ -390,30 +373,4 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
 
-  // Footer
-  footer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: Colors.bgPanel,
-    borderTopWidth: 1,
-    borderTopColor: Colors.borderFaint,
-  },
-  backBtn: {
-    borderWidth: 1,
-    borderRadius: 4,
-    paddingVertical: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  backBtnText: {
-    fontSize: 12,
-    fontFamily: Fonts.mono,
-    letterSpacing: 1,
-    fontWeight: "600",
-    color: Colors.blue,
-  },
 });
