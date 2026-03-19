@@ -15,6 +15,7 @@ interface PortfolioState {
   lesson: LessonState | null;
   isSwipeLocked: boolean;
   setPortfolio: (p: PortfolioData) => void;
+  updatePortfolio: (p: Partial<PortfolioData>) => void;
   setCurrentCard: (c: CardData | null) => void;
   setNextCard: (c: CardData | null) => void;
   setLesson: (l: LessonState | null) => void;
@@ -30,6 +31,9 @@ export const usePortfolioStore = create<PortfolioState>((set) => ({
   isSwipeLocked: false,
 
   setPortfolio: (portfolio) => set({ portfolio }),
+  updatePortfolio: (updates) => set((state) => ({
+    portfolio: state.portfolio ? { ...state.portfolio, ...updates } : null,
+  })),
   setCurrentCard: (card) => set({ currentCard: card }),
   setNextCard: (card) => set({ nextCard: card }),
   setLesson: (lesson) => set({ lesson }),

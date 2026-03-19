@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { useAppFonts } from "../hooks/useFont";
 import { useAuthStore } from "../store/authStore";
@@ -40,17 +41,19 @@ export default function RootLayout() {
   const showSpinner = !isReady || redirectPending;
 
   return (
-    <GestureHandlerRootView style={styles.root}>
-      <StatusBar style="light" />
-      {/* Slot must always render so the navigator mounts */}
-      <Slot />
-      {/* Overlay the spinner on top until we're ready */}
-      {showSpinner && (
-        <View style={[StyleSheet.absoluteFill, styles.loading]}>
-          <ActivityIndicator color={Colors.blue} size="large" />
-        </View>
-      )}
-    </GestureHandlerRootView>
+    <SafeAreaView style={styles.root} edges={["top"]}>
+      <GestureHandlerRootView style={styles.root}>
+        <StatusBar style="light" />
+        {/* Slot must always render so the navigator mounts */}
+        <Slot />
+        {/* Overlay the spinner on top until we're ready */}
+        {showSpinner && (
+          <View style={[StyleSheet.absoluteFill, styles.loading]}>
+            <ActivityIndicator color={Colors.blue} size="large" />
+          </View>
+        )}
+      </GestureHandlerRootView>
+    </SafeAreaView>
   );
 }
 

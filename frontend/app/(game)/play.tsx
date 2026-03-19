@@ -190,7 +190,7 @@ export default function PlayScreen() {
     nextCard,
     lesson,
     isSwipeLocked,
-    setPortfolio,
+    updatePortfolio,
     setCurrentCard,
     setNextCard,
     setLesson,
@@ -253,7 +253,7 @@ export default function PlayScreen() {
         const action = isChoiceFlipped ? (direction === "left" ? "right" : "left") : direction;
         const previousRank = portfolio?.investor_rank ?? 1;
         const result = await playCard(currentCard.id, action);
-        setPortfolio(result.portfolio);
+        updatePortfolio(result.portfolio);
         setNextCard(result.next_card ?? null);
         setLesson({
           text: result.lesson,
@@ -279,7 +279,7 @@ export default function PlayScreen() {
         Alert.alert(t("common.error"), t("play.errors.swipe"));
       }
     },
-    [companionId, currentCard, isChoiceFlipped, isSwipeLocked, portfolio?.investor_rank, recentPhrases, setCurrentCard, setLesson, setNextCard, setPortfolio, setSwipeLocked, showBubble, t]
+    [companionId, currentCard, isChoiceFlipped, isSwipeLocked, portfolio?.investor_rank, recentPhrases, setCurrentCard, setLesson, setNextCard, updatePortfolio, setSwipeLocked, showBubble, t]
   );
 
   const handleLessonDismiss = useCallback(() => {
