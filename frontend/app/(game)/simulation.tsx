@@ -26,7 +26,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from "react-native-reanimated";
-import { Colors } from "../../constants/colors";
+import { Colors, useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { Layout } from "../../constants/layout";
 import { usePortfolioStore } from "../../store/portfolioStore";
@@ -38,6 +38,7 @@ import {
   type TradeRecord,
 } from "../../services/simulation";
 import { api } from "../../services/api";
+import { useThemeStore } from "../../store/themeStore";
 
 // ─── Asset config ────────────────────────────────────────────────────────────
 
@@ -768,6 +769,7 @@ const metricStyles = StyleSheet.create({
 // ─── Live Clock ────────────────────────────────────────────────────────────────
 
 function LiveClock() {
+  const colors = useColors();
   const [time, setTime] = useState(() => {
     const now = new Date();
     return now.toTimeString().slice(0, 8);
@@ -782,7 +784,7 @@ function LiveClock() {
   }, []);
 
   return (
-    <Text style={clockStyles.text}>{time} UTC</Text>
+    <Text style={[clockStyles.text, { color: colors.textDim }]}>{time} UTC</Text>
   );
 }
 
@@ -804,6 +806,8 @@ interface AssetToggleProps {
 }
 
 function AssetToggle({ asset, selected, onToggle }: AssetToggleProps) {
+  const colors = useColors();
+  const isNormal = useThemeStore((state) => state.mode === "normal");
   const color = ASSET_COLORS[asset];
   return (
     <TouchableOpacity
@@ -811,8 +815,9 @@ function AssetToggle({ asset, selected, onToggle }: AssetToggleProps) {
       style={[
         assetToggleStyles.chip,
         {
-          borderColor: selected ? color : Colors.borderFaint,
-          backgroundColor: selected ? color + "22" : "transparent",
+          borderColor: selected ? color : colors.borderFaint,
+          backgroundColor: selected ? color + "22" : isNormal ? colors.bg : "transparent",
+          borderRadius: isNormal ? 999 : 3,
         },
       ]}
       activeOpacity={0.7}
@@ -820,13 +825,13 @@ function AssetToggle({ asset, selected, onToggle }: AssetToggleProps) {
       <View
         style={[
           assetToggleStyles.dot,
-          { backgroundColor: selected ? color : Colors.textMuted },
+          { backgroundColor: selected ? color : colors.textMuted },
         ]}
       />
       <Text
         style={[
           assetToggleStyles.label,
-          { color: selected ? color : Colors.textDim },
+          { color: selected ? color : colors.textDim, fontFamily: isNormal ? Fonts.sansBold : Fonts.mono },
         ]}
       >
         {ASSET_LABELS[asset]}
@@ -860,11 +865,12 @@ const assetToggleStyles = StyleSheet.create({
 // ─── Divider ──────────────────────────────────────────────────────────────────
 
 function Divider() {
+  const colors = useColors();
   return (
     <View
       style={{
         height: 1,
-        backgroundColor: Colors.borderFaint,
+        backgroundColor: colors.borderFaint,
         marginVertical: 12,
       }}
     />
@@ -874,16 +880,18 @@ function Divider() {
 // ─── Section Label ────────────────────────────────────────────────────────────
 
 function SectionLabel({ text }: { text: string }) {
+  const colors = useColors();
+  const isNormal = useThemeStore((state) => state.mode === "normal");
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
-      <View style={{ width: 3, height: 12, backgroundColor: Colors.blue, borderRadius: 1 }} />
+      <View style={{ width: isNormal ? 8 : 3, height: 12, backgroundColor: colors.blue, borderRadius: 999 }} />
       <Text
         style={{
-          fontSize: 9,
-          fontFamily: Fonts.mono,
-          color: Colors.blue,
-          letterSpacing: 2,
-          textTransform: "uppercase",
+          fontSize: isNormal ? 14 : 9,
+          fontFamily: isNormal ? Fonts.sansBold : Fonts.mono,
+          color: colors.blue,
+          letterSpacing: isNormal ? 0.4 : 2,
+          textTransform: isNormal ? "none" : "uppercase",
         }}
       >
         {text}
@@ -909,6 +917,8 @@ const TRAIT_KEYS = [
 // ─── Main Simulation Screen ───────────────────────────────────────────────────
 
 export default function SimulationScreen() {
+  const colors = useColors();
+  const isNormal = useThemeStore((state) => state.mode === "normal");
   const { width } = useWindowDimensions();
   const isWide = width >= 1024;
 
@@ -1025,7 +1035,12 @@ export default function SimulationScreen() {
       <Divider />
 
       {/* Simulation config */}
-      <SectionLabel text="SIMULATION CONFIG" />
+      <SectionLabel text={isNormal ? "🧪 Try a What-If Plan" : "SIMULATION CONFIG"} />
+      {isNormal ? (
+        <Text style={styles.traitInterpretation}>
+          Choose a time range, starting cash, and a few investment types. We will turn the results into a simpler story below.
+        </Text>
+      ) : null}
 
       <View style={styles.configRow}>
         <View style={styles.configField}>
@@ -1090,7 +1105,7 @@ export default function SimulationScreen() {
         {running ? (
           <ActivityIndicator size="small" color={Colors.textBright} />
         ) : (
-          <Text style={styles.runButtonText}>▶ RUN SIMULATION</Text>
+          <Text style={styles.runButtonText}>{isNormal ? "▶ Run My Scenario" : "▶ RUN SIMULATION"}</Text>
         )}
       </TouchableOpacity>
     </View>
@@ -1106,10 +1121,11 @@ export default function SimulationScreen() {
       {!result && !running && !error && (
         <View style={styles.emptyState}>
           <Text style={styles.emptyIcon}>◉</Text>
-          <Text style={styles.emptyTitle}>SIMULATION ENGINE READY</Text>
+          <Text style={styles.emptyTitle}>{isNormal ? "Simulation ready" : "SIMULATION ENGINE READY"}</Text>
           <Text style={styles.emptySubtitle}>
-            Configure parameters and press RUN SIMULATION to generate your
-            persona-driven backtest.
+            {isNormal
+              ? "Pick a simple scenario and run it to see how this investor style might have behaved."
+              : "Configure parameters and press RUN SIMULATION to generate your persona-driven backtest."}
           </Text>
         </View>
       )}
@@ -1118,10 +1134,12 @@ export default function SimulationScreen() {
         <View style={styles.emptyState}>
           <ActivityIndicator size="large" color={Colors.blue} />
           <Text style={[styles.emptyTitle, { marginTop: 16 }]}>
-            RUNNING SIMULATION...
+            {isNormal ? "Running your scenario..." : "RUNNING SIMULATION..."}
           </Text>
           <Text style={styles.emptySubtitle}>
-            Backtesting your investor persona across historical market data.
+            {isNormal
+              ? "We're comparing your investor style against past market moves."
+              : "Backtesting your investor persona across historical market data."}
           </Text>
         </View>
       )}
@@ -1129,7 +1147,7 @@ export default function SimulationScreen() {
       {!!error && !running && (
         <View style={styles.errorState}>
           <Text style={styles.errorIcon}>⚠</Text>
-          <Text style={styles.errorTitle}>SIMULATION FAILED</Text>
+          <Text style={styles.errorTitle}>{isNormal ? "Simulation could not run" : "SIMULATION FAILED"}</Text>
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={handleRun}>
             <Text style={styles.retryText}>RETRY</Text>
@@ -1139,8 +1157,27 @@ export default function SimulationScreen() {
 
       {result && !running && (
         <>
+          {isNormal ? (
+            <View style={[styles.metricsStrip, { marginBottom: 6 }]}>
+              <MetricCard
+                label="What happened"
+                value={result.metrics.total_return >= 0 ? "📈 Money grew" : "📉 Money fell"}
+                color={result.metrics.total_return >= 0 ? colors.green : colors.red}
+              />
+              <MetricCard
+                label="Risk feel"
+                value={result.metrics.max_drawdown > -0.2 ? "🙂 Manageable" : result.metrics.max_drawdown > -0.35 ? "😬 Bumpy" : "😵 Wild"}
+                color={result.metrics.max_drawdown > -0.2 ? colors.green : result.metrics.max_drawdown > -0.35 ? colors.amber : colors.red}
+              />
+              <MetricCard
+                label="Quick read"
+                value={result.metrics.sharpe_ratio >= 1 ? "Balanced" : "Needs work"}
+                color={result.metrics.sharpe_ratio >= 1 ? colors.blue : colors.textBright}
+              />
+            </View>
+          ) : null}
           {/* Metrics strip */}
-          <SectionLabel text="PERFORMANCE METRICS" />
+          <SectionLabel text={isNormal ? "📊 Easy Summary" : "PERFORMANCE METRICS"} />
           <View style={styles.metricsStrip}>
             <MetricCard
               label="TOTAL RETURN"
@@ -1199,7 +1236,7 @@ export default function SimulationScreen() {
           <Divider />
 
           {/* Line Chart */}
-          <SectionLabel text="PORTFOLIO PERFORMANCE" />
+          <SectionLabel text={isNormal ? "📈 Money Over Time" : "PORTFOLIO PERFORMANCE"} />
           <View
             style={[
               styles.chartContainer,
@@ -1224,7 +1261,7 @@ export default function SimulationScreen() {
           <Divider />
 
           {/* Final Allocation Donut */}
-          <SectionLabel text="FINAL ALLOCATION" />
+          <SectionLabel text={isNormal ? "🧺 Where the Money Ended Up" : "FINAL ALLOCATION"} />
           <View style={styles.donutRow}>
             <AllocationDonut allocation={result.final_allocation} size={130} />
             <View style={styles.allocationList}>
@@ -1256,7 +1293,7 @@ export default function SimulationScreen() {
           <Divider />
 
           {/* Trade Log */}
-          <SectionLabel text={`TRADE LOG · ${result.trades.length} DECISIONS`} />
+          <SectionLabel text={isNormal ? `📝 Decisions Made (${result.trades.length})` : `TRADE LOG · ${result.trades.length} DECISIONS`} />
           {result.trades.length === 0 ? (
             <Text style={styles.noTradesText}>
               No trades executed in this simulation period.
@@ -1277,11 +1314,11 @@ export default function SimulationScreen() {
   return (
     <View style={styles.screen}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, isNormal && { backgroundColor: colors.bgPanel, borderBottomColor: colors.borderDim }]}>
         <View style={styles.headerLeft}>
           <Text style={styles.headerBrand}>CARDECON</Text>
           <View style={styles.headerSeparator} />
-          <Text style={styles.headerTitle}>SIMULATION ENGINE</Text>
+          <Text style={styles.headerTitle}>{isNormal ? "🧪 Try a Simulation" : "SIMULATION ENGINE"}</Text>
         </View>
         <View style={styles.headerRight}>
           <View style={[styles.statusDot, { backgroundColor: Colors.green }]} />
@@ -1299,7 +1336,7 @@ export default function SimulationScreen() {
       ) : (
         <ScrollView style={styles.narrowBody} showsVerticalScrollIndicator={false}>
           {personaPanel}
-          <View style={{ height: 1, backgroundColor: Colors.borderFaint, marginVertical: 12 }} />
+          <View style={{ height: 1, backgroundColor: colors.borderFaint, marginVertical: 12 }} />
           {resultsPanel}
         </ScrollView>
       )}

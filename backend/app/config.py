@@ -22,6 +22,9 @@ class Settings(BaseSettings):
 
     frontend_url: str = "http://localhost:8081"
     environment: str = "development"
+    openai_api_key: str = ""
+    google_api_key: str = ""
+    google_cse_id: str = ""
 
 
 @lru_cache

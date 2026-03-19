@@ -10,6 +10,7 @@ from app.routers import portfolio as portfolio_router
 from app.routers import achievements as achievements_router
 from app.routers import simulation as simulation_router
 from app.routers import game_hud as game_hud_router
+from app.routers import companion_chat as companion_chat_router
 
 # Import models so Base.metadata knows about all tables
 import app.models.user       # noqa: F401
@@ -105,6 +106,12 @@ async def lifespan(app: FastAPI):
                             ALTER TABLE user_portfolios ADD COLUMN market_state JSONB NOT NULL DEFAULT '{}';
                         END IF;
                         IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name='user_portfolios' AND column_name='companion_id'
+                        ) THEN
+                            ALTER TABLE user_portfolios ADD COLUMN companion_id VARCHAR(32);
+                        END IF;
+                        IF NOT EXISTS (
                             SELECT 1 FROM pg_constraint
                             WHERE conname = 'uq_user_achievement'
                         ) THEN
@@ -122,6 +129,11 @@ async def lifespan(app: FastAPI):
             await conn.run_sync(Base.metadata.create_all)
 
         await _ensure_sqlite_card_columns()
+        async with engine.begin() as conn:
+            try:
+                await conn.execute(text("ALTER TABLE user_portfolios ADD COLUMN companion_id VARCHAR(32)"))
+            except Exception:
+                pass
 
     # Seed data in development
     if settings.environment == "development":
@@ -162,6 +174,7 @@ app.include_router(portfolio_router.router)
 app.include_router(achievements_router.router)
 app.include_router(simulation_router.router)
 app.include_router(game_hud_router.router)
+app.include_router(companion_chat_router.router)
 
 
 @app.get("/health")

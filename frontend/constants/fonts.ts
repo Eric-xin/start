@@ -6,4 +6,5 @@ export const Fonts = {
   sansMedium: "Inter_500Medium",
   sansBold: "Inter_700Bold",
   mono: "monospace",
+  monoItalic: "monospace",
 } as const;

@@ -44,6 +44,7 @@ class UserPortfolio(Base):
         UUID(as_uuid=True), ForeignKey("personas.id", ondelete="SET NULL"), nullable=True
     )
     persona_vector: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    companion_id: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(

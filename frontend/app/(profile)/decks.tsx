@@ -11,6 +11,7 @@ import {
 import { getPortfolio } from "../../services/portfolio";
 import { Colors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
+import { useThemeStore } from "../../store/themeStore";
 
 const STRATEGY_ICONS: Record<string, string> = {
   savings: "💵",
@@ -42,6 +43,7 @@ const DECK_ICONS: Record<string, string> = {
 
 export default function DecksScreen() {
   const router = useRouter();
+  const isNormal = useThemeStore((state) => state.mode === "normal");
   const [progress, setProgress] = useState<ProgressData | null>(null);
   const [capital, setCapital] = useState<number>(0);
   const [loading, setLoading] = useState(true);
@@ -157,7 +159,7 @@ export default function DecksScreen() {
       <View style={styles.topBar}>
         <Text style={styles.logo}>CARDECON</Text>
         <View style={styles.barSep} />
-        <Text style={styles.topLabel}>INVESTMENT DECKS</Text>
+        <Text style={styles.topLabel}>{isNormal ? "LEARNING DECKS" : "INVESTMENT DECKS"}</Text>
         {saving && <ActivityIndicator color={Colors.blue} size="small" style={{ marginLeft: "auto" }} />}
         <TouchableOpacity onPress={() => router.back()}>
           <Text style={styles.backText}>BACK →</Text>
@@ -192,9 +194,9 @@ export default function DecksScreen() {
         {/* Info banner */}
         <View style={styles.infoCard}>
           <Text style={styles.infoText}>
-            Strategies are the top-level investment categories. Each strategy contains one or more
-            specialized decks that filter which cards appear in your sessions. Enable or disable
-            individual decks to focus your learning. Unlock new strategies and decks by playing more cards.
+            {isNormal
+              ? "Big themes live at the top, and each one contains smaller card packs underneath. Turn packs on or off to choose what you want to learn next."
+              : "Strategies are the top-level investment categories. Each strategy contains one or more specialized decks that filter which cards appear in your sessions. Enable or disable individual decks to focus your learning. Unlock new strategies and decks by playing more cards."}
           </Text>
         </View>
 
@@ -215,9 +217,11 @@ export default function DecksScreen() {
                   <Text style={styles.strategyIcon}>{icon}</Text>
                   <View style={styles.strategyMeta}>
                     <Text style={[styles.strategyLabel, !strat.is_unlocked && { color: Colors.textMuted }]}>
-                      {strat.label.toUpperCase()}
+                      {isNormal ? strat.label : strat.label.toUpperCase()}
                     </Text>
-                    <Text style={styles.strategyStage}>STAGE {strat.stage}</Text>
+                    <Text style={styles.strategyStage}>
+                      {isNormal ? (strat.is_unlocked ? "Ready to use" : `Opens after ${strat.unlock_at} cards`) : `STAGE ${strat.stage}`}
+                    </Text>
                   </View>
                 </View>
                 <View style={styles.strategyRight}>
@@ -240,14 +244,19 @@ export default function DecksScreen() {
 
               {/* Strategy description */}
               <Text style={[styles.strategyDesc, !strat.is_unlocked && { opacity: 0.4 }]}>
-                {desc}
+                {isNormal
+                  ? desc
+                      .replace("Low risk, low return.", "Usually safer, but slower-growing.")
+                      .replace("Higher volatility, higher expected return.", "Can grow faster, but feels bumpier.")
+                      .replace("Advanced instruments.", "More advanced and trickier to master.")
+                  : desc}
               </Text>
 
               {/* Status indicator */}
               {strat.is_unlocked && (
                 <View style={[styles.stratStatus, strat.is_enabled && styles.stratStatusOn]}>
                   <Text style={[styles.stratStatusText, strat.is_enabled && { color: Colors.green }]}>
-                    {strat.is_enabled ? "● STRATEGY ACTIVE" : "○ STRATEGY DISABLED"}
+                    {strat.is_enabled ? (isNormal ? "● Theme turned on" : "● STRATEGY ACTIVE") : (isNormal ? "○ Theme turned off" : "○ STRATEGY DISABLED")}
                   </Text>
                 </View>
               )}
@@ -255,7 +264,7 @@ export default function DecksScreen() {
               {/* Decks within this strategy */}
               {decks.length > 0 && (
                 <View style={styles.decksContainer}>
-                  <Text style={styles.decksLabel}>CARD DECKS</Text>
+                  <Text style={styles.decksLabel}>{isNormal ? "CARD PACKS" : "CARD DECKS"}</Text>
                   {decks.map((deck, idx) => {
                     const deckIcon = DECK_ICONS[deck.key] ?? "📁";
                     return (
@@ -279,8 +288,8 @@ export default function DecksScreen() {
                             {!deck.is_unlocked && (
                               <Text style={styles.deckUnlockAt}>
                                 {deck.is_purchasable && deck.shop_price
-                                  ? `Buy for $${deck.shop_price.toLocaleString()}`
-                                  : `Unlocks at ${deck.unlock_at} cards`}
+                                  ? (isNormal ? `Unlock now for $${deck.shop_price.toLocaleString()}` : `Buy for $${deck.shop_price.toLocaleString()}`)
+                                  : (isNormal ? `Opens after ${deck.unlock_at} cards` : `Unlocks at ${deck.unlock_at} cards`)}
                               </Text>
                             )}
                           </View>

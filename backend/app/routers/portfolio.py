@@ -23,6 +23,7 @@ from app.schemas.portfolio import (
     PlayCardResponse,
     NetWorthSnapshotOut,
     CardPlayOut,
+    UpdateCompanionRequest,
 )
 from app.services import portfolio_service as svc
 from app.services import achievement_service as ach_svc
@@ -67,6 +68,7 @@ def _portfolio_out(portfolio: UserPortfolio) -> PortfolioOut:
         last_income_date=portfolio.last_income_date,
         income_streak=portfolio.income_streak,
         persona_id=str(portfolio.persona_id) if portfolio.persona_id else None,
+        companion_id=portfolio.companion_id,
         can_claim_income=can_claim,
         pending_income=pending,
         created_at=portfolio.created_at.isoformat() if portfolio.created_at else "",
@@ -80,6 +82,19 @@ async def get_portfolio(
     db: AsyncSession = Depends(get_db),
 ):
     portfolio = await svc.get_or_create_portfolio(db, current_user.id)
+    return _portfolio_out(portfolio)
+
+
+@router.patch("/companion", response_model=PortfolioOut)
+async def update_companion(
+    body: UpdateCompanionRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    portfolio = await svc.get_or_create_portfolio(db, current_user.id)
+    portfolio.companion_id = body.companion_id
+    await db.commit()
+    await db.refresh(portfolio)
     return _portfolio_out(portfolio)
 
 

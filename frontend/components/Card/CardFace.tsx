@@ -1,10 +1,11 @@
 import React, { useRef } from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { Colors } from "../../constants/colors";
+import { useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { Layout } from "../../constants/layout";
 import type { CardData } from "../../services/portfolio";
 import { MarkdownText } from "../MarkdownText";
+import { useThemeStore } from "../../store/themeStore";
 
 const TYPE_LABELS: Record<string, string> = {
   education: "EDU",
@@ -18,39 +19,44 @@ interface Props {
 }
 
 export function CardFace({ card, isChoiceFlipped = false }: Props) {
+  const colors = useColors();
+  const isNormal = useThemeStore((state) => state.mode === "normal");
+  const styles = createStyles(colors);
   const rotation = useRef((-1.5 + Math.random() * 3).toFixed(2)).current;
-  const bandColor = Colors.cardBand[card.card_band_color] ?? Colors.cardBand.steel_blue;
-  const typeLabel = TYPE_LABELS[card.type] ?? card.type.toUpperCase();
+  const bandColor = colors.cardBand[card.card_band_color] ?? colors.cardBand.steel_blue;
+  const typeLabel = isNormal
+    ? ({ education: "📖 Learn", event: "⚡ Event", action: "🎯 Decide" }[card.type] ?? card.type.toUpperCase())
+    : (TYPE_LABELS[card.type] ?? card.type.toUpperCase());
+  const diffScore = Math.round(card.difficulty * 10);
+  const difficultyLabel = isNormal
+    ? (
+      diffScore <= 3 ? "⭐ Easy"
+        : diffScore <= 6 ? "⭐⭐ Medium"
+          : diffScore <= 9 ? "⭐⭐⭐ Hard"
+            : "🔥 Expert"
+    )
+    : `DIFF ${diffScore}/10`;
   const leftChoice = isChoiceFlipped ? card.right_choice : card.left_choice;
   const rightChoice = isChoiceFlipped ? card.left_choice : card.right_choice;
 
   return (
     <View style={[styles.card, { transform: [{ rotate: `${rotation}deg` }] }]}>
-      {/* Top band */}
       <View style={[styles.band, { backgroundColor: bandColor }]} />
 
-      {/* Card inner */}
       <View style={styles.inner}>
-        {/* Header row: type + difficulty */}
         <View style={styles.metaRow}>
           <View style={[styles.typePill, { borderColor: bandColor }]}>
             <Text style={[styles.typeText, { color: bandColor }]}>{typeLabel}</Text>
           </View>
-          <Text style={styles.diffLabel}>
-            DIFF {(card.difficulty * 10).toFixed(0)}/10
-          </Text>
+          <Text style={styles.diffLabel}>{difficultyLabel}</Text>
         </View>
 
-        {/* Emoji */}
         <Text style={styles.emoji}>{card.emoji}</Text>
 
-        {/* Title */}
         <Text style={styles.title} numberOfLines={2}>{card.title}</Text>
 
-        {/* Divider */}
         <View style={[styles.divider, { backgroundColor: bandColor + "44" }]} />
 
-        {/* Body */}
         <MarkdownText
           text={card.body}
           style={styles.body}
@@ -58,7 +64,6 @@ export function CardFace({ card, isChoiceFlipped = false }: Props) {
           italicStyle={styles.bodyItalic}
         />
 
-        {/* Choices */}
         <View style={styles.choicesRow}>
           <View style={styles.choice}>
             <Text style={styles.arrow}>←</Text>
@@ -75,11 +80,11 @@ export function CardFace({ card, isChoiceFlipped = false }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
   card: {
     width: Layout.cardWidth,
     height: Layout.cardHeight,
-    backgroundColor: Colors.cardSurface,
+    backgroundColor: colors.cardSurface,
     borderRadius: Layout.cardBorderRadius,
     overflow: "hidden",
     shadowColor: "#000",
@@ -88,7 +93,7 @@ const styles = StyleSheet.create({
     shadowRadius: 24,
     elevation: 16,
     borderWidth: 1,
-    borderColor: Colors.cardBorder,
+    borderColor: colors.cardBorder,
   },
   band: {
     height: Layout.cardBandHeight,
@@ -129,7 +134,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontFamily: Fonts.mono,
-    color: Colors.cardText,
+    color: colors.cardText,
     textAlign: "center",
     lineHeight: 26,
     marginBottom: 8,
@@ -141,7 +146,7 @@ const styles = StyleSheet.create({
   body: {
     fontSize: 13.5,
     fontFamily: Fonts.sans,
-    color: Colors.cardTextBody,
+    color: colors.cardTextBody,
     lineHeight: 20,
     flex: 1,
   },
@@ -177,7 +182,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: Fonts.sansBold,
     lineHeight: 18,
-    color: Colors.textMuted,
+    color: colors.textMuted,
   },
   choiceText: {
     flex: 1,

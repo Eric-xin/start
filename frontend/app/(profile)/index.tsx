@@ -281,9 +281,13 @@ export default function ProfileScreen() {
     return <View style={s.loading}><ActivityIndicator color={Colors.blue} size="large" /></View>;
   }
 
+  if (!progress) {
+    return <View style={s.loading}><ActivityIndicator color={Colors.blue} size="large" /></View>;
+  }
+
   // Group decks by strategy
   const decksByStrategy: Record<string, typeof progress.decks> = {};
-  progress?.decks.forEach((d) => {
+  progress.decks.forEach((d) => {
     if (!decksByStrategy[d.strategy]) decksByStrategy[d.strategy] = [];
     decksByStrategy[d.strategy].push(d);
   });
