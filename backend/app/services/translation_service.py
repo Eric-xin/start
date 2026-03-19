@@ -1,4 +1,6 @@
 from functools import lru_cache
+import concurrent.futures
+import time
 
 from app.schemas.card import CardOut
 
@@ -18,6 +20,66 @@ LANGUAGE_MAP = {
     "de": "de",
 }
 
+# Threadpool and circuit breaker configuration for translation calls.
+_TRANSLATION_WORKERS = 4
+_TRANSLATION_TIMEOUT_SECONDS = 1.0
+_TRANSLATION_FAILURE_THRESHOLD = 5
+_TRANSLATION_COOLDOWN_SECONDS = 60.0
+
+_translation_executor: concurrent.futures.Executor | None = None
+_translation_failure_count = 0
+_translation_disabled_until = 0.0
+
+
+def _get_translation_executor() -> concurrent.futures.Executor:
+    """
+    Lazily initialize a shared threadpool for translation calls.
+    """
+    global _translation_executor
+    if _translation_executor is None:
+        _translation_executor = concurrent.futures.ThreadPoolExecutor(
+            max_workers=_TRANSLATION_WORKERS,
+            thread_name_prefix="translation-worker",
+        )
+    return _translation_executor
+
+
+def _translate_via_google(text: str, target_lang: str) -> str:
+    """
+    Perform the actual Google translation in a threadpool with
+    timeouts and a simple circuit breaker.
+    """
+    global _translation_failure_count, _translation_disabled_until
+
+    if not text or target_lang == "en":
+        return text
+    if GoogleTranslator is None:
+        return text
+
+    now = time.time()
+    if now < _translation_disabled_until:
+        # Circuit breaker open; skip translation.
+        return text
+
+    executor = _get_translation_executor()
+
+    def _do_translate() -> str:
+        return GoogleTranslator(source="en", target=target_lang).translate(text)
+
+    future = executor.submit(_do_translate)
+    try:
+        translated = future.result(timeout=_TRANSLATION_TIMEOUT_SECONDS)
+    except (concurrent.futures.TimeoutError, Exception):
+        _translation_failure_count += 1
+        if _translation_failure_count >= _TRANSLATION_FAILURE_THRESHOLD:
+            _translation_disabled_until = now + _TRANSLATION_COOLDOWN_SECONDS
+        # On failure or timeout, fall back to original text.
+        return text
+    else:
+        # Successful call; reset failure counter.
+        _translation_failure_count = 0
+        return translated
+
 
 def normalize_language(language: str | None) -> str:
     if not language:
@@ -32,14 +94,12 @@ def normalize_language(language: str | None) -> str:
 
 @lru_cache(maxsize=4096)
 def _translate_cached(text: str, target_lang: str) -> str:
-    if not text or target_lang == "en":
-        return text
-    if GoogleTranslator is None:
-        return text
-    try:
-        return GoogleTranslator(source="en", target=target_lang).translate(text)
-    except Exception:
-        return text
+    """
+    Cached translation wrapper. Delegates to the threadpool-based
+    translator to avoid blocking the main event loop thread with
+    network I/O.
+    """
+    return _translate_via_google(text, target_lang)
 
 
 def localize_text(text: str, language: str | None) -> str:
