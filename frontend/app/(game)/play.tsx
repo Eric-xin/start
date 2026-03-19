@@ -1,7 +1,7 @@
 import React, { useEffect, useCallback, useRef, useState } from "react";
 import {
   View, Text, StyleSheet, ActivityIndicator,
-  Alert, useWindowDimensions, Platform,
+  Alert, useWindowDimensions, Platform, TouchableOpacity,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { usePortfolioStore } from "../../store/portfolioStore";
@@ -57,7 +57,7 @@ function TerminalGrid() {
 }
 
 // ─── Top Status Bar ─────────────────────────────────────────────────────────
-function TopStatusBar({ session }: { session: any }) {
+function TopStatusBar({ session, onExit }: { session: any; onExit: () => void }) {
   const now = new Date();
   const timeStr = now.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
@@ -80,6 +80,9 @@ function TopStatusBar({ session }: { session: any }) {
       <View style={tbStyles.right}>
         <View style={tbStyles.liveIndicator} />
         <Text style={tbStyles.time}>{timeStr}</Text>
+        <TouchableOpacity style={tbStyles.exitBtn} onPress={onExit}>
+          <Text style={tbStyles.exitBtnText}>EXIT</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -128,6 +131,20 @@ const tbStyles = StyleSheet.create({
     fontFamily: Fonts.mono,
     color: Colors.textDim,
     letterSpacing: 1,
+  },
+  exitBtn: {
+    borderWidth: 1,
+    borderColor: Colors.borderDim,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 2,
+    marginLeft: 4,
+  },
+  exitBtnText: {
+    fontSize: 9,
+    fontFamily: Fonts.sansBold,
+    color: Colors.textDim,
+    letterSpacing: 1.5,
   },
 });
 
@@ -252,7 +269,7 @@ export default function PlayScreen() {
       )}
 
       {/* Top status bar */}
-      <TopStatusBar session={sessionProxy} />
+      <TopStatusBar session={sessionProxy} onExit={() => router.replace("/(game)/index")} />
 
       {/* Body */}
       <View style={styles.body}>
