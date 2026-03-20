@@ -166,7 +166,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="CardEcon API",
+    title="MarketHand API",
     version="1.0.0",
     lifespan=lifespan,
 )

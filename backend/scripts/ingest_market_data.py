@@ -371,7 +371,7 @@ async def seed_events(db: AsyncSession) -> None:
 # ---------------------------------------------------------------------------
 
 async def main() -> None:
-    print("=== CardEcon Market Data Ingestion ===")
+    print("=== MarketHand Market Data Ingestion ===")
     print(f"Database: {DATABASE_URL}")
     print(f"Date range: {START_DATE} → {END_DATE}")
     print()

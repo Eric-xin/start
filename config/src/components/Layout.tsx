@@ -84,7 +84,7 @@ export default function Layout({ title, children }: LayoutProps) {
               letterSpacing: '0.1em',
             }}
           >
-            CARDECON
+            MARKETHAND
           </div>
           <div
             style={{

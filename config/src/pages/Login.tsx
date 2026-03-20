@@ -101,7 +101,7 @@ export default function Login() {
               marginBottom: 8,
             }}
           >
-            CARDECON ADMIN
+            MARKETHAND ADMIN
           </div>
           <div
             style={{
@@ -257,7 +257,7 @@ export default function Login() {
             letterSpacing: '0.1em',
           }}
         >
-          CARDECON FINANCIAL EDUCATION PLATFORM
+          MARKETHAND FINANCIAL EDUCATION PLATFORM
         </div>
       </div>
     </div>

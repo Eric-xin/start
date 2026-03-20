@@ -1,12 +1,12 @@
-# CardEcon
+# MarketHand
 
 ## Setup
 
 ### 1. Create and activate Conda environment
 
 ```bash
-conda create -n cardecon python=3.11 -y
-conda activate cardecon
+conda create -n markethand python=3.11 -y
+conda activate markethand
 ```
 
 ### 2. Install backend dependencies

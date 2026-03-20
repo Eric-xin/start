@@ -74,11 +74,11 @@ async def send_verification_email(to: str, token: str, username: str) -> None:
     frontend_url = settings.frontend_url
     verify_url = f"{frontend_url}/verify-email?token={token}"
     html = _render("email_verify.html", {"username": username, "verify_url": verify_url})
-    await _send(to, "Verify your CardEcon account", html)
+    await _send(to, "Verify your MarketHand account", html)
 
 
 async def send_password_reset_email(to: str, token: str) -> None:
     frontend_url = settings.frontend_url
     reset_url = f"{frontend_url}/reset-password?token={token}"
     html = _render("password_reset.html", {"reset_url": reset_url})
-    await _send(to, "Reset your CardEcon password", html)
+    await _send(to, "Reset your MarketHand password", html)

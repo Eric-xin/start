@@ -11,7 +11,7 @@ interface ThemeState {
   hydrate: () => Promise<void>;
 }
 
-const STORAGE_KEY = "cardecon-theme-mode";
+const STORAGE_KEY = "markethand-theme-mode";
 
 export const useThemeStore = create<ThemeState>((set, get) => ({
   mode: "pro",

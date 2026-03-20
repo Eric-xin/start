@@ -30,7 +30,7 @@ def build_context_block(context: dict[str, Any] | None) -> str:
     portfolio = context.get("portfolio") or {}
 
     lines = [
-        "You are answering as an in-game companion for CardEcon.",
+        "You are answering as an in-game companion for MarketHand.",
         "Use the user's current gameplay context when relevant.",
         f"Current card title: {current_card.get('title', 'N/A')}",
         f"Current card body: {current_card.get('body', 'N/A')}",

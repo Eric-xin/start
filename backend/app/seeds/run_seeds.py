@@ -30,10 +30,10 @@ SMTP_CONFIGS = [
     {"key": "smtp_password", "value": "", "description": "SMTP password"},
     {
         "key": "smtp_from",
-        "value": "noreply@cardecon.app",
+        "value": "noreply@markethand.app",
         "description": "From email address",
     },
-    {"key": "smtp_from_name", "value": "CardEcon", "description": "From display name"},
+    {"key": "smtp_from_name", "value": "MarketHand", "description": "From display name"},
     {
         "key": "email_backend",
         "value": "console",
