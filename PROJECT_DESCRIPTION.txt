@@ -9,7 +9,7 @@ THE PROBLEM
 - Traditional platforms are too complex, too abstract, or too overwhelming
 - Risk profiling relies on meaningless self-reported questionnaires ("Rate your tolerance from 1 to 5")
 - There is no safe space to practice, fail, and learn before committing real money
-- Millions of people — especially in markets like Switzerland where ~12% face this barrier — are left behind
+- Millions of people — especially in markets like Switzerland where ~55% face this barrier — are left behind
 
 
 THE OBJECTIVE
