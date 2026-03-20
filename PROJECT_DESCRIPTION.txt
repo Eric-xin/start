@@ -1,0 +1,50 @@
+MarketHand — The biggest risk is not taking any risk
+
+Most people know they should invest. Yet millions never do — not because they lack intelligence, but because they lack confidence. Traditional platforms throw charts, jargon, and complexity at users who haven't yet built the foundation to make sense of it all. The result? Hesitation, fear, and missed opportunities that compound over a lifetime.
+
+
+THE PROBLEM
+
+- Financial tools assume users are already confident investors
+- Traditional platforms are too complex, too abstract, or too overwhelming
+- Risk profiling relies on meaningless self-reported questionnaires ("Rate your tolerance from 1 to 5")
+- There is no safe space to practice, fail, and learn before committing real money
+- Millions of people — especially in markets like Switzerland where ~12% face this barrier — are left behind
+
+
+THE OBJECTIVE
+
+MarketHand bridges the gap between financial curiosity and investment confidence. Instead of another trading platform, we built an interactive card game that teaches investing through real decision-making — transforming abstract concepts into intuitive, hands-on experience.
+
+
+KEY FEATURES
+
+Card-Based Learning
+  Users swipe through scenario cards making simple left-or-right decisions. No jargon, no pressure. Starting from fundamentals like cash flow and trade-offs, players progressively unlock advanced topics — market events, asset classes, diversification strategies.
+
+Financial Persona Engine
+  Every decision is captured to build a living behavioral profile — your risk appetite, patience, reaction to losses, and decision patterns. Unlike static bank questionnaires, MarketHand observes how you actually think through real choices.
+
+Portfolio Simulation
+  Once your persona is built, MarketHand runs it against real historical market data. Before investing a single dollar, users can see how they would have performed, where their blind spots are, and what strategies suit their profile.
+
+Progressive Difficulty
+  Five stages guide players from beginner scenarios to complex market dynamics, with an intelligent card recommender that adapts to skill level, topic mastery, and learning gaps.
+
+Multiplayer Arena
+  Compete in real-time against friends or other players. Shared card sequences, synchronized rounds, and live leaderboards make learning social and engaging.
+
+AI Companion
+  A real-time assistant explains concepts, answers questions, and adapts to each user — so no one is ever lost or stuck.
+
+Achievements & Leaderboards
+  Progress is rewarded with milestones, rankings, and unlockable tiers that keep users motivated and engaged over time.
+
+
+CONCLUSION
+
+MarketHand turns investing from something intimidating into something intuitive. From something risky into something learnable. From something exclusive into something accessible to everyone. By meeting users where they are — with play, not pressure — we give them the confidence to take control of their financial future.
+
+The future of finance is not just better tools. It is better understanding.
+
+MarketHand is available now on the App Store.
