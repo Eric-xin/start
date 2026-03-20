@@ -399,22 +399,6 @@ export default function PortfolioScreen() {
         {/* ── Income Breakdown ── */}
         <View style={[styles.rowCards, isWide && { flexDirection: "row" }]}>
           <View style={[styles.card, { backgroundColor: colors.bgPanel, borderColor: colors.borderDim, borderRadius: isNormal ? 18 : 2 }, isWide && { flex: 1 }]}>
-            <SectionHeader title={t("portfolio.learningStage")} />
-            <View style={styles.stageRow}>
-              <Text style={styles.stageBig}>STAGE {p.stage}</Text>
-              <Text style={styles.stageOf}>/ 5</Text>
-            </View>
-            <View style={styles.progressTrack}>
-              <View style={[styles.progressFill, {
-                width: `${Math.min(((p.total_cards_played % 20) / 20) * 100, 100)}%`
-              }]} />
-            </View>
-            <Text style={styles.progressHint}>
-              {t("portfolio.untilStage", { count: 20 - (p.total_cards_played % 20), stage: Math.min(p.stage + 1, 5) })}
-            </Text>
-          </View>
-
-          <View style={[styles.card, { backgroundColor: colors.bgPanel, borderColor: colors.borderDim, borderRadius: isNormal ? 18 : 2 }, isWide && { flex: 1 }]}>
             <SectionHeader title={t("portfolio.incomeBreakdown")} />
             <View style={styles.incomeBreakdown}>
               <View style={styles.incomeLine}>
