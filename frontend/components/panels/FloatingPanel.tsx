@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import {
   Modal, View, Text, TouchableOpacity, StyleSheet,
-  ScrollView, TouchableWithoutFeedback, Animated,
+  ScrollView, TouchableWithoutFeedback, Animated, Dimensions,
 } from "react-native";
 import { useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
@@ -37,6 +37,11 @@ export function FloatingPanel({
     }
   }, [visible]);
 
+  const screenWidth = Dimensions.get("window").width;
+  const screenHeight = Dimensions.get("window").height;
+  const panelWidth = Math.min(width, screenWidth - 32);
+  const panelHeight = Math.min(height, screenHeight - 80);
+
   return (
     <Modal
       visible={visible}
@@ -55,7 +60,7 @@ export function FloatingPanel({
         <Animated.View
           style={[
             styles.panel,
-            { width, maxHeight: height },
+            { width: panelWidth, maxHeight: panelHeight },
             { transform: [{ scale: scaleAnim }], opacity: opacityAnim },
           ]}
         >
@@ -102,7 +107,11 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     borderColor: colors.borderPrimary,
     borderRadius: 16,
     overflow: "hidden",
-    boxShadow: "0 24px 64px rgba(0, 0, 0, 0.9)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 24 },
+    shadowOpacity: 0.9,
+    shadowRadius: 32,
+    elevation: 24,
   },
   titleBar: {
     height: 40,

@@ -114,6 +114,7 @@ export default function GameIndexScreen() {
   const styles = createStyles(colors, isNormal);
   const { width } = useWindowDimensions();
   const isWide = width >= 1040;
+  const isNarrow = width < 520;
   const { user, clearAuth } = useAuthStore();
   const { setPortfolio, setCurrentCard } = usePortfolioStore();
   const setCompanion = useCompanionStore((state) => state.setCompanion);
@@ -198,11 +199,11 @@ export default function GameIndexScreen() {
         label={isNormal ? t("topbar.homeBase") : t("home.topBarPro")}
         rightContent={
           <>
-            <ThemeModeToggle navSized />
-            <TouchableOpacity style={styles.navBtn} onPress={() => router.push("/(profile)")}>
+            <ThemeModeToggle compact={isNarrow} navSized={!isNarrow} />
+            <TouchableOpacity style={[styles.navBtn, isNarrow && styles.navBtnNarrow]} onPress={() => router.push("/(profile)")}>
               <Text style={styles.navBtnText}>{isNormal ? t("topbar.profile") : t("home.profilePro")}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.navBtn, styles.logoutBtn]} onPress={clearAuth}>
+            <TouchableOpacity style={[styles.navBtn, styles.logoutBtn, isNarrow && styles.navBtnNarrow]} onPress={clearAuth}>
               <Text style={styles.navBtnText}>{isNormal ? t("home.logout") : t("home.logoutPro")}</Text>
             </TouchableOpacity>
           </>
@@ -389,6 +390,10 @@ const createStyles = (colors: ReturnType<typeof useColors>, isNormal: boolean) =
       fontFamily: Fonts.sansBold,
       color: colors.textDim,
       letterSpacing: isNormal ? 0.4 : 1.2,
+    },
+    navBtnNarrow: {
+      paddingHorizontal: 8,
+      paddingVertical: 5,
     },
     logoutBtn: {
       marginLeft: 2,

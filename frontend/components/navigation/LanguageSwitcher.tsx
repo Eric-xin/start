@@ -13,10 +13,26 @@ const LANGS: Array<{ code: AppLanguage; icon: string; label: string }> = [
   { code: "it", icon: "IT", label: "Italian" },
 ];
 
-export function LanguageSwitcher() {
+export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
   const colors = useColors();
   const { i18n } = useTranslation();
   const current = useMemo(() => getCurrentLanguage(), [i18n.language]);
+
+  if (compact) {
+    const currentIdx = LANGS.findIndex((l) => l.code === current);
+    const currentLang = LANGS[currentIdx] ?? LANGS[0];
+    const nextLang = LANGS[(currentIdx + 1) % LANGS.length];
+    return (
+      <TouchableOpacity
+        onPress={() => setAppLanguage(nextLang.code)}
+        accessibilityRole="button"
+        accessibilityLabel={`Language: ${currentLang.label}. Tap to switch.`}
+        style={[styles.btn, { borderColor: colors.blue, backgroundColor: colors.blueDim }]}
+      >
+        <Text style={[styles.btnText, { color: colors.blueBright }]}>{currentLang.icon}</Text>
+      </TouchableOpacity>
+    );
+  }
 
   return (
     <View style={styles.row}>

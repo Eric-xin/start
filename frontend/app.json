@@ -2,8 +2,7 @@
   "expo": {
     "name": "MarketHand",
     "slug": "markethand",
-    "version": "1.0.0",
-    "orientation": "landscape",
+    "version": "1.0.2",
     "icon": "./assets/icon.jpg",
     "userInterfaceStyle": "dark",
     "splash": {

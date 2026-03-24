@@ -8,7 +8,7 @@ import { useTranslation } from "react-i18next";
 import { login, getMe } from "../../services/auth";
 import { API_BASE } from "../../services/api";
 import { useAuthStore } from "../../store/authStore";
-import { Colors } from "../../constants/colors";
+import { Colors, useColors } from "../../constants/colors";
 import { Fonts } from "../../constants/fonts";
 import { LanguageSwitcher } from "../../components/navigation/LanguageSwitcher";
 
@@ -41,6 +41,7 @@ function parseError(e: any, t: (key: string, options?: any) => string): string {
 export default function LoginScreen() {
   const router = useRouter();
   const { t } = useTranslation();
+  const colors = useColors();
   const setAuth = useAuthStore((s) => s.setAuth);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -73,7 +74,7 @@ export default function LoginScreen() {
     >
       <GridBg />
 
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { backgroundColor: colors.bgPanel }]}>
         <Text style={styles.logo}>{t("common.appName")}</Text>
         <Text style={styles.topBarSub}>{t("auth.login.topBar")}</Text>
         <View style={{ flex: 1 }} />
@@ -158,7 +159,6 @@ const styles = StyleSheet.create({
 
   topBar: {
     height: 40,
-    backgroundColor: Colors.bgPanel,
     borderBottomWidth: 1,
     borderBottomColor: Colors.borderPrimary,
     flexDirection: "row",
