@@ -76,12 +76,14 @@ function TopStatusBar({
   onExit,
   activePanel,
   onOpenPanel,
+  isNarrow,
   t,
 }: {
   session: any;
   onExit: () => void;
   activePanel: PanelType;
   onOpenPanel: (p: PanelType) => void;
+  isNarrow: boolean;
   t: (k: string) => string;
 }) {
   const colors = useColors();
@@ -109,46 +111,56 @@ function TopStatusBar({
   };
 
   return (
-    <View style={styles.bar}>
-      <View style={styles.left}>
-        <Text style={styles.logo}>{t("common.appName")}</Text>
-        <View style={styles.sep} />
-        <Text style={styles.label}>{isNormal ? t("play.top.cash") : t("play.top.stage")}</Text>
-        <Text style={[styles.value, { color: isNormal ? (session.capital >= 10000 ? colors.green : session.capital >= 8500 ? colors.amber : colors.red) : colors.textBright }]}>
-          {isNormal ? `$${Math.round(session.capital).toLocaleString()}` : `${session.stage}/5`}
-        </Text>
-        {!isNormal && (
-          <>
-            <View style={styles.sep} />
-            <Text style={styles.label}>{t("play.top.rank")}</Text>
-            <Text style={styles.value}>{session.investor_rank}</Text>
-            <View style={styles.sep} />
-            <Text style={styles.label}>{t("play.top.capital")}</Text>
-          </>
+    <View>
+      <View style={styles.bar}>
+        <View style={styles.left}>
+          <Text style={styles.logo}>{t("common.appName")}</Text>
+          <View style={styles.sep} />
+          <Text style={styles.label}>{isNormal ? t("play.top.cash") : t("play.top.stage")}</Text>
+          <Text style={[styles.value, { color: isNormal ? (session.capital >= 10000 ? colors.green : session.capital >= 8500 ? colors.amber : colors.red) : colors.textBright }]}>
+            {isNormal ? `$${Math.round(session.capital).toLocaleString()}` : `${session.stage}/5`}
+          </Text>
+          {!isNormal && !isNarrow && (
+            <>
+              <View style={styles.sep} />
+              <Text style={styles.label}>{t("play.top.rank")}</Text>
+              <Text style={styles.value}>{session.investor_rank}</Text>
+              <View style={styles.sep} />
+              <Text style={styles.label}>{t("play.top.capital")}</Text>
+            </>
+          )}
+          {!isNormal && !isNarrow && (
+            <Text style={[styles.value, { color: session.capital >= 10000 ? colors.green : colors.red }]}>
+              ${Math.round(session.capital).toLocaleString()}
+            </Text>
+          )}
+        </View>
+
+        {!isNarrow && (
+          <View style={styles.panelBtns}>
+            {panelBtn("market", isNormal ? t("play.top.market") : t("play.top.marketPro"))}
+            {panelBtn("news", isNormal ? t("play.top.news") : t("play.top.newsPro"))}
+            {panelBtn("portfolio", isNormal ? t("play.top.portfolio") : t("play.top.portfolioPro"))}
+          </View>
         )}
-        {!isNormal && (
-        <Text style={[styles.value, { color: session.capital >= 10000 ? colors.green : colors.red }]}>
-          ${Math.round(session.capital).toLocaleString()}
-        </Text>
-        )}
+
+        <View style={styles.right}>
+          <View style={styles.liveIndicator} />
+          {!isNarrow && <Text style={styles.time}>{timeStr}</Text>}
+          <ThemeModeToggle compact={isNarrow} />
+          <TouchableOpacity style={styles.exitBtn} onPress={onExit}>
+            <Text style={styles.exitBtnText}>{t("play.top.exit")}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      <View style={styles.panelBtns}>
-        {panelBtn("market", isNormal ? t("play.top.market") : t("play.top.marketPro"))}
-        {panelBtn("news", isNormal ? t("play.top.news") : t("play.top.newsPro"))}
-        {panelBtn("portfolio", isNormal ? t("play.top.portfolio") : t("play.top.portfolioPro"))}
-      </View>
-
-      <View style={styles.right}>
-        <View style={styles.liveIndicator} />
-        <Text style={styles.time}>{timeStr}</Text>
-
-        <ThemeModeToggle />
-
-        <TouchableOpacity style={styles.exitBtn} onPress={onExit}>
-          <Text style={styles.exitBtnText}>{t("play.top.exit")}</Text>
-        </TouchableOpacity>
-      </View>
+      {isNarrow && (
+        <View style={styles.subBar}>
+          {panelBtn("market", isNormal ? t("play.top.market") : t("play.top.marketPro"))}
+          {panelBtn("news", isNormal ? t("play.top.news") : t("play.top.newsPro"))}
+          {panelBtn("portfolio", isNormal ? t("play.top.portfolio") : t("play.top.portfolioPro"))}
+        </View>
+      )}
     </View>
   );
 }
@@ -183,6 +195,7 @@ export default function PlayScreen() {
 
   const isWide = width >= Layout.wideBreakpoint;
   const isMedium = width >= Layout.tabletBreakpoint;
+  const isNarrow = width < 520;
 
   const {
     portfolio,
@@ -335,6 +348,7 @@ export default function PlayScreen() {
         onExit={() => router.replace("/(game)")}
         activePanel={activePanel}
         onOpenPanel={setActivePanel}
+        isNarrow={isNarrow}
         t={t}
       />
 
@@ -529,6 +543,17 @@ const createTopBarStyles = (colors: ReturnType<typeof useColors>, isNormal: bool
       fontFamily: Fonts.sansBold,
       color: colors.textDim,
       letterSpacing: isNormal ? 0.3 : 1.5,
+    },
+    subBar: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      paddingHorizontal: 14,
+      paddingVertical: 6,
+      backgroundColor: colors.bgPanel,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.borderDim,
     },
   });
 
